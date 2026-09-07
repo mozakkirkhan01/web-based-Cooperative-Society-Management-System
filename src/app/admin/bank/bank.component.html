@@ -1,0 +1,173 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main" *ngIf="action.ResponseReceived">
+
+    <div class="row">
+        <div class="pagetitle dashboard col-sm-8">
+            <h1>{{action.MenuTitle}}</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a routerLink="admin/admin-dashboard">Home</a></li>
+                    <li class="breadcrumb-item">{{action.ParentMenuTitle}}</li>
+                    <li class="breadcrumb-item active">{{action.MenuTitle}}</li>
+                </ol>
+            </nav>
+        </div>
+        <!-- <div class="col-sm-4 mb-3">
+            <button mat-raised-button color="primary" *ngIf="action.CanCreate" class="float-right"
+                data-bs-toggle="modal" data-bs-target="#staticBackdrop" (click)="resetForm()">New Head</button>
+        </div> -->
+    </div>
+
+    <section class="section dashboard">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title">New Bank</h5>
+                    </div>
+                    <div class="card-body">
+
+                        <form #formBank="ngForm" class="d-flex justify-content-evenly flex-wrap">
+
+
+                            <mat-form-field appearance="outline" class="col-sm-12">
+                                <mat-label>Bank Name</mat-label>
+                                <input matInput #BankName="ngModel" name="BankName" [(ngModel)]="Bank.BankName" required
+                                    autofocus>
+                                <mat-error>
+                                    Bank name is <strong>required</strong>
+                                </mat-error>
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="col-sm-12">
+                                <mat-label>Account Holder Name</mat-label>
+                                <input matInput #AccountHolderName="ngModel" name="AccountHolderName"
+                                    [(ngModel)]="Bank.AccountHolderName">
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="col-sm-12">
+                                <mat-label>Account No.</mat-label>
+                                <input matInput #AccountNo="ngModel" name="AccountNo" [(ngModel)]="Bank.AccountNo"
+                                    required autofocus>
+                                <mat-error>
+                                    Account No. is <strong>required</strong>
+                                </mat-error>
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="col-sm-12">
+                                <mat-label>IFSC Code</mat-label>
+                                <input matInput #IFSCCode="ngModel" name="IFSCCode" [(ngModel)]="Bank.IFSCCode">
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="col-sm-12">
+                                <mat-label>Branch</mat-label>
+                                <input matInput #Branch="ngModel" name="Branch" [(ngModel)]="Bank.Branch">
+                            </mat-form-field>
+                             <mat-form-field appearance="outline" class="col-sm-12">
+                                <mat-label>Opening Balance</mat-label>
+                                <input matInput #OpeningBalance="ngModel" name="OpeningBalance" [(ngModel)]="Bank.OpeningBalance" required
+                                    autofocus>
+                                <mat-error>
+                                    Opening Balance is <strong>required</strong>
+                                </mat-error>
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="col-sm-12">
+                                <mat-label>Status</mat-label>
+                                <mat-select #Status="ngModel" name="Status" [(ngModel)]="Bank.Status" required>
+                                    <mat-option [value]="status.Key"
+                                        *ngFor="let status of StatusList">{{status.Value}}</mat-option>
+                                </mat-select>
+                                <mat-error>
+                                    Status is <strong>required</strong>
+                                </mat-error>
+                            </mat-form-field>
+                            <button type="button" mat-raised-button color="warn" class="me-2" data-bs-dismiss="modal"
+                                (click)="resetForm()">Cancel</button>
+                            <button mat-raised-button color="primary" (click)="saveBank()">{{Bank.BankId >
+                                0 ? 'Update':'Submit'}}</button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title">Bank List</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container overflow-auto">
+                            <div class="dataTable-top">
+                                <div class="dataTable-dropdown d-flex">
+                                    <select class="dataTable-selector form-select form-select-sm"
+                                        [(ngModel)]="itemPerPage">
+                                        <option *ngFor="let option of PageSize" [value]="option">{{option}} </option>
+                                    </select>
+                                    <span class="ms-2">Entries per page</span>
+                                </div>
+                                <div class="dataTable-search">
+                                    <input class="dataTable-input form-control form-control-sm" [(ngModel)]="Search"
+                                        placeholder="Search..." type="text">
+                                </div>
+                            </div>
+
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>S.No</th>
+                                        <th style="cursor:pointer;" (click)="sort('BankName')">Bank Name</th>
+                                        <th style="cursor:pointer;" (click)="sort('AccountHolderName')">A/c Holder Name
+                                        </th>
+                                        <th style="cursor:pointer;" (click)="sort('AccountNo')">Account No.</th>
+                                        <th style="cursor:pointer;" (click)="sort('IFSCCode')">IFSC Code</th>
+                                        <th style="cursor:pointer;" (click)="sort('Branch')">Branch</th>
+                                        <th style="cursor:pointer;" (click)="sort('OpeningBalance')">Opening Balance</th>
+                                        <th style="cursor:pointer;" (click)="sort('Status')">Status</th>
+                                        <th *ngIf="action.CanEdit">Edit</th>
+                                        <th *ngIf="action.CanDelete">Delete</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        *ngFor="let item of BankList |filter:Search|orderBy:sortKey:reverse|paginate: { itemsPerPage: itemPerPage, currentPage: p } ; ; let i = index;">
+                                        <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
+                                        <td>{{item.BankName}}</td>
+                                        <td>{{item.AccountHolderName}}</td>
+                                        <td>{{item.AccountNo}} A/c</td>
+                                        <td>{{item.IFSCCode}}</td>
+                                        <td>{{item.Branch}}</td>
+                                        <td>{{item.OpeningBalance}}</td>
+                                        <td>
+                                            <span class="p-1"
+                                                [ngClass]="item.Status == 1 ? 'badge text-bg-success':'badge text-bg-danger'">
+                                                {{AllStatusList[item.Status]}}
+                                            </span>
+                                        </td>
+                                        <td *ngIf="action.CanEdit">
+                                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                                data-bs-target="#staticBackdrop" (click)="editBank(item)">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                        </td>
+                                        <td *ngIf="action.CanDelete">
+                                            <button class="btn btn-sm btn-danger" (click)="deleteBank(item)">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="dataTable-bottom">
+                                <pagination-controls (pageChange)="onTableDataChange($event)" style="float:right;"
+                                    class="my-pagination"></pagination-controls>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </section>
+
+
+
+</main>

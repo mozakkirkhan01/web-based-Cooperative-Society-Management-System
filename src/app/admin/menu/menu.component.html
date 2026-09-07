@@ -1,0 +1,271 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main" *ngIf="action.ResponseReceived">
+
+    <div class="pagetitle">
+        <h1>{{action.MenuTitle}}</h1>
+        <nav>
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a routerLink="admin/admin-dashboard">Home</a></li>
+            <li class="breadcrumb-item">{{action.ParentMenuTitle}}</li>
+            <li class="breadcrumb-item active">{{action.MenuTitle}}</li>
+          </ol>
+        </nav>
+      </div>
+
+    <section class="section dashboard">
+        <div class="card p-2">
+            <mat-form-field appearance="outline" style="width: 300px;padding-left: 48px;margin-bottom: 0;margin-top: 10px;">
+                <mat-label>Search</mat-label>
+                <input matInput type="text" [(ngModel)]="Search" placeholder="Search......"> 
+            </mat-form-field>
+
+            <ul class="tree">
+                <li>
+                    <details open>
+                        <summary>Staff Menu List</summary>
+                        <ul>
+                            <li *ngIf="action.CanCreate">
+                                <a class="text-link" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                                    (click)="resetForm()">New
+                                    Menu</a>
+                            </li>
+                            <li *ngFor="let menu of MenuList|filter:Search;let i1 =index">
+                                <details open>
+                                    <summary>
+                                        <span [ngClass]="menu.Status == 1 ? '':'text-danger'">
+                                            {{menu.MenuTitle}}
+                                        </span>
+                                        <span class="badge" *ngIf="i1 > 0 && action.CanEdit">
+                                            <a class="icon" (click)="menuUp(menu)"><i class="bi bi-arrow-up-square"></i>
+                                            </a>>
+                                        </span>
+                                        <span class="badge" *ngIf="i1 < MenuList.length-1 && action.CanEdit">
+                                            <a class="icon" (click)="menuDown(menu)"><i
+                                                    class="bi bi-arrow-down-square"></i> </a>>
+                                        </span>
+                                        <span class="badge" *ngIf="action.CanEdit">
+                                            <a class="icon" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                                                (click)="editMenu(menu)"><i class="bi bi-pencil-square"></i> </a>
+                                        </span>
+                                        <span class="badge" *ngIf="action.CanDelete">
+                                            <a class="icon" (click)="deleteMenu(menu)"><i
+                                                    class="bi bi-trash-fill"></i></a>
+                                        </span>
+                                    </summary>
+                                    <ul>
+                                        <li *ngIf="action.CanCreate"> <a class="text-link" data-bs-toggle="modal"
+                                                data-bs-target="#staticBackdrop"
+                                                (click)="Menu.ParentMenuId = menu.MenuId">
+                                                New Menu
+                                            </a>
+                                        </li>
+                                        <li *ngFor="let subMenu of menu.MenuList;let i2 = index">
+                                            <details *ngIf="subMenu.MenuList" open>
+                                                <summary>
+                                                    <span [ngClass]="subMenu.Status == 1 ? '':'text-danger'">
+                                                        {{subMenu.MenuTitle}}
+                                                    </span>
+                                                    <span class="badge" *ngIf="i2 > 0 && action.CanEdit">
+                                                        <a class="icon" (click)="menuUp(subMenu)"><i
+                                                                class="bi bi-arrow-up-square"></i> </a>>
+                                                    </span>
+                                                    <span class="badge" *ngIf="i2 < menu.MenuList.length-1 && action.CanEdit">
+                                                        <a class="icon" (click)="menuDown(subMenu)"><i
+                                                                class="bi bi-arrow-down-square"></i> </a>>
+                                                    </span>
+                                                    <span class="badge" *ngIf="action.CanEdit">
+                                                        <a class="icon" data-bs-toggle="modal"
+                                                            data-bs-target="#staticBackdrop"
+                                                            (click)="editMenu(subMenu)"><i
+                                                                class="bi bi-pencil-square"></i> </a>
+                                                    </span>
+                                                    <span class="badge" *ngIf="action.CanDelete">
+                                                        <a class="icon" (click)="deleteMenu(subMenu)"><i
+                                                                class="bi bi-trash-fill"></i></a>
+                                                    </span>
+                                                </summary>
+                                            </details>
+                                            <span *ngIf="subMenu.MenuList == null">
+                                                <span [ngClass]="subMenu.Status == 1 ? '':'text-danger'">
+                                                    {{subMenu.MenuTitle}}
+                                                </span>
+                                                <span class="badge" *ngIf="i2 > 0 && action.CanEdit">
+                                                    <a class="icon" (click)="menuUp(subMenu)"><i
+                                                            class="bi bi-arrow-up-square"></i> </a>>
+                                                </span>
+                                                <span class="badge" *ngIf="i2 < menu.MenuList.length-1 && action.CanEdit">
+                                                    <a class="icon" (click)="menuDown(subMenu)"><i
+                                                            class="bi bi-arrow-down-square"></i> </a>>
+                                                </span>
+                                                <span class="badge" *ngIf="action.CanEdit">
+                                                    <a class="icon" data-bs-toggle="modal"
+                                                        data-bs-target="#staticBackdrop" (click)="editMenu(subMenu)"><i
+                                                            class="bi bi-pencil-square"></i> </a>
+                                                </span>
+                                                <span class="badge" *ngIf="action.CanDelete">
+                                                    <a class="icon" (click)="deleteMenu(subMenu)"><i
+                                                            class="bi bi-trash-fill"></i></a>
+                                                </span>
+                                            </span>
+                                        </li>
+                                        <!-- <li *ngIf="menu.MenuList.length >4"> <a class="text-link" data-bs-toggle="modal"
+                                                data-bs-target="#staticBackdrop"
+                                                (click)="Menu.ParentMenuId = menu.MenuId">
+                                                New Menu
+                                            </a>
+                                        </li> -->
+                                    </ul>
+                                </details>
+                            </li>
+                            <li *ngIf="MenuList.length > 10 && action.CanCreate">
+                                <a class="text-link" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                                    (click)="resetForm()">New
+                                    Menu</a>
+                            </li>
+                        </ul>
+                    </details>
+                </li>
+            </ul>
+        </div>
+        <!-- <div class="card p-2">
+            <a>
+                <button color="primary" mat-button data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                    (click)="resetForm()">
+                    <i class="bi bi-plus-circle-fill"></i>
+                    New Menu
+                </button>
+            </a>
+            <details class="tree-nav__item is-expandable" *ngFor="let menu of MenuList;let i1 =index">
+                <summary class="tree-nav__item-title ">
+
+                    <span [ngClass]="menu.Status == 1 ? 'text-success':'text-danger'">
+                        {{menu.MenuTitle}}
+                    </span>
+                    <span class="badge" *ngIf="i1 > 0">
+                        <button class="btn btn-sm btn-primary" (click)="menuUp(menu)"><i class="bi bi-arrow-bar-up"></i>
+                        </button>>
+                    </span>
+                    <span class="badge" *ngIf="i1 < MenuList.length-1">
+                        <button class="btn btn-sm btn-primary" (click)="menuDown(menu)"><i
+                                class="bi bi-arrow-bar-down"></i> </button>>
+                    </span>
+                    <span class="badge">
+                        <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                            (click)="editMenu(menu)"><i class="bi bi-pencil-square"></i> </button>>
+                    </span>
+                    <span class="badge">
+                        <button class="btn btn-sm btn-danger" (click)="deleteMenu(menu)"><i
+                                class="bi bi-trash-fill"></i></button>
+                    </span>
+                </summary>
+                <details class="tree-nav__item is-expandable">
+                    <summary>
+                        <a data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                            (click)="Menu.ParentMenuId = menu.MenuId">
+                            <button color="primary" mat-button>
+                                <i class="bi bi-plus-circle-fill"></i>
+                                New Submenu
+                            </button>
+                        </a>
+                    </summary>
+                </details>
+                <details class="tree-nav__item is-expandable" *ngFor="let subMenu of menu.MenuList;let i2 = index">
+                    <summary class="tree-nav__item-title ">
+
+                        <span [ngClass]="subMenu.Status == 1 ? 'text-success':'text-danger'">
+                            {{subMenu.MenuTitle}}
+                        </span>
+                        <span class="badge" *ngIf="i2 > 0">
+                            <button class="btn btn-sm btn-primary" (click)="menuUp(subMenu)"><i
+                                    class="bi bi-arrow-bar-up"></i> </button>>
+                        </span>
+                        <span class="badge" *ngIf="i2 < menu.MenuList.length-1">
+                            <button class="btn btn-sm btn-primary" (click)="menuDown(subMenu)"><i
+                                    class="bi bi-arrow-bar-down"></i> </button>>
+                        </span>
+                        <span class="badge">
+                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                data-bs-target="#staticBackdrop" (click)="editMenu(subMenu)"><i
+                                    class="bi bi-pencil-square"></i> </button>
+                        </span>
+                        <span class="badge">
+                            <button class="btn btn-sm btn-danger" (click)="deleteMenu(subMenu)"><i
+                                    class="bi bi-trash-fill"></i></button>
+                        </span>
+
+                    </summary>
+                </details>
+            </details>
+        </div> -->
+
+    </section>
+    <div class="modal fade" 
+    *ngIf="action.CanEdit || action.CanCreate" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+        aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">{{Menu.MenuId > 0 ? 'Update':'New'}} Menu
+                    </h1>
+                    <button type=" button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        (click)="resetForm()"></button>
+                </div>
+
+                <div class="modal-body">
+
+                    <form #formMenu="ngForm" class="d-flex justify-content-evenly flex-wrap">
+                        <mat-form-field appearance="outline">
+                            <mat-label>Menu Title</mat-label>
+                            <input matInput #MenuTitle="ngModel" name="MenuTitle" [(ngModel)]="Menu.MenuTitle" required
+                                autofocus>
+                            <mat-error
+                                *ngIf="(MenuTitle.dirty  || MenuTitle.touched) || (MenuTitle.invalid && isSubmitted)">
+                                Menu title is <strong>required</strong>
+                            </mat-error>
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Page</mat-label>
+                            <input matInput #PageName="ngModel" name="PageName"
+                                (ngModelChange)="filterPageList(Menu.PageName)" [(ngModel)]="Menu.PageName"
+                                [matAutocomplete]="autoStaffName">
+                            <mat-autocomplete #autoStaffName="matAutocomplete" (optionSelected)="Menu.PageId =$event.option.id">
+                                <mat-option *ngFor="let option of filterPage"
+                                    [id]="option.PageId" [value]="option.PageName">
+                                    {{option.PageName}}
+                                </mat-option>
+                            </mat-autocomplete>
+
+                        </mat-form-field>
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Icon</mat-label>
+                            <input matInput #MenuIcon="ngModel" name="MenuIcon" [(ngModel)]="Menu.MenuIcon">
+                        </mat-form-field>
+
+
+
+                        <mat-form-field appearance="outline">
+                            <mat-label>Status</mat-label>
+                            <mat-select #Status="ngModel" name="Status" [(ngModel)]="Menu.Status" required>
+                                <mat-option [value]="status.Key"
+                                    *ngFor="let status of StatusList">{{status.Value}}</mat-option>
+                            </mat-select>
+                            <mat-error *ngIf="(Status.dirty  || Status.touched) || (Status.invalid && isSubmitted)">
+                                Status is <strong>required</strong>
+                            </mat-error>
+                        </mat-form-field>
+
+                    </form>
+                    <div class="modal-footer mt-2">
+                        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal"
+                            (click)="resetForm()">Cancel</button>
+                        <button class="btn btn-primary" (click)="saveMenu()">{{Menu.MenuId >
+                            0 ? 'Update':'Add'}}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</main>

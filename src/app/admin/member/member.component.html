@@ -1,0 +1,769 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main" *ngIf="action.ResponseReceived">
+
+    <div class="row">
+        <div class="pagetitle dashboard col-sm-8">
+            <h1>{{action.MenuTitle}}</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a routerLink="admin/admin-dashboard">Home</a></li>
+                    <li class="breadcrumb-item">{{action.ParentMenuTitle}}</li>
+                    <li class="breadcrumb-item active">{{action.MenuTitle}}</li>
+                </ol>
+            </nav>
+        </div>
+        <!-- <div class="col-sm-4 mb-3">
+            <button mat-raised-button color="primary" *ngIf="action.CanCreate" class="float-right"
+                data-bs-toggle="modal" data-bs-target="#staticBackdrop" (click)="resetForm()">New Mem
+                Year</button>
+        </div> -->
+    </div>
+
+    <section class="section">
+        <div class="row">
+            <div class="col-lg-12">
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title">New Membership Form</h5>
+                        <!-- <p class="card-subtitle">Multi-line text input</p> -->
+                    </div>
+                    <div class="card-body">
+                        <!-- Member Form Start -->
+                        <form #formMember="ngForm" class="d-flex justify-content-evenly flex-wrap">
+                            <div class="container">
+
+                                <!-- Personal Details Start -->
+                                <div
+                                    style="position: relative; margin: 20px 0; border: 1px solid #dbe3ff; border-radius: 8px; padding: 20px 20px 0px 20px">
+                                    <span
+                                        style="position: absolute; top: -12px; left: 15px; background: white; padding: 0 8px; font-weight: 400; font-size: 14px; color:#012970;">
+                                        Personal Details
+                                    </span>
+
+                                    <div class="row">
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Sail Personal No.</mat-label>
+                                            <input matInput #SailPersonalNo="ngModel" name="SailPersonalNo"
+                                                [(ngModel)]="Member.SailPersonalNo" autofocus>
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Staff No.</mat-label>
+                                            <input matInput #StaffNo="ngModel" name="StaffNo"
+                                                [(ngModel)]="Member.StaffNo" required>
+                                            <mat-error>
+                                                Staff No. <strong>required</strong>
+                                            </mat-error>
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Member No.</mat-label>
+                                            <input matInput #MemberNo="ngModel" name="MemberNo"
+                                                [(ngModel)]="Member.MemberNo" required>
+                                            <mat-error>
+                                                Member No. <strong>required</strong>
+                                            </mat-error>
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Member Type</mat-label>
+                                            <mat-select #MemberType="ngModel" name="MemberType"
+                                                [(ngModel)]="Member.MemberType" required>
+                                                <mat-option [value]="MemberType.Key"
+                                                    *ngFor="let MemberType of MemberTypeList">{{MemberType.Value}}</mat-option>
+                                            </mat-select>
+                                            <mat-error>
+                                                Member Type is <strong>required</strong>
+                                            </mat-error>
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Member Name</mat-label>
+                                            <input matInput #MemberName="ngModel" name="MemberName"
+                                                [(ngModel)]="Member.MemberName" required>
+                                            <mat-error>
+                                                Member name is <strong>required</strong>
+                                            </mat-error>
+                                        </mat-form-field>
+
+
+
+
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Father's Name</mat-label>
+                                            <input matInput #FatherName="ngModel" name="FatherName"
+                                                [(ngModel)]="Member.FatherName">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Gender</mat-label>
+                                            <mat-select #Gender="ngModel" name="Gender" [(ngModel)]="Member.Gender"
+                                                required>
+                                                <mat-option [value]="Gender.Key"
+                                                    *ngFor="let Gender of GenderList">{{Gender.Value}}</mat-option>
+                                            </mat-select>
+                                            <mat-error>
+                                                Gender is <strong>required</strong>
+                                            </mat-error>
+                                        </mat-form-field>
+
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Date of Birth</mat-label>
+                                            <input matInput #DateofBirth="ngModel" name="DateofBirth"
+                                                placeholder="DD/MM/YYYY" (blur)="formatDateofBirth()"
+                                                [(ngModel)]="Member.DateofBirth" [matDatepicker]="DateofBirthPicker">
+                                            <mat-datepicker-toggle matIconSuffix
+                                                [for]="DateofBirthPicker"></mat-datepicker-toggle>
+                                            <mat-datepicker #DateofBirthPicker></mat-datepicker>
+                                        </mat-form-field>
+
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Mobile No.</mat-label>
+                                            <input matInput #MobileNo="ngModel" name="MobileNo"
+                                                [(ngModel)]="Member.MobileNo">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Whatsapp No.</mat-label>
+                                            <input matInput #WhatsappNo="ngModel" name="WhatsappNo"
+                                                [(ngModel)]="Member.WhatsappNo">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Aadhar No.</mat-label>
+                                            <input matInput #AadharNo="ngModel" name="AadharNo"
+                                                [(ngModel)]="Member.AadharNo">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>PAN No.</mat-label>
+                                            <input matInput #PanNo="ngModel" name="PanNo" [(ngModel)]="Member.PanNo">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Email</mat-label>
+                                            <input matInput #Email="ngModel" name="Email" [(ngModel)]="Member.Email">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>PS Unit</mat-label>
+                                            <mat-select #PsuUnit="ngModel" name="PsuUnit" [(ngModel)]="Member.PsuUnit"
+                                                required>
+                                                <mat-option [value]="PsuUnit.Key"
+                                                    *ngFor="let PsuUnit of PsuUnitList">{{PsuUnit.Value}}</mat-option>
+                                            </mat-select>
+                                            <mat-error>
+                                                PS Unit is <strong>required</strong>
+                                            </mat-error>
+                                        </mat-form-field>
+
+
+                                    </div>
+                                </div>
+                                <!-- Personal Details End -->
+
+                                <!-- Department Details Start -->
+                                <div
+                                    style="position: relative; margin: 20px 0; border: 1px solid #dbe3ff; border-radius: 8px; padding: 20px 20px 0px 20px">
+                                    <span
+                                        style="position: absolute; top: -12px; left: 15px; background: white; padding: 0 8px; font-weight: 400; font-size: 14px; color:#012970;">
+                                        Department Details
+                                    </span>
+                                    <div class="row">
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label [ariaSetSize]="8">Select Department</mat-label>
+                                            <mat-select #DepartmentId="ngModel" name="DepartmentId"
+                                                [(ngModel)]="Member.DepartmentId"
+                                                (selectionChange)="onDepartmentChange($event.value)">
+                                                <mat-option *ngFor="let option of DepartmentList"
+                                                    (onSelectionChange)="Member.DepartmentId = option.DepartmentId"
+                                                    [value]="option.DepartmentId">
+                                                    {{option.DepartmentName}}
+                                                </mat-option>
+                                            </mat-select>
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-2">
+                                            <mat-label>Department/Sec Code</mat-label>
+                                            <input matInput #DeptSecCode="ngModel" name="DeptSecCode"
+                                                [(ngModel)]="Member.DeptSecCode">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Designation</mat-label>
+                                            <input matInput #Designation="ngModel" name="Designation"
+                                                [(ngModel)]="Member.Designation">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-2 form-group">
+                                            <mat-label>Membership Date</mat-label>
+                                            <input matInput #MembershipDate="ngModel" name="MembershipDate"
+                                                [(ngModel)]="Member.MembershipDate" placeholder="DD/MM/YYYY"
+                                                (blur)="formatMembershipDate()" [matDatepicker]="MembershipDatePicker">
+                                            <mat-datepicker-toggle matIconSuffix
+                                                [for]="MembershipDatePicker"></mat-datepicker-toggle>
+                                            <mat-datepicker #MembershipDatePicker></mat-datepicker>
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-2 form-group">
+                                            <mat-label>Joining Date (SAIL)</mat-label>
+                                            <input matInput #JoiningDate="ngModel" name="JoiningDate"
+                                                placeholder="DD/MM/YYYY" (blur)="formatJoiningDate()"
+                                                [(ngModel)]="Member.JoiningDate" [matDatepicker]="JoiningDatePicker">
+                                            <mat-datepicker-toggle matIconSuffix
+                                                [for]="JoiningDatePicker"></mat-datepicker-toggle>
+                                            <mat-datepicker #JoiningDatePicker></mat-datepicker>
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-2 form-group">
+                                            <mat-label>Retirement Date</mat-label>
+                                            <input matInput #RetirementDate="ngModel" name="RetirementDate"
+                                                placeholder="DD/MM/YYYY" (blur)="formatRetirementDate()"
+                                                [(ngModel)]="Member.RetirementDate"
+                                                [matDatepicker]="RetirementDatePicker">
+                                            <mat-datepicker-toggle matIconSuffix
+                                                [for]="RetirementDatePicker"></mat-datepicker-toggle>
+                                            <mat-datepicker #RetirementDatePicker></mat-datepicker>
+                                        </mat-form-field>
+
+                                    </div>
+                                </div>
+                                <!-- Department Details End -->
+
+                                <!-- Communication Details Start -->
+                                <div
+                                    style="position: relative; margin: 20px 0; border: 1px solid #dbe3ff; border-radius: 8px; padding: 20px 20px 0px 20px">
+                                    <span
+                                        style="position: absolute; top: -12px; left: 15px; background: white; padding: 0 8px; font-weight: 400; font-size: 14px; color:#012970;">
+                                        Address
+                                    </span>
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <label class="mb-3">Present Address</label>
+                                            <mat-form-field appearance="outline" class="col-sm-6">
+                                                <mat-label>Present Address</mat-label>
+                                                <textarea matInput #PresentAddress="ngModel" name="PresentAddress"
+                                                    [(ngModel)]="Member.PresentAddress" rows="2"
+                                                    (ngModelChange)="sameAddress ? Member.PermanentAddress = $event : null">
+                                                </textarea>
+                                            </mat-form-field>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label style="float: left;">Permanent Address</label>
+                                            <mat-checkbox [(ngModel)]="sameAddress" name="sameAddress"
+                                                (change)="copyAddress()" class="same-address-checkbox">
+                                                Same as Present Address
+                                            </mat-checkbox>
+
+                                            <mat-form-field appearance="outline" class="w-100">
+                                                <mat-label>Permanent Address</mat-label>
+                                                <textarea matInput #PermanentAddress="ngModel" name="PermanentAddress"
+                                                    [(ngModel)]="Member.PermanentAddress" rows="2">
+                                                 </textarea>
+                                            </mat-form-field>
+
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Communication Details End -->
+
+                                <!-- Bank Details Start -->
+                                <div
+                                    style="position: relative; margin: 20px 0; border: 1px solid #dbe3ff; border-radius: 8px; padding: 20px 20px 0px 20px">
+                                    <span
+                                        style="position: absolute; top: -12px; left: 15px; background: white; padding: 0 8px; font-weight: 400; font-size: 14px; color:#012970;">
+                                        Bank Details (Preffered Salary Account Details)
+                                    </span>
+                                    <div class="row">
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Bank Name</mat-label>
+                                            <input matInput #BankName="ngModel" name="BankName"
+                                                [(ngModel)]="Member.BankName">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Account No.</mat-label>
+                                            <input matInput #AccountNo="ngModel" name="AccountNo"
+                                                [(ngModel)]="Member.AccountNo">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>IFSC Code</mat-label>
+                                            <input matInput #IFSCCode="ngModel" name="IFSCCode"
+                                                [(ngModel)]="Member.IFSCCode">
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Branch Name</mat-label>
+                                            <input matInput #BranchName="ngModel" name="BranchName"
+                                                [(ngModel)]="Member.BranchName">
+                                        </mat-form-field>
+                                    </div>
+                                </div>
+                                <!-- Banl Details End -->
+
+                                <!-- Nominee Details Start -->
+                                <div
+                                    style="position: relative; margin: 20px 0; border: 1px solid #dbe3ff; border-radius: 8px; padding: 20px 20px 0px 20px">
+                                    <span
+                                        style="position: absolute; top: -12px; left: 15px; background: white; padding: 0 8px; font-weight: 400; font-size: 14px; color:#012970;">
+                                        Nominee Details
+                                    </span>
+
+                                    <div class="row">
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Nominee Name</mat-label>
+                                            <input matInput #NomineeName="ngModel" name="NomineeName"
+                                                [(ngModel)]="Member.NomineeName" required autofocus>
+                                            <mat-error>
+                                                Nominee Name <strong>required</strong>
+                                            </mat-error>
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Nominee Relation</mat-label>
+                                            <mat-select #NomineeRelation="ngModel" name="NomineeRelation"
+                                                [(ngModel)]="Member.NomineeRelation" required>
+                                                <mat-option [value]="NomineeRelation.Key"
+                                                    *ngFor="let NomineeRelation of NomineeRelationList">{{NomineeRelation.Value}}</mat-option>
+                                            </mat-select>
+                                            <mat-error>
+                                                Nominee Relation is <strong>required</strong>
+                                            </mat-error>
+                                        </mat-form-field>
+                                        <mat-form-field appearance="outline" class="col-sm-3">
+                                            <mat-label>Status</mat-label>
+                                            <mat-select #Status="ngModel" name="Status" [(ngModel)]="Member.Status"
+                                                required>
+                                                <mat-option [value]="status.Key"
+                                                    *ngFor="let status of StatusList">{{status.Value}}</mat-option>
+                                            </mat-select>
+                                            <mat-error>
+                                                Status is <strong>required</strong>
+                                            </mat-error>
+                                        </mat-form-field>
+                                    </div>
+                                </div>
+                                <!-- Nominee Details End -->
+                                <div class="row justify-content-center">
+                                    <button type="button" mat-raised-button color="warn" class="col-sm-2 mr-2 mb-4"
+                                        data-bs-dismiss="modal" (click)="resetForm()">Cancel</button>
+                                    <button mat-raised-button color="primary" class="col-sm-2 mb-4"
+                                        (click)="saveMember()">{{Member.MemberId >
+                                        0 ? 'Update':'Submit'}}</button>
+                                </div>
+                            </div>
+
+                        </form>
+                        <!-- Member Form End -->
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title"> Member List</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Member List Start -->
+                        <div class="table-container overflow-auto">
+                            <div class="dataTable-top">
+                                <div class="dataTable-dropdown d-flex">
+                                    <select class="dataTable-selector form-select form-select-sm"
+                                        [(ngModel)]="itemPerPage">
+                                        <option *ngFor="let option of PageSize" [value]="option">{{option}} </option>
+                                    </select>
+                                    <span class="ms-2">Entries per page</span>
+                                </div>
+                                <div class="dataTable-search">
+                                    <input class="dataTable-input form-control form-control-sm" [(ngModel)]="Search"
+                                        placeholder="Search..." type="text">
+                                </div>
+                            </div>
+
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>S.No</th>
+                                        <th>Print</th>
+                                        <th *ngIf="action.CanEdit">View</th>
+                                        <th *ngIf="action.CanEdit">Edit</th>
+                                        <th *ngIf="action.CanDelete">Delete</th>
+                                        <th style="cursor:pointer;" (click)="sort('StaffNo')">Staff No.</th>
+                                        <th style="cursor:pointer;" (click)="sort('MemberNo')">Member No.</th>
+                                        <th style="cursor:pointer;" (click)="sort('SailPersonalNo')">Sail Personal No.
+                                        </th>
+                                        <th style="cursor:pointer;" (click)="sort('MemberName')">Member Name</th>
+                                        <th style="cursor:pointer;" (click)="sort('FatherName')">Father's Name</th>
+                                        <th style="cursor:pointer;" (click)="sort('MobileNo')">Mobile No.</th>
+                                        <th style="cursor:pointer;" (click)="sort('PresentAddress')">Present Address
+                                        </th>
+                                        <th style="cursor:pointer;" (click)="sort('DepartmentName')">Department</th>
+                                        <th style="cursor:pointer;" (click)="sort('MembershipDate')">Membership Date
+                                        </th>
+                                        <th style="cursor:pointer;" (click)="sort('JoiningDate')">Joining Date (SALE)
+                                        </th>
+                                        <th style="cursor:pointer;" (click)="sort('RetirementDate')">Retirement Date
+                                        </th>
+                                        <th style="cursor:pointer;" (click)="sort('Status')">Status</th>
+
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        *ngFor="let item of MemberList |filter:Search|orderBy:sortKey:reverse|paginate: { itemsPerPage: itemPerPage, currentPage: p } ; ; let i = index;">
+                                        <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-danger" (click)="downloadMemberPDF(item)">
+                                                <i class="bi bi-file-earmark-pdf"></i>
+                                            </button>
+                                        </td>
+                                        <td *ngIf="action.CanEdit">
+                                            <button class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                                data-bs-target="#staticBackdrop" (click)="viewMember(item)">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                        <td *ngIf="action.CanEdit">
+                                            <button class="btn btn-sm btn-warning" (click)="editMember(item)">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                        </td>
+                                        <td *ngIf="action.CanDelete">
+                                            <button class="btn btn-sm btn-danger" (click)="deleteMember(item)">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </td>
+                                        <td>{{item.StaffNo}}</td>
+                                        <td>{{item.MemberNo}}</td>
+                                        <td>{{item.SailPersonalNo}}</td>
+                                        <td>{{item.MemberName}}</td>
+                                        <td>{{item.FatherName}}</td>
+                                        <td>{{item.MobileNo}}</td>
+                                        <td>{{item.PresentAddress}}</td>
+                                        <td>{{item.DepartmentName}}</td>
+                                        <td>{{ item.MembershipDate | date:'dd-MM-yyyy' }}</td>
+                                        <td>{{item.JoiningDate | date: "dd-MM-yyyy"}}</td>
+                                        <td>{{item.RetirementDate | date: "dd-MM-yyyy"}}</td>
+                                        <td>
+                                            <span class="p-1"
+                                                [ngClass]="item.Status == 1 ? 'badge text-bg-success':'badge text-bg-danger'">
+                                                {{AllStatusList[item.Status]}}
+                                            </span>
+                                        </td>
+
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="dataTable-bottom">
+                                <pagination-controls (pageChange)="onTableDataChange($event)" style="float:right;"
+                                    class="my-pagination"></pagination-controls>
+                            </div>
+
+                        </div>
+                        <!-- Member List End -->
+                    </div>
+                </div>
+
+
+
+
+            </div>
+        </div>
+    </section>
+
+    <!-- <div class="modal fade" *ngIf="action.CanEdit || action.CanCreate" id="staticBackdrop" data-bs-backdrop="static"
+        data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">{{FinancialYear.FinancialYearId > 0
+                        ?'Update':'New'}} FinancialYear
+                    </h1>
+                    <button type=" button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        (click)="resetForm()"></button>
+                </div>
+                <div class="modal-body">
+
+                    <form #formMember="ngForm" class="d-flex justify-content-evenly flex-wrap">
+                        <div class="container">
+                            <div class="row">
+
+                                <mat-form-field appearance="outline" class="col-sm-12">
+                                    <mat-label>Financial Year Name</mat-label>
+                                    <input matInput #FinancialYearName="ngModel" name="FinancialYearName"
+                                        [(ngModel)]="FinancialYear.FinancialYearName" required autofocus>
+                                    <mat-error>
+                                        FinancialYear name is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-6 form-group">
+                                    <mat-label>Start Date</mat-label>
+                                    <input matInput #StartDate="ngModel" name="StartDate"
+                                        [(ngModel)]="FinancialYear.StartDate" [matDatepicker]="StartDatePicker">
+                                    <mat-datepicker-toggle matIconSuffix
+                                        [for]="StartDatePicker"></mat-datepicker-toggle>
+                                    <mat-datepicker #StartDatePicker></mat-datepicker>
+                                </mat-form-field>
+                                  <mat-form-field appearance="outline" class="col-sm-6 form-group">
+                                    <mat-label>End Date</mat-label>
+                                    <input matInput #EndDate="ngModel" name="EndDate"
+                                        [(ngModel)]="FinancialYear.EndDate" [matDatepicker]="EndDatePicker">
+                                    <mat-datepicker-toggle matIconSuffix
+                                        [for]="EndDatePicker"></mat-datepicker-toggle>
+                                    <mat-datepicker #EndDatePicker></mat-datepicker>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Status</mat-label>
+                                    <mat-select #Status="ngModel" name="Status" [(ngModel)]="FinancialYear.Status"
+                                        required>
+                                        <mat-option [value]="status.Key"
+                                            *ngFor="let status of StatusList">{{status.Value}}</mat-option>
+                                    </mat-select>
+                                    <mat-error>
+                                        Status is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" mat-raised-button color="warn" class="me-2" data-bs-dismiss="modal"
+                        (click)="resetForm()">Cancel</button>
+                    <button mat-raised-button color="primary"
+                        (click)="saveFinancialYear()">{{FinancialYear.FinancialYearId >
+                        0 ? 'Update':'Submit'}}</button>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+</main>
+<div class="modal fade" id="staticBackdrop" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content shadow-lg border-0 rounded-3">
+
+            <!-- Header -->
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-person-lines-fill me-2"></i>
+                    Member Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body">
+
+                <!-- Personal Details -->
+                <h6 class="section-title">Personal Details</h6>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label>Member Name</label>
+                        <p>{{selectedMember.MemberName}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Father Name</label>
+                        <p>{{selectedMember.FatherName}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Sail Personal No</label>
+                        <p>{{selectedMember.SailPersonalNo}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Staff No</label>
+                        <p>{{selectedMember.StaffNo}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Member Type</label>
+                        <p>{{AllMemberTypeList[selectedMember.MemberType]}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Member No</label>
+                        <p>{{selectedMember.MemberNo}}</p>
+                    </div>
+
+
+
+                    <div class="col-md-3">
+                        <label>Date of Birth</label>
+                        <p>{{selectedMember.DateofBirth | date:'dd-MM-yyyy'}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Gender</label>
+                        <p>{{AllGenderList[selectedMember.Gender]}} </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Department Details -->
+                <h6 class="section-title">Department Details</h6>
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Dept Sec Code</label>
+                        <p>{{selectedMember.DeptSecCode}}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Department</label>
+                        <p>{{selectedMember.DepartmentName}}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Designation</label>
+                        <p>{{selectedMember.Designation}}</p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Membership Details -->
+                <h6 class="section-title">Membership Details</h6>
+                <div class="row g-3">
+
+                    <div class="col-md-3">
+                        <label>Membership Date</label>
+                        <p>{{selectedMember.MembershipDate | date:'dd-MM-yyyy'}}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label>JoiningDate Date</label>
+                        <p>{{selectedMember.JoiningDate | date:'dd-MM-yyyy'}}</p>
+                    </div>
+                    <div class="col-md-3">
+                        <label>Retirement Date</label>
+                        <p>{{selectedMember.RetirementDate | date:'dd-MM-yyyy'}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Status</label>
+                        <p>
+                            <span class="badge bg-success" *ngIf="selectedMember.Status == 1">Active</span>
+                            <span class="badge bg-danger" *ngIf="selectedMember.Status == 0">Inactive</span>
+                        </p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Contact Details -->
+                <h6 class="section-title">Contact Details</h6>
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Mobile No</label>
+                        <p>{{selectedMember.MobileNo}}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Whatsapp No</label>
+                        <p>{{selectedMember.WhatsappNo}}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Email</label>
+                        <p>{{selectedMember.Email}}</p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Present Address</label>
+                        <p>{{selectedMember.PresentAddress}}</p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Permanent Address</label>
+                        <p>{{selectedMember.PermanentAddress}}</p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Nominee Details -->
+                <h6 class="section-title">Nominee Details</h6>
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label>Nominee Name</label>
+                        <p>{{selectedMember.NomineeName}}</p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>Relation</label>
+                        <p>{{AllNomineeRelationList[selectedMember.NomineeRelation]}}</p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Bank Details -->
+                <h6 class="section-title">Bank Details</h6>
+                <div class="row g-3">
+
+                    <div class="col-md-4">
+                        <label>Bank Name</label>
+                        <p>{{selectedMember.BankName}}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Account No</label>
+                        <p>{{selectedMember.AccountNo}}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>IFSC Code</label>
+                        <p>{{selectedMember.IFSCCode}}</p>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label>Branch Name</label>
+                        <p>{{selectedMember.BranchName}}</p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Documents -->
+                <h6 class="section-title">Documents</h6>
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label>Aadhar No</label>
+                        <p>{{selectedMember.AadharNo}}</p>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label>PAN No</label>
+                        <p>{{selectedMember.PanNo}}</p>
+                    </div>
+                </div>
+
+                <hr>
+
+                <!-- Audit Details -->
+                <h6 class="section-title">Audit Information</h6>
+                <div class="row g-3">
+
+                    <div class="col-md-3">
+                        <label>Created By</label>
+                        <p>{{selectedMember.CreatedByName}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Created Date</label>
+                        <p>{{selectedMember.CreatedDate | date:'dd-MM-yyyy hh:mm a'}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Updated By</label>
+                        <p>{{selectedMember.UpdatedByName}}</p>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>Updated Date</label>
+                        <p>{{selectedMember.UpdatedDate | date:'dd-MM-yyyy hh:mm a'}}</p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>

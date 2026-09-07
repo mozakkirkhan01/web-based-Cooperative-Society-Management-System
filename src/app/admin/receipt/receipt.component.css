@@ -1,0 +1,48 @@
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.table-container table {
+    min-width: 1400px;
+    white-space: nowrap;
+}
+
+.table-container th,
+.table-container td {
+    white-space: nowrap;
+    vertical-align: middle;
+    padding: 5px 8px;
+}
+
+.table-container th {
+    background: #f8f9fa;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+/* Horizontal Scrollbar */
+.table-container::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #999;
+    border-radius: 20px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+/* Optional Better Look */
+.table-hover tbody tr:hover {
+    background: #f5f9ff;
+}
+
+.card-body {
+    overflow: hidden;
+}

@@ -1,0 +1,206 @@
+<!-- ======= Header ======= -->
+<app-progress *ngIf="dataLoading"></app-progress>
+<header id="header" class="header fixed-top d-flex align-items-center">
+
+  <div class="d-flex align-items-center justify-content-between">
+    <a class="logo d-flex align-items-center">
+      <img [src]="imageUrl + Company.LogoPNG" alt="" style="width: 40px;">
+      <!-- <span class="d-none d-lg-block">{{Company.ShortName}}</span> -->
+    </a>
+    <i class="bi bi-list toggle-sidebar-btn" (click)="hideSideBar()"></i>
+  </div><!-- End Logo -->
+
+  <div class="search-bar">
+    <!-- <form class="search-form d-flex align-items-center" method="POST" action="#">
+      <input type="text" name="query" placeholder="Search" title="Enter search keyword">
+      <button type="submit" title="Search"><i class="bi bi-search"></i></button>
+    </form> -->
+  </div><!-- End Search Bar -->
+
+  <nav class="header-nav ms-auto">
+    <ul class="d-flex align-items-center">
+      <li class="nav-item dropdown">
+        <a class="nav-link nav-icon show" (click)="fullScreen()">
+          <i class="bi bi-arrows-fullscreen"></i>
+        </a>
+      </li>
+      <li class="nav-item dropdown pe-3">
+
+        <a class="nav-link nav-profile d-flex align-items-center pe-0" data-bs-toggle="dropdown">
+          <img [src]="imageUrl + Company.LogoPNG" alt="Profile" class="rounded-circle">
+          <span class="d-none d-md-block dropdown-toggle ps-2">{{staffLogin.StaffName}}</span>
+        </a><!-- End Profile Iamge Icon -->
+
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+          <li class="dropdown-header">
+            <h6>{{staffLogin.StaffName}}</h6>
+            <span>{{staffLogin.DesignationName}}</span>
+          </li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+
+          <!-- <li>
+            <a class="dropdown-item d-flex align-items-center">
+              <i class="bi bi-person"></i>
+              <span>My Profile</span>
+            </a>
+          </li> -->
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+          <li>
+            <a class="dropdown-item d-flex align-items-center" [routerLink]="'/admin/change-password'">
+              <i class="bi bi-gear"></i>
+              <span>Change Password</span>
+            </a>
+          </li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+
+          <!-- <li>
+            <a class="dropdown-item d-flex align-items-center" [routerLink]="'/admin/support'">
+              <i class="bi bi-question-circle"></i>
+              <span>Support</span>
+            </a>
+          </li> -->
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+
+          <li>
+            <a class="dropdown-item d-flex align-items-center" (click)="logOut()">
+              <i class="bi bi-box-arrow-right"></i>
+              <span>Sign Out</span>
+            </a>
+          </li>
+
+        </ul><!-- End Profile Dropdown Items -->
+      </li>
+
+    </ul>
+  </nav><!-- End Icons Navigation -->
+
+</header><!-- End Header -->
+
+<!-- ======= Sidebar ======= -->
+<aside id="sidebar" class="sidebar">
+
+  <ul class="sidebar-nav" id="sidebar-nav">
+
+    <li class="nav-item">
+      <a class="nav-link " routerLink="admin-dashboard">
+        <i class="bi bi-grid"></i>
+        <span>Dashboard</span>
+      </a>
+    </li>
+
+    <li class="nav-item" *ngFor="let menuOne of MenuList">
+      <a class="nav-link collapsed" attr.data-bs-target="#menu-{{menuOne.MenuId}}" data-bs-toggle="collapse">
+        <i [class]="menuOne.MenuIcon"></i><span>{{menuOne.MenuTitle}}</span><i class="bi bi-chevron-down ms-auto"></i>
+      </a>
+      <ul id="menu-{{menuOne.MenuId}}" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li (click)="checkSideNav()" *ngFor="let menuTwo of menuOne.MenuList">
+          <a [routerLink]="menuTwo.PageUrl">
+            <i class="bi bi-circle"></i><span>{{menuTwo.MenuTitle}}</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-link collapsed" data-bs-target="#menu-setting" data-bs-toggle="collapse">
+        <i [class]="'ri-settings-5-fill'"></i><span>Setting</span><i class="bi bi-chevron-down ms-auto"></i>
+      </a>
+      <ul id="menu-setting" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li (click)="checkSideNav()">
+          <a [routerLink]="'/admin/change-password'">
+            <i class="bi bi-circle"></i><span>Change Password</span>
+          </a>
+        </li>
+        <li (click)="logOut()">
+          <a>
+            <i class="bi bi-circle"></i><span>Logout</span>
+          </a>
+        </li>
+      </ul>
+    </li>
+
+    <!--<li class="nav-item">
+      <a class="nav-link collapsed" data-bs-target="#components-nav" data-bs-toggle="collapse">
+        <i class="bi bi-menu-button-wide"></i><span>Master Entry</span><i class="bi bi-chevron-down ms-auto"></i>
+      </a>
+      <ul id="components-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+        <li (click)="checkSideNav()">
+          <a routerLink="designation">
+            <i class="bi bi-circle"></i><span>Manage Designation</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="department">
+            <i class="bi bi-circle"></i><span>Manage Department</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="staff">
+            <i class="bi bi-circle"></i><span>Manage Staff</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="staffLogin">
+            <i class="bi bi-circle"></i><span>Manage Staff Login</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="Company">
+            <i class="bi bi-circle"></i><span>Manage Company</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="page-group">
+            <i class="bi bi-circle"></i><span>Manage Page Group</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="page">
+            <i class="bi bi-circle"></i><span>Manage Page</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="menu">
+            <i class="bi bi-circle"></i><span>Manage Menu</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="role">
+            <i class="bi bi-circle"></i><span>Manage Role</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="role-menu">
+            <i class="bi bi-circle"></i><span>Manage Role Menu</span>
+          </a>
+        </li>
+        <li (click)="checkSideNav()">
+          <a routerLink="staff-login-role">
+            <i class="bi bi-circle"></i><span>Manage Staff Login Role</span>
+          </a>
+        </li>
+      </ul>
+    </li>-->
+
+  </ul>
+
+</aside><!-- End Sidebar-->
+
+<router-outlet></router-outlet>
+<!-- ======= Footer ======= -->
+<footer id="footer" class="footer fixed-footer">
+  <div class="copyright">
+    &copy; Copyright <strong><span class="logo-span">{{Company.CompanyName}}</span></strong>. All Rights Reserved.
+    <span>Designed & Developed by <a href="https://webaikon.com/" target="_blank"><strong> Webaikon Infotech</strong></a>.</span>
+  </div>
+</footer>
+
+<a class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>

@@ -1,0 +1,321 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main" *ngIf="action.ResponseReceived">
+    <div class="row">
+        <div class="pagetitle dashboard col-sm-8">
+            <h1>{{action.MenuTitle}}</h1>
+            <nav>
+              <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a routerLink="admin/admin-dashboard">Home</a></li>
+                <li class="breadcrumb-item">{{action.ParentMenuTitle}}</li>
+                <li class="breadcrumb-item active">{{action.MenuTitle}}</li>
+              </ol>
+            </nav>
+          </div>
+        <div class="col-sm-4">
+            <button mat-raised-button color="primary" *ngIf="action.CanCreate" class="float-right"
+                data-bs-toggle="modal" data-bs-target="#staticBackdrop" (click)="resetForm()">New
+                Staff</button>
+        </div>
+    </div>
+
+    <section class="section dashboard">
+        <div class="card">
+            <div class="card-body ">
+                <div class="dataTable-top">
+                    <div class="dataTable-dropdown d-flex">
+                        <select class="dataTable-selector form-select form-select-sm" [(ngModel)]="itemPerPage">
+                            <option *ngFor="let option of PageSize" [value]="option">{{option}} </option>
+                        </select>
+                        <span class="ms-2">Entries per page</span>
+                    </div>
+                    <div class="dataTable-search">
+                        <input class="dataTable-input form-control form-control-sm" [(ngModel)]="Search"
+                            placeholder="Search..." type="text">
+                    </div>
+                </div>
+                <div class="table-container overflow-auto">
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th (click)="sort('StaffName')">Staff Name</th>
+                                <th (click)="sort('StaffCode')">Staff Code</th>
+                                <th (click)="sort('DesignationName')">Designation</th>
+                                <th (click)="sort('StaffType')">Staff Type</th>
+                                <th (click)="sort('FatherName')">Father's Name</th>
+                                <th (click)="sort('MobileNo')">Mobile No</th>
+                                <th (click)="sort('AlternateNo')">Alternate No</th>
+                                <th (click)="sort('Email')">Email</th>
+                                <th (click)="sort('DOB')">DOB</th>
+                                <th (click)="sort('Gender')">Gender</th>
+                                <th (click)="sort('Qualification')">Qualification</th>
+                                <th (click)="sort('FullAddress')">Full Address</th>
+                                <th (click)="sort('JoinDate')">Join Date</th>
+                                <th (click)="sort('DepartmentName')">Department</th>
+                                <th (click)="sort('Status')">Status</th>
+                                <th *ngIf="action.CanEdit">Edit</th>
+                                <th *ngIf="action.CanDelete">Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr
+                                *ngFor="let item of StaffList |filter:Search:true|orderBy:sortKey:reverse|paginate: { itemsPerPage: itemPerPage, currentPage: p } ; ; let i = index;">
+                                <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
+                                <td>{{item.StaffName}}</td>
+                                <td>{{item.StaffCode}}</td>
+                                <td>{{item.DesignationName}}</td>
+                                <td>{{AllStaffTypeList[item.StaffType]|enumCase}}</td>
+                                <td>{{item.FatherName}}</td>
+                                <td>{{item.MobileNo}}</td>
+                                <td>{{item.AlternateNo}}</td>
+                                <td>{{item.Email}}</td>
+                                <td style="white-space:nowrap">{{item.DOB | date: "dd-MM-yy"}}</td>
+                                <td>{{AllGenderList[item.Gender]}}</td>
+                                <td>{{item.Qualification}}</td>
+                                <td>{{item.FullAddress}}</td>
+                                <td style="white-space:nowrap">{{item.JoinDate | date: "dd-MM-yy"}}</td>
+                                <td>{{item.DepartmentName}}</td>
+                                <td>
+                                    <span class="p-1"
+                                        [ngClass]="item.Status == 1 ? 'badge text-bg-success':'badge text-bg-danger'">
+                                        {{AllStatusList[item.Status]}}
+                                    </span>
+                                </td>
+                                <td *ngIf="action.CanEdit">
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                        data-bs-target="#staticBackdrop" (click)="editStaff(item)">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </button>
+                                </td>
+                                <td *ngIf="action.CanDelete">
+                                    <button class="btn btn-sm btn-danger" (click)="deleteStaff(item)">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="dataTable-bottom ">
+                    <pagination-controls (pageChange)="onTableDataChange($event)"
+                        class="pagination justify-content-end"></pagination-controls>
+                </div>
+            </div>
+        </div>
+
+    </section>
+
+
+    <div *ngIf="action.CanEdit || action.CanCreate" class="modal fade modal-lg" id="staticBackdrop"
+        data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">{{Staff.StaffId > 0 ? 'Update':'New'}}
+                        Staff
+                    </h1>
+                    <button type=" button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        (click)="resetForm()"></button>
+                </div>
+                <div class="modal-body">
+                    <form #formStaff="ngForm" class="d-flex justify-content-evenly flex-wrap">
+                        <div class="container">
+
+                            <div class="row">
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Staff Name</mat-label>
+                                    <input matInput #StaffName="ngModel" name="StaffName" [(ngModel)]="Staff.StaffName"
+                                        required autofocus>
+
+                                    <mat-error
+                                        *ngIf="(StaffName.dirty  || StaffName.touched) || (StaffName.invalid && isSubmitted)">
+                                        Staff name is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Staff Code</mat-label>
+                                    <input matInput #StaffCode="ngModel" name="StaffCode" [(ngModel)]="Staff.StaffCode"
+                                        required autofocus>
+
+                                    <mat-error
+                                        *ngIf="(StaffCode.dirty  || StaffCode.touched) || (StaffCode.invalid && isSubmitted)">
+                                        Staff Code is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <!--designation-->
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Designation</mat-label>
+                                    <mat-select #DesignationId="ngModel" name="DesignationId"
+                                        [(ngModel)]="Staff.DesignationId" required autofocus>
+                                        <mat-option *ngFor="let option of DesignationList"
+                                            (onSelectionChange)="Staff.DesignationId = option.DesignationId"
+                                            [value]="option.DesignationId">
+                                            {{option.DesignationName}}
+                                        </mat-option>
+                                    </mat-select>
+                                    <mat-error
+                                        *ngIf="(DesignationId.dirty  || DesignationId.touched) || (DesignationId.invalid && isSubmitted)">
+                                        Designation is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label [ariaSetSize]="8">Department</mat-label>
+                                    <mat-select #DepartmentId="ngModel" name="DepartmentId"
+                                        [(ngModel)]="Staff.DepartmentId" required autofocus>
+                                        <mat-option *ngFor="let option of DepartmentList"
+                                            (onSelectionChange)="Staff.DepartmentId = option.DepartmentId"
+                                            [value]="option.DepartmentId">
+                                            {{option.DepartmentName}}
+                                        </mat-option>
+                                    </mat-select>
+                                    <mat-error
+                                        *ngIf="(DepartmentId.dirty  || DepartmentId.touched) || (DepartmentId.invalid && isSubmitted)">
+                                        Department is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Staff Type</mat-label>
+                                    <mat-select #StaffType="ngModel" name="StaffType" [(ngModel)]="Staff.StaffType"
+                                        required>
+                                        <mat-option [value]="staffType.Key"
+                                            *ngFor="let staffType of StaffTypeList">{{staffType.Value}}</mat-option>
+                                    </mat-select>
+                                    <mat-error
+                                        *ngIf="(StaffType.dirty  || StaffType.touched) || (StaffType.invalid && isSubmitted)">
+                                        Staff Type is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Father Name</mat-label>
+                                    <input matInput #FatherName="ngModel" name="FatherName"
+                                        [(ngModel)]="Staff.FatherName">
+                                    <mat-error>
+                                        Father Name is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>DOB</mat-label>
+                                    <input matInput #DOB="ngModel" name="DOB" [(ngModel)]="Staff.DOB"
+                                        [matDatepicker]="DOBPicker">
+                                    <mat-datepicker-toggle matIconSuffix [for]="DOBPicker"></mat-datepicker-toggle>
+                                    <mat-datepicker #DOBPicker></mat-datepicker>
+                                    
+                                </mat-form-field>
+
+                                <!--mobile-->
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Mobile No</mat-label>
+                                    <input type="number" matInput #MobileNo="ngModel" name="MobileNo"
+                                        [(ngModel)]="Staff.MobileNo" required autofocus>
+                                    <!--<mat-icon matSuffix>phone</mat-icon>-->
+                                    <mat-error
+                                        *ngIf="(MobileNo.dirty  || MobileNo.touched) || (MobileNo.invalid && isSubmitted)">
+                                        Mobile No is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <!--alternate no-->
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Alternate No</mat-label>
+                                    <input type="number" matInput #AlternateNo="ngModel" name="AlternateNo"
+                                        [(ngModel)]="Staff.AlternateNo" autofocus>
+                                    <!--<mat-icon matSuffix>phone</mat-icon>-->
+
+                                    <mat-error>
+                                        Alternate No is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+
+                                <!--email-->
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Email</mat-label>
+                                    <input type="email" matInput #Email="ngModel" email="true" name="Email"
+                                        [(ngModel)]="Staff.Email">
+                                    <mat-error>
+                                        Email is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <!--gender-->
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Gender</mat-label>
+                                    <mat-select #Gender="ngModel" name="Gender" [(ngModel)]="Staff.Gender">
+                                        <mat-option [value]="gender.Key"
+                                            *ngFor="let gender of GenderList">{{gender.Value}}</mat-option>
+                                    </mat-select>
+                                    <mat-error>
+                                        Gender is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <!--qualification-->
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Qualification</mat-label>
+                                    <input matInput #Qualification="ngModel" name="Qualification"
+                                        [(ngModel)]="Staff.Qualification">
+                                    <mat-error>
+                                        Qualification is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <!--fill address-->
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Full Address</mat-label>
+                                    <input matInput #FullAddress="ngModel" name="FullAddress"
+                                        [(ngModel)]="Staff.FullAddress">
+                                    <mat-error>
+                                        Full Address is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <!--join date-->
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Join Date</mat-label>
+                                    <input matInput #JoinDate="ngModel" name="JoinDate" [(ngModel)]="Staff.JoinDate"
+                                        required [matDatepicker]="JoinDatePicker">
+                                    <mat-datepicker-toggle matIconSuffix [for]="JoinDatePicker"></mat-datepicker-toggle>
+                                    <mat-datepicker #JoinDatePicker></mat-datepicker>
+                                    <mat-error
+                                        *ngIf="(JoinDate.dirty  || JoinDate.touched) || (JoinDate.invalid && isSubmitted)">
+                                        Join Date is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+                                <!--department-->
+
+                                <!--status-->
+                                <mat-form-field appearance="outline" class="col-sm-3 form-group">
+                                    <mat-label>Status</mat-label>
+                                    <mat-select #Status="ngModel" name="Status" [(ngModel)]="Staff.Status" required>
+                                        <mat-option [value]="status.Key"
+                                            *ngFor="let status of StatusList">{{status.Value}}</mat-option>
+                                    </mat-select>
+                                    <mat-error
+                                        *ngIf="(Status.dirty  || Status.touched) || (Status.invalid && isSubmitted)">
+                                        Status is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer mt-2">
+                    <button type="button" mat-raised-button color="warn" class="me-2" data-bs-dismiss="modal"
+                        (click)="resetForm()">Cancel</button>
+                    <button mat-raised-button color="primary" (click)="saveStaff()">{{Staff.StaffId >
+                        0 ? 'Update':'Submit'}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>

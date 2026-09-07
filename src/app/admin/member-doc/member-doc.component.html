@@ -1,0 +1,651 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main" *ngIf="action.ResponseReceived">
+
+
+
+    <section class="member-doc-section">
+        <div class="member-doc-card">
+            <div class="top-header">
+                <div>
+                    <div>
+                        <h3>{{action.MenuTitle}}</h3>
+                            <p>Upload and manage member verification documents</p>
+                            <nav>
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a routerLink="admin/admin-dashboard">Home</a></li>
+                                    <li class="breadcrumb-item">{{action.ParentMenuTitle}}</li>
+                                    <li class="breadcrumb-item active">{{action.MenuTitle}}</li>
+                                </ol>
+                            </nav>
+
+                    </div>
+                </div>
+                <!-- <div>
+                    <h3>Member Documents</h3>
+                    
+                </div> -->
+                <div class="header-badge">
+                    <i class="bi bi-folder2-open"></i>
+                </div>
+            </div>
+            <!-- Form -->
+            <form #formMemberDoc="ngForm">
+                <div class="search-section pastel-blue">
+                    <div class="section-title">
+                        <i class="bi bi-person"></i>
+                        Search Member
+                    </div>
+                    <mat-form-field appearance="outline" class="w-100 compact-field">
+                        <mat-label>
+                            Search Member by Name / Member No / Staff No
+                        </mat-label>
+                        <input matInput #MemberId="ngModel" name="MemberId" (ngModelChange)="filterMemberList($event)"
+                            [(ngModel)]="MemberDoc.MemberName" [matAutocomplete]="autoMember" required>
+                        <mat-autocomplete #autoMember="matAutocomplete" (optionSelected)="afterMemberSelected($event)">
+                            <mat-option *ngFor="let option of MemberList" [id]="option.MemberId"
+                                [value]="option.MemberName">
+                                {{option.SearchMember}}
+                            </mat-option>
+                        </mat-autocomplete>
+                        <button mat-icon-button matSuffix *ngIf="MemberDoc.MemberName" (click)="clearMember()">
+                            <mat-icon>close</mat-icon>
+                        </button>
+                        <mat-error>Member Name required !!</mat-error>
+                    </mat-form-field>
+                </div>
+
+                <!-- Profile Show Here Start -->
+                <div class="member-profile-card">
+
+                    <!-- PERSONAL DETAILS -->
+                    <div class="info-section pastel-blue">
+
+                        <div class="section-header">
+                            <i class="bi bi-person-circle"></i>
+                            Personal Details
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-md-3 col-sm-6">
+                                <div class="info-box">
+                                    <span>Sail Personal No</span>
+                                    <h6>{{selectedMember.SailPersonalNo}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="info-box">
+                                    <span>Staff No</span>
+                                    <h6>{{selectedMember.StaffNo}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="info-box">
+                                    <span>Member No</span>
+                                    <h6>{{selectedMember.MemberNo}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="info-box">
+                                    <span>Member Type</span>
+                                    <h6>{{AllMemberTypeList[selectedMember.MemberType]}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="info-box">
+                                    <span>Member Name</span>
+                                    <h6>{{selectedMember.MemberName}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3 col-sm-6">
+                                <div class="info-box">
+                                    <span>Father Name</span>
+                                    <h6>{{selectedMember.FatherName}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="info-box">
+                                    <span>Gender</span>
+                                    <h6>{{AllGenderList[selectedMember.Gender]}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="info-box">
+                                    <span>Date of Birth</span>
+                                    <h6>{{selectedMember.DateofBirth | date:'dd-MM-yyyy'}}</h6>
+                                </div>
+                            </div>
+
+
+
+                        </div>
+
+                    </div>
+                    <!-- DOCUMENT DETAILS -->
+                    <div class="info-section pastel-cyan">
+
+                        <div class="section-header">
+                            <i class="bi bi-file-earmark-text"></i>
+                            Document Details
+                        </div>
+
+                        <div class="row g-2">
+
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <span>Aadhar No</span>
+                                    <h6>{{selectedMember.AadharNo}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <span>PAN No</span>
+                                    <h6>{{selectedMember.PanNo}}</h6>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- CONTACT DETAILS -->
+                    <div class="info-section pastel-pink">
+
+                        <div class="section-header">
+                            <i class="bi bi-telephone"></i>
+                            Contact Details
+                        </div>
+
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <div class="info-box">
+                                    <span>Mobile No</span>
+                                    <h6>{{selectedMember.MobileNo}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="info-box">
+                                    <span>Whatsapp No</span>
+                                    <h6>{{selectedMember.WhatsappNo}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="info-box">
+                                    <span>Email</span>
+                                    <h6>{{selectedMember.Email}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <span>Present Address</span>
+                                    <h6>{{selectedMember.PresentAddress}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <span>Permanent Address</span>
+                                    <h6>{{selectedMember.PermanentAddress}}</h6>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- DEPARTMENT DETAILS -->
+                    <div class="info-section pastel-green">
+
+                        <div class="section-header">
+                            <i class="bi bi-building"></i>
+                            Department Details
+                        </div>
+
+                        <div class="row g-2">
+
+                            <div class="col-md-4">
+                                <div class="info-box">
+                                    <span>Dept Sec Code</span>
+                                    <h6>{{selectedMember.DeptSecCode}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="info-box">
+                                    <span>Department</span>
+                                    <h6>{{selectedMember.DepartmentName}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
+                                <div class="info-box">
+                                    <span>Designation</span>
+                                    <h6>{{selectedMember.Designation}}</h6>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- MEMBERSHIP DETAILS -->
+                    <div class="info-section pastel-orange">
+
+                        <div class="section-header">
+                            <i class="bi bi-award"></i>
+                            Membership Details
+                        </div>
+
+                        <div class="row g-2">
+                             <div class="col-md-2">
+                                <div class="info-box">
+                                    <span>JoiningDate Date</span>
+                                    <h6>{{selectedMember.JoiningDate | date:'dd-MM-yyyy'}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>Membership Date</span>
+                                    <h6>{{selectedMember.MembershipDate | date:'dd-MM-yyyy'}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>Retirement Date</span>
+                                    <h6>{{selectedMember.RetirementDate | date:'dd-MM-yyyy'}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-2 col-sm-6">
+                                <div class="info-box">
+                                    <span>PS Unit</span>
+                                    <h6>{{AllPsuUnitList[selectedMember.PsuUnit]}}</h6>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="info-box">
+                                    <span>Status</span>
+
+                                    <h6>
+                                        <span class="badge bg-success text-white" *ngIf="selectedMember.Status == 1">
+                                            Active
+                                        </span>
+
+                                        <span class="badge bg-dange text-whiter" *ngIf="selectedMember.Status == 0">
+                                            Inactive
+                                        </span>
+                                    </h6>
+
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- NOMINEE DETAILS -->
+                    <div class="info-section pastel-purple">
+
+                        <div class="section-header">
+                            <i class="bi bi-people"></i>
+                            Nominee Details
+                        </div>
+
+                        <div class="row g-2">
+
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <span>Nominee Name</span>
+                                    <h6>{{selectedMember.NomineeName}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="info-box">
+                                    <span>Relation</span>
+                                    <h6>{{AllNomineeRelationList[selectedMember.NomineeRelation]}}</h6>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!-- BANK DETAILS -->
+                    <div class="info-section pastel-yellow">
+
+                        <div class="section-header">
+                            <i class="bi bi-bank"></i>
+                            Bank Details
+                        </div>
+
+                        <div class="row g-2">
+
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>Bank Name</span>
+                                    <h6>{{selectedMember.BankName}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>Account No</span>
+                                    <h6>{{selectedMember.AccountNo}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>IFSC Code</span>
+                                    <h6>{{selectedMember.IFSCCode}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>Branch Name</span>
+                                    <h6>{{selectedMember.BranchName}}</h6>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <!-- AUDIT DETAILS -->
+                    <div class="info-section pastel-gray">
+
+                        <div class="section-header">
+                            <i class="bi bi-clock-history"></i>
+                            Audit Information
+                        </div>
+
+                        <div class="row g-2">
+
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>Created By</span>
+                                    <h6>{{selectedMember.CreatedByName}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>Created Date</span>
+                                    <h6>{{selectedMember.CreatedDate | date:'dd-MM-yyyy hh:mm a'}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>Updated By</span>
+                                    <h6>{{selectedMember.UpdatedByName}}</h6>
+                                </div>
+                            </div>
+
+                            <div class="col-md-3">
+                                <div class="info-box">
+                                    <span>Updated Date</span>
+                                    <h6>{{selectedMember.UpdatedDate | date:'dd-MM-yyyy hh:mm a'}}</h6>
+                                </div>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+                <!-- Profile Show Here End -->
+
+                <!-- Upload Member Document Start -->
+                <div class="upload-grid">
+                    <!-- Card -->
+                    <div class="doc-card">
+                        <div class="doc-title">
+                            <i class="fa-solid fa-file-lines"></i>
+                            Membership Form
+                        </div>
+                        <div class="preview-box">
+                            <img [src]="MembershipFormPhoto ? MembershipFormPhoto : '/assets/img/no-image.jpg'"
+                                (click)="openGallery([MembershipFormPhoto],0)" class="preview-image">
+                        </div>
+                        <input hidden #inputMembershipForm accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" type="file"
+                            (change)="setMembershipForm($event)">
+                        <button type="button" class="upload-btn" (click)="inputMembershipForm.click()">
+                            <i class="fa-solid fa-upload"></i>
+                            Upload
+                        </button>
+                    </div>
+
+                    <!-- Member Photo -->
+                    <div class="doc-card">
+                        <div class="doc-title">
+                            <i class="fa-solid fa-image"></i>
+                            Member Photo
+                        </div>
+                        <div class="preview-box">
+                            <img [src]="MemberPhotoPhoto ? MemberPhotoPhoto : '/assets/img/no-image.jpg'"
+                                (click)="openGallery([MemberPhotoPhoto],0)" class="preview-image">
+                        </div>
+                        <input hidden #inputMemberPhoto accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" type="file"
+                            (change)="setMemberPhoto($event)">
+                        <button type="button" class="upload-btn" (click)="inputMemberPhoto.click()">
+                            <i class="fa-solid fa-upload"></i>
+                            Upload
+                        </button>
+                    </div>
+
+                    <!-- Signature -->
+                    <div class="doc-card">
+                        <div class="doc-title">
+                            <i class="fa-solid fa-signature"></i>
+                            Member Signature
+                        </div>
+                        <div class="preview-box">
+                            <img [src]="MemberSignaturePhoto ? MemberSignaturePhoto : '/assets/img/no-image.jpg'"
+                                (click)="openGallery([MemberSignaturePhoto],0)" class="preview-image">
+                        </div>
+                        <input hidden #inputMemberSignature accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" type="file"
+                            (change)="setMemberSignature($event)">
+                        <button type="button" class="upload-btn" (click)="inputMemberSignature.click()">
+                            <i class="fa-solid fa-upload"></i>
+                            Upload
+                        </button>
+                    </div>
+
+                    <!-- Spicemen -->
+                    <div class="doc-card">
+                        <div class="doc-title">
+                            <i class="fa-solid fa-id-card"></i>
+                            Spicemen Card
+                        </div>
+                        <div class="preview-box">
+                            <img [src]="SpicemenSignatureCardPhoto ? SpicemenSignatureCardPhoto : '/assets/img/no-image.jpg'"
+                                (click)="openGallery([SpicemenSignatureCardPhoto],0)" class="preview-image">
+                        </div>
+                        <input hidden #inputSpicemenSignatureCard accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" type="file"
+                            (change)="setSpicemenSignatureCard($event)">
+                        <button type="button" class="upload-btn" (click)="inputSpicemenSignatureCard.click()">
+                            <i class="fa-solid fa-upload"></i>
+                            Upload
+                        </button>
+                    </div>
+
+                    <!-- Loan -->
+                    <div class="doc-card">
+                        <div class="doc-title">
+                            <i class="fa-solid fa-file-contract"></i>
+                            Loan Application
+                        </div>
+                        <div class="preview-box">
+                            <img [src]="LoanApplicationFormPhoto ? LoanApplicationFormPhoto : '/assets/img/no-image.jpg'"
+                                (click)="openGallery([LoanApplicationFormPhoto],0)" class="preview-image">
+                        </div>
+                        <input hidden #inputLoanApplicationForm accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" type="file"
+                            (change)="setLoanApplicationForm($event)">
+                        <button type="button" class="upload-btn" (click)="inputLoanApplicationForm.click()">
+                            <i class="fa-solid fa-upload"></i>
+                            Upload
+                        </button>
+                    </div>
+
+                    <!-- KYC -->
+                    <div class="doc-card">
+                        <div class="doc-title">
+                            <i class="fa-solid fa-address-card"></i>
+                            KYC Form
+                        </div>
+                        <div class="preview-box">
+                            <img [src]="KYCFormPhoto ? KYCFormPhoto : '/assets/img/no-image.jpg'"
+                                (click)="openGallery([KYCFormPhoto],0)" class="preview-image">
+                        </div>
+                        <input hidden #inputKYCForm accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" type="file"
+                            (change)="setKYCForm($event)">
+                        <button type="button" class="upload-btn" (click)="inputKYCForm.click()">
+                            <i class="fa-solid fa-upload"></i>
+                            Upload
+                        </button>
+                    </div>
+
+                    <!-- Cancel Cheque -->
+                    <div class="doc-card">
+                        <div class="doc-title">
+                            <i class="fa-solid fa-money-check-dollar"></i>
+                            Cancel Cheque
+                        </div>
+                        <div class="preview-box">
+                            <img [src]="CancelChequePhoto ? CancelChequePhoto : '/assets/img/no-image.jpg'"
+                                (click)="openGallery([CancelChequePhoto],0)" class="preview-image">
+                        </div>
+                        <input hidden #inputCancelCheque accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" type="file"
+                            (change)="setCancelCheque($event)">
+                        <button type="button" class="upload-btn" (click)="inputCancelCheque.click()">
+                            <i class="fa-solid fa-upload"></i>
+                            Upload
+                        </button>
+                    </div>
+
+                    <!-- Nominee Photo -->
+                    <div class="doc-card">
+                        <div class="doc-title">
+                            <i class="fa-solid fa-money-check-dollar"></i>
+                            Nominee Photo
+                        </div>
+                        <div class="preview-box">
+                            <img [src]="NomineePhotoPhoto ? NomineePhotoPhoto : '/assets/img/no-image.jpg'"
+                                (click)="openGallery([NomineePhotoPhoto],0)" class="preview-image">
+                        </div>
+                        <input hidden #inputNomineePhoto accept=".png,.jpg,.jpeg,.pdf,.doc,.docx" type="file"
+                            (change)="setNomineePhoto($event)">
+                        <button type="button" class="upload-btn" (click)="inputNomineePhoto.click()">
+                            <i class="fa-solid fa-upload"></i>
+                            Upload
+                        </button>
+                    </div>
+                </div>
+                <div class="bottom-btns">
+                    <button type="button" class="cancel-btn" (click)="resetForm()">
+                        Cancel
+                    </button>
+                    <button type="button" class="save-btn" [disabled]="dataLoading" (click)="saveMemberDoc()">
+                        <i class="fa-solid fa-floppy-disk"></i>
+                        {{MemberDoc.MemberImageId > 0 ? 'Update':'Save'}}
+                    </button>
+                </div>
+                <!-- Upload Member Document End -->
+            </form>
+        </div>
+    </section>
+
+
+    <!-- Image Modal -->
+    <div class="custom-image-modal" *ngIf="isImageOpen">
+        <button class="modal-btn close-btn" (click)="closeImage()">
+            <i class="bi bi-x-lg"></i>
+        </button>
+        <button class="modal-btn prev-btn" (click)="previousImage()">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <button class="modal-btn next-btn" (click)="nextImage()">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+        <img [src]="selectedImage" class="zoom-image">
+    </div>
+    <!-- IMAGE GALLERY POPUP -->
+
+    <!-- <div class="custom-image-viewer" *ngIf="isImageOpen">
+        <span class="close-btn" (click)="closeImage()">
+            &times;
+        </span>
+        <img [src]="selectedImage">
+    </div> -->
+    <!-- <div class="modal fade" *ngIf="action.CanEdit || action.CanCreate" id="staticBackdrop" data-bs-backdrop="static"
+        data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">{{FinancialYear.FinancialYearId > 0
+                        ?'Update':'New'}} FinancialYear
+                    </h1>
+                    <button type=" button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                        (click)="resetForm()"></button>
+                </div>
+                <div class="modal-body">
+
+                    <form #formMember="ngForm" class="d-flex justify-content-evenly flex-wrap">
+                        <div class="container">
+                            <div class="row">
+
+                                <mat-form-field appearance="outline" class="col-sm-12">
+                                    <mat-label>Financial Year Name</mat-label>
+                                    <input matInput #FinancialYearName="ngModel" name="FinancialYearName"
+                                        [(ngModel)]="FinancialYear.FinancialYearName" required autofocus>
+                                    <mat-error>
+                                        FinancialYear name is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-6 form-group">
+                                    <mat-label>Start Date</mat-label>
+                                    <input matInput #StartDate="ngModel" name="StartDate"
+                                        [(ngModel)]="FinancialYear.StartDate" [matDatepicker]="StartDatePicker">
+                                    <mat-datepicker-toggle matIconSuffix
+                                        [for]="StartDatePicker"></mat-datepicker-toggle>
+                                    <mat-datepicker #StartDatePicker></mat-datepicker>
+                                </mat-form-field>
+                                  <mat-form-field appearance="outline" class="col-sm-6 form-group">
+                                    <mat-label>End Date</mat-label>
+                                    <input matInput #EndDate="ngModel" name="EndDate"
+                                        [(ngModel)]="FinancialYear.EndDate" [matDatepicker]="EndDatePicker">
+                                    <mat-datepicker-toggle matIconSuffix
+                                        [for]="EndDatePicker"></mat-datepicker-toggle>
+                                    <mat-datepicker #EndDatePicker></mat-datepicker>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Status</mat-label>
+                                    <mat-select #Status="ngModel" name="Status" [(ngModel)]="FinancialYear.Status"
+                                        required>
+                                        <mat-option [value]="status.Key"
+                                            *ngFor="let status of StatusList">{{status.Value}}</mat-option>
+                                    </mat-select>
+                                    <mat-error>
+                                        Status is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+                            </div>
+                        </div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" mat-raised-button color="warn" class="me-2" data-bs-dismiss="modal"
+                        (click)="resetForm()">Cancel</button>
+                    <button mat-raised-button color="primary"
+                        (click)="saveFinancialYear()">{{FinancialYear.FinancialYearId >
+                        0 ? 'Update':'Submit'}}</button>
+                </div>
+            </div>
+        </div>
+    </div> -->
+
+</main>

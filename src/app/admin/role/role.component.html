@@ -1,0 +1,134 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main" *ngIf="action.ResponseReceived">
+  <div class="row">
+    <div class="pagetitle dashboard col-sm-8">
+      <h1>{{action.MenuTitle}}</h1>
+      <nav>
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item"><a routerLink="admin/admin-dashboard">Home</a></li>
+          <li class="breadcrumb-item">{{action.ParentMenuTitle}}</li>
+          <li class="breadcrumb-item active">{{action.MenuTitle}}</li>
+        </ol>
+      </nav>
+    </div>
+    <div class="col-sm-4">
+      <button mat-raised-button color="primary" *ngIf="action.CanCreate" class="float-right" data-bs-toggle="modal"
+        data-bs-target="#staticBackdrop" (click)="resetForm()">New
+        Role</button>
+    </div>
+  </div>
+  <section class="section dashboard">
+
+    <div class="card">
+      <div class="card-body ">
+        <div class="dataTable-top">
+          <div class="dataTable-dropdown d-flex">
+            <select class="dataTable-selector form-select form-select-sm" [(ngModel)]="itemPerPage">
+              <option *ngFor="let option of PageSize" [value]="option">{{option}} </option>
+            </select>
+            <span class="ms-2">Entries per page</span>
+          </div>
+          <div class="dataTable-search">
+            <input class="dataTable-input form-control form-control-sm" [(ngModel)]="Search" placeholder="Search..."
+              type="text">
+          </div>
+        </div>
+        <div class="table-container overflow-auto">
+          <table class="table table-bordered table-hover">
+            <thead>
+              <tr>
+                <th>S.No</th>
+                <th (click)="sort('RoleTitle')">Role</th>
+                <th (click)="sort('Status')">Status</th>
+                <th>View Task</th>
+                <th *ngIf="action.CanEdit">Edit</th>
+                <th *ngIf="action.CanDelete">Delete</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let item of RoleList |filter:Search|orderBy:sortKey:reverse|paginate: { itemsPerPage: itemPerPage, currentPage: p } ; ; let i = index;">
+                <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
+                <td>{{item.RoleTitle}}</td>
+                <td>
+                  <span class="p-1" [ngClass]="item.Status == 1 ? 'badge text-bg-success':'badge text-bg-danger'">
+                    {{AllStatusList[item.Status]}}
+                  </span>
+                </td>
+                <td>
+                  <a [routerLink]="'/admin/role-menu/' + item.RoleId"><i
+                      class="bi bi-layout-text-window-reverse"></i></a>
+                </td>
+                <td *ngIf="action.CanEdit">
+                  <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#staticBackdrop"
+                    (click)="editRole(item)">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                </td>
+                <td *ngIf="action.CanDelete">
+                  <button class="btn btn-sm btn-danger" (click)="deleteRole(item)">
+                    <i class="bi bi-trash-fill"></i>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="dataTable-bottom">
+          <pagination-controls (pageChange)="onTableDataChange($event)" style="float:right;"
+            class="my-pagination"></pagination-controls>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div *ngIf="action.CanEdit || action.CanCreate" class="modal fade" id="staticBackdrop" data-bs-backdrop="static"
+    data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h1 class="modal-title fs-5" id="staticBackdropLabel">{{Role.RoleId > 0 ? 'Update':'New'}}
+            Role
+          </h1>
+          <button type=" button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+            (click)="resetForm()"></button>
+        </div>
+        <div class="modal-body">
+
+          <form #formRole="ngForm">
+            <div class="container">
+              <div class="row">
+
+                <mat-form-field appearance="outline" class="col-sm-6">
+
+                  <mat-label>Role Title</mat-label>
+                  <input matInput #RoleTitle="ngModel" name="RoleTitle" [(ngModel)]="Role.RoleTitle" required autofocus>
+                  <mat-error *ngIf="(RoleTitle.dirty  || RoleTitle.touched) || (RoleTitle.invalid && isSubmitted)">
+                    Role title is <strong>required</strong>
+                  </mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline" class="col-sm-6">
+                  <mat-label>Status</mat-label>
+                  <mat-select #Status="ngModel" name="Status" [(ngModel)]="Role.Status" required>
+                    <mat-option [value]="status.Key" *ngFor="let status of StatusList">{{status.Value}}</mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="(Status.dirty  || Status.touched) || (Status.invalid && isSubmitted)">
+                    Status is <strong>required</strong>
+                  </mat-error>
+                </mat-form-field>
+              </div>
+            </div>
+
+          </form>
+        </div>
+        <div class="modal-footer mt-2">
+          <button type="button" mat-raised-button color="warn" class="me-2" data-bs-dismiss="modal"
+            (click)="resetForm()">Cancel</button>
+          <button mat-raised-button color="primary" (click)="saveRole()">{{Role.RoleId >
+            0 ? 'Update':'Submit'}}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

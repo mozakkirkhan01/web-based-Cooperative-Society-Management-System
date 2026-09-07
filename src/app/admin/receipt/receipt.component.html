@@ -1,0 +1,253 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main" *ngIf="action.ResponseReceived">
+
+    <div class="row">
+        <div class="pagetitle dashboard col-sm-8">
+            <h1>{{action.MenuTitle}}</h1>
+            <nav>
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a routerLink="admin/admin-dashboard">Home</a></li>
+                    <li class="breadcrumb-item">{{action.ParentMenuTitle}}</li>
+                    <li class="breadcrumb-item active">{{action.MenuTitle}}</li>
+                </ol>
+            </nav>
+        </div>
+        <!-- <div class="col-sm-4 mb-3">
+            <button mat-raised-button color="primary" *ngIf="action.CanCreate" class="float-right"
+                data-bs-toggle="modal" data-bs-target="#staticBackdrop" (click)="resetForm()">New Head</button>
+        </div> -->
+    </div>
+
+    <section class="section dashboard">
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title">New Receipt</h5>
+                    </div>
+                    <div class="card-body">
+
+                        <form #formReceipt="ngForm" class="d-flex justify-content-evenly flex-wrap">
+                            <div class="row">
+                                <mat-form-field appearance="outline" class="col-sm-4" readonly-field>
+                                    <mat-label>Trn No.</mat-label>
+                                    <input matInput #TrnNo="ngModel" name="TrnNo" [(ngModel)]="Receipt.TrnNo" required
+                                        autofocus readonly="true">
+                                    <mat-error>
+                                        Trn No. is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-4">
+                                    <mat-label>Receipt No.</mat-label>
+                                    <input matInput #ReceiptNo="ngModel" name="ReceiptNo"
+                                        [(ngModel)]="Receipt.ReceiptNo" required autofocus>
+                                    <mat-error>
+                                        Receipt No. is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-4 form-group">
+                                    <mat-label>Receipt Date</mat-label>
+                                    <input matInput #ReceiptDate="ngModel" name="ReceiptDate"
+                                        [(ngModel)]="Receipt.ReceiptDate" [matDatepicker]="ReceiptDatePicker">
+                                    <mat-datepicker-toggle matIconSuffix
+                                        [for]="ReceiptDatePicker"></mat-datepicker-toggle>
+                                    <mat-datepicker #ReceiptDatePicker></mat-datepicker>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-8">
+                                    <mat-label [ariaSetSize]="8">Select Head</mat-label>
+                                    <mat-select #HeadId="ngModel" name="HeadId" [(ngModel)]="Receipt.HeadId"
+                                        (selectionChange)="onHeadChange($event.value)">
+                                        <mat-option *ngFor="let option of HeadList"
+                                            (onSelectionChange)="Receipt.HeadId = option.HeadId"
+                                            [value]="option.HeadId">
+                                            {{option.HeadName}}
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-4">
+                                    <mat-label>Head Balance</mat-label>
+                                    <input matInput #HeadBalance="ngModel" name="HeadBalance"
+                                        [(ngModel)]="Receipt.HeadBalance" readonly="true">
+                                </mat-form-field>
+
+                                <!-- mat auto complete -->
+                                <mat-form-field appearance="outline" class="col-sm-12">
+                                    <mat-label>Search Member by Name/No.</mat-label>
+                                    <input matInput #MemberId="ngModel" name="MemberId"
+                                        (ngModelChange)="filterMemberList($event)"
+                                        placeholder="Search By Member Name/No." [(ngModel)]="Receipt.MemberName"
+                                        [matAutocomplete]="autoMember" required autofocus>
+                                    <mat-autocomplete #autoMember="matAutocomplete"
+                                        (optionSelected)="afterMemberSelected($event)">
+                                        <mat-option *ngFor="let option of MemberList" [id]="option.MemberId"
+                                            [value]="option.MemberName">{{option.SearchMember}}</mat-option>
+                                    </mat-autocomplete>
+                                    <button mat-icon-button matSuffix *ngIf="Receipt.MemberName" color="primary"
+                                        (click)="clearMember()">
+                                        <mat-icon><i class="ri-close-circle-line"></i> </mat-icon>
+                                    </button>
+                                    <mat-error>
+                                        Member Name required !!
+                                    </mat-error>
+                                </mat-form-field>
+
+
+                                <mat-form-field appearance="outline" class="col-sm-12">
+                                    <mat-label>Balance</mat-label>
+                                    <input matInput #Balance="ngModel" name="Balance" [(ngModel)]="Receipt.Balance"
+                                        readonly="true">
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Bank/Cash</mat-label>
+                                    <mat-select #BankCashType="ngModel" name="BankCashType"
+                                        [(ngModel)]="Receipt.BankCashType" required>
+                                        <mat-option [value]="BankCashType.Key"
+                                            *ngFor="let BankCashType of BankCashTypeList">{{BankCashType.Value}}</mat-option>
+                                    </mat-select>
+                                    <mat-error>
+                                        Bank or Cash is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Debit / Credit</mat-label>
+                                    <input matInput value="Credit" readonly>
+                                </mat-form-field>
+
+                                <input type="hidden" name="DebitCreditType" [(ngModel)]="Receipt.DebitCreditType">
+
+                                <mat-form-field appearance="outline" class="col-sm-4">
+                                    <mat-label>Amount</mat-label>
+                                    <input type="number" matInput #Amount="ngModel" name="Amount"
+                                        [(ngModel)]="Receipt.Amount" required autofocus>
+                                    <mat-error>
+                                        Amount is <strong>required</strong>
+                                    </mat-error>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-8">
+                                    <mat-label [ariaSetSize]="8">Select Bank</mat-label>
+                                    <mat-select #BankId="ngModel" name="BankId" [(ngModel)]="Receipt.BankId"
+                                        [disabled]="Receipt.BankCashType == 2"
+                                        (selectionChange)="onBankChange($event.value)">
+                                        <mat-option *ngFor="let option of BankList"
+                                            (onSelectionChange)="Receipt.BankId = option.BankId"
+                                            [value]="option.BankId">
+                                            {{option.BankName}}
+                                        </mat-option>
+                                    </mat-select>
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Current Bank Balance</mat-label>
+                                    <input matInput #OpeningBalance="ngModel" name="OpeningBalance"
+                                        [(ngModel)]="Receipt.OpeningBalance" readonly="true">
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Cheque No.</mat-label>
+                                    <input matInput #ChequeNo="ngModel" name="ChequeNo" [(ngModel)]="Receipt.ChequeNo"
+                                        [readonly]="Receipt.BankCashType == 2">
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-12">
+                                    <mat-label>Narration</mat-label>
+                                    <textarea matInput #Narration="ngModel" name="Narration"
+                                        [(ngModel)]="Receipt.Narration" rows="3"></textarea>
+                                </mat-form-field>
+                               
+                            </div>
+
+                            <button type="button" mat-raised-button color="warn" class="col-sm-5 me-2"
+                                    data-bs-dismiss="modal" (click)="resetForm()">Cancel</button>
+                                <button mat-raised-button color="primary" (click)="saveReceipt()"
+                                    class="col-sm-6">{{Receipt.ReceiptId >
+                                    0 ? 'Update':'Submit'}}</button>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-7">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h5 class="card-title">Receipt List</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <div class="dataTable-top">
+                                <div class="dataTable-dropdown d-flex">
+                                    <select class="dataTable-selector form-select form-select-sm"
+                                        [(ngModel)]="itemPerPage">
+                                        <option *ngFor="let option of PageSize" [value]="option">{{option}} </option>
+                                    </select>
+                                    <span class="ms-2">Entries per page</span>
+                                </div>
+                                <div class="dataTable-search">
+                                    <input class="dataTable-input form-control form-control-sm" [(ngModel)]="Search"
+                                        placeholder="Search..." type="text">
+                                </div>
+                            </div>
+
+                            <table class="table table-bordered table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>S.No</th>
+                                         <th *ngIf="action.CanEdit">Edit</th>
+                                        <th *ngIf="action.CanDelete">Delete</th>
+                                        <th style="cursor:pointer;" (click)="sort('TrnNo')">Trn No.</th>
+                                        <th style="cursor:pointer;text-align: center;" (click)="sort('ReceiptNo')">  Receipt No. </th>
+                                        <th style="cursor:pointer;" (click)="sort('ReceiptDate')">Receipt Date</th>
+                                        <th style="cursor:pointer;" (click)="sort('HeadName')">Head Name</th>
+                                        <th style="cursor:pointer;" (click)="sort('MemberName')">Staff Name/No.</th>
+                                        <th style="cursor:pointer;" (click)="sort('OpeningBalance')">Bank/Cash</th>
+                                        <th style="cursor:pointer;" (click)="sort('BankName')">Bank Name</th>
+                                        <th style="cursor:pointer;" (click)="sort('Amount')">Amount</th>
+                                        <th style="cursor:pointer;" (click)="sort('ChequeNo')">Cheque No.</th>
+                                       
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        *ngFor="let item of ReceiptList |filter:Search|orderBy:sortKey:reverse|paginate: { itemsPerPage: itemPerPage, currentPage: p } ; ; let i = index;">
+                                        <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
+                                         <td *ngIf="action.CanEdit">
+                                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                                data-bs-target="#staticBackdrop" (click)="editReceipt(item)">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </button>
+                                        </td>
+                                        <td *ngIf="action.CanDelete">
+                                            <button class="btn btn-sm btn-danger" (click)="deleteReceipt(item)">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </td>
+                                        <td>{{item.TrnNo}}</td>
+                                        <td style="text-align: center;">{{item.ReceiptNo}}</td>
+                                        <td>{{item.ReceiptDate | date: "dd-MM-yyyy"}}</td>
+                                        <td>{{item.HeadName}}</td>
+                                        <td>{{item.MemberName}}-{{item.StaffNo}}</td>
+                                        <td>{{AllBankCashTypeList[item.BankCashType]}}</td>
+                                        <td>{{item.BankName}}</td>
+                                        <td>{{item.Amount}} {{DebitCreditShort[item.DebitCreditType]}}</td>
+                                        <td>{{item.ChequeNo}}</td>
+
+                                       
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="dataTable-bottom">
+                                <pagination-controls (pageChange)="onTableDataChange($event)" style="float:right;"
+                                    class="my-pagination"></pagination-controls>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </section>
+
+
+
+</main>

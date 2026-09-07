@@ -1,0 +1,98 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main class="login-background">
+    <div class="container">
+
+        <section class="section register min-vh-100 d-flex flex-column align-items-center justify-content-center py-4">
+            <div class="container">
+                <div class="row justify-content-center">
+                    <div class="col-lg-4 col-md-6 d-flex flex-column align-items-center justify-content-center">
+
+                        <div class="card mb-3">
+                            <div class="card-header d-flex justify-content-center align-items-center" style="color: darkblue;">
+                                
+                                    <img [src]="imageUrl + Company.LogoPNG" alt="" style="height: 80px;" class=" pb-2 pt-2">
+                                
+                                <!-- <h4 class="text-center mt-2">{{Company.CompanyName}}</h4> -->
+                                <!-- <label *ngIf="Company.CompanyAddress">{{Company.CompanyAddress}}</label> -->
+                                <!-- <label *ngIf="Company.MobileNo">{{Company.MobileNo}}</label>
+                                <label *ngIf="Company.Website">{{Company.Website}}</label> -->
+                            </div>
+
+                            <div class="card-body" style="padding-bottom: 22px;">
+
+                                <div class="pb-2">
+                                    <h5 class="card-title text-center pb-0 fs-4" style="padding-bottom: 5px !important;padding-top: 0 !important;">
+                                        Login to Your Account</h5>
+                                    <p class="text-center small mb-2">Enter your username & password to login</p>
+                                </div>
+
+                                <form #myForm="ngForm" class="row g-3 needs-validation" novalidate>
+
+                                    <div class="col-12">
+                                        <label for="yourUsername" class="form-label">Username</label>
+                                        <mat-form-field appearance="outline" class="w-100">
+                                          <mat-icon matPrefix>person</mat-icon>
+                                          <input matInput type="text" name="UserName" #UserName="ngModel"
+                                                 placeholder="Enter username"
+                                                 [(ngModel)]="Staff.UserName"
+                                                 [ngClass]="{'is-invalid': submitted && UserName.invalid}"
+                                                 id="yourUsername" required>
+                                        </mat-form-field>
+                                        <div *ngIf="UserName.invalid && (UserName.dirty || UserName.touched || submitted)"
+                                             class="invalid-feedback">
+                                          <div *ngIf="UserName.errors?.['required']">
+                                            Please enter your username.
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+
+                                    <div class="col-12">
+                                        <label for="yourPassword" class="form-label">Password</label>
+                                        <mat-form-field appearance="outline" class="w-100">
+                                          <mat-icon matPrefix>lock</mat-icon>
+                                          <input matInput type="password" name="LoginPassword"
+                                                 placeholder="Enter Login password"
+                                                 id="yourPassword" #LoginPassword="ngModel"
+                                                 [(ngModel)]="Staff.LoginPassword"
+                                                 [ngClass]="{'is-invalid': submitted && LoginPassword.invalid}"
+                                                 required>
+                                        </mat-form-field>
+                                        <div *ngIf="LoginPassword.errors?.['required'] && LoginPassword.invalid && (LoginPassword.dirty || LoginPassword.touched || submitted)"
+                                             class="invalid-feedback">Please enter your password!</div>
+                                      </div>
+                                      
+
+                                    <!-- <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="remember" value="true"
+                                                id="rememberMe">
+                                            <label class="form-check-label" for="rememberMe">Remember me</label>
+                                        </div>
+                                    </div> -->
+                                    <div class="col-12">
+                                        <button mat-raised-button color="primary" class="w-100" type="submit"
+                                            (click)="staffLogin(myForm)">Login</button>
+                                    </div>
+                                    <div class="col-12" style="text-align: center;">
+                                        <p class="small mb-0"> <a href="https://webaikon.com/" target="_blank">Design & Developed By <b>Webaikon Infotech</b>
+                                                </a></p>
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+
+                       
+
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </div>
+</main><!-- End #main -->
+
+<a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i
+        class="bi bi-arrow-up-short"></i></a>
