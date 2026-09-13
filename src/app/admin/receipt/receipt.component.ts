@@ -186,12 +186,13 @@ export class ReceiptComponent {
       this.toastr.error("Error while generating transaction number");
     });
   }
-  onBankCashTypeChange() {
-    if (this.Receipt.BankCashType == BankCashType.Cash) {
-      this.Receipt.BankId = null;
-      this.Receipt.ChequeNo = '';
-    }
+onBankCashTypeChange() {
+  if (this.Receipt.BankCashType == BankCashType.Cash) {
+    this.Receipt.BankId = null;
+    this.Receipt.ChequeNo = '';
+    this.Receipt.OpeningBalance = 0;
   }
+}
 
   //mat auto complete
   AllMemberList: any[] = [];
