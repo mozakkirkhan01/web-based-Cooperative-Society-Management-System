@@ -26,10 +26,17 @@ export class PaymentComponent {
   PaymentList: any = []
   Payment: any = {}
   isSubmitted = false
+  isSaving = false;
+  TotalRecords = 0;
+  listRequest = 0;
+  pendingPayment: any = null;
+  FromDate: any = null;
+  ToDate: any = null;
+  transactionNoRequest = 0;
   StatusList = this.loadData.GetEnumList(Status);
   BankCashTypeList = this.loadData.GetEnumList(BankCashType);
   DebitCreditTypeList = this.loadData.GetEnumList(DebitCreditType);
-  PageSize = ConstantData.PageSizes;
+  PageSize = ConstantData.PageSizes.filter(x => x <= 200);
   p: number = 1;
   Search: string = '';
   reverse: boolean = false;
@@ -57,7 +64,18 @@ export class PaymentComponent {
     this.getBankList();
     this.getPaymentList();
     this.resetForm();
-    this.getTransactionNo();
+    const pending = sessionStorage.getItem('PaymentPending:' + this.staffLogin.StaffLoginId);
+    if (pending) {
+      try {
+        this.pendingPayment = JSON.parse(this.localService.decrypt(pending));
+        this.transactionNoRequest++;
+        this.Payment = { ...this.pendingPayment, PaymentDate: this.loadData.loadDate(this.pendingPayment.PaymentDate) };
+        this.toastr.warning("A payment is awaiting confirmation. Retry it before starting another payment.");
+      } catch {
+        this.toastr.error("Unable to restore the pending payment. Contact the administrator before submitting another payment.");
+        this.isSaving = true;
+      }
+    }
   }
 
   validiateMenu() {
@@ -76,6 +94,7 @@ export class PaymentComponent {
 
   @ViewChild('formPayment') formPayment: NgForm;
   resetForm() {
+    if (this.isSaving || this.pendingPayment) return;
     this.Payment = {
       PaymentId: 0,
       TrnNo: '',
@@ -85,6 +104,7 @@ export class PaymentComponent {
       ChequeNo: '',
       HeadBalance: 0,
       OpeningBalance: 0,
+      Balance: null,
       PaymentDate: new Date(),
       Status: 1,
       DebitCreditType: 1,
@@ -110,10 +130,12 @@ export class PaymentComponent {
   sort(key: any) {
     this.sortKey = key;
     this.reverse = !this.reverse;
+    this.filterPaymentList();
   }
 
   onTableDataChange(p: any) {
     this.p = p
+    this.getPaymentList();
   }
   getHeadList() {
     var obj: RequestModel = {
@@ -124,6 +146,7 @@ export class PaymentComponent {
       let response = r1 as any
       if (response.Message == ConstantData.SuccessMessage) {
         this.HeadList = response.HeadList;
+        this.onHeadChange(this.Payment.HeadId);
       } else {
         this.toastr.error(response.Message)
       }
@@ -153,6 +176,7 @@ export class PaymentComponent {
       let response = r1 as any
       if (response.Message == ConstantData.SuccessMessage) {
         this.BankList = response.BankList;
+        this.onBankChange(this.Payment.BankId);
       } else {
         this.toastr.error(response.Message)
       }
@@ -173,11 +197,14 @@ export class PaymentComponent {
     }
   }
   getTransactionNo() {
+    const requestNo = ++this.transactionNoRequest;
+    const payment = this.Payment;
     let obj: RequestModel = {
       request: this.localService.encrypt(JSON.stringify({})).toString()
     };
 
     this.service.getTransactionNo(obj).subscribe((response: any) => {
+      if (requestNo != this.transactionNoRequest || this.Payment != payment || this.Payment.PaymentId > 0) return;
       if (response.Message == ConstantData.SuccessMessage) {
         this.Payment.TrnNo = response.TrnNo;
       } else {
@@ -191,6 +218,7 @@ export class PaymentComponent {
     if (this.Payment.BankCashType == BankCashType.Cash) {
       this.Payment.BankId = null;
       this.Payment.ChequeNo = '';
+      this.Payment.OpeningBalance = null;
     }
   }
 
@@ -204,11 +232,14 @@ export class PaymentComponent {
       this.MemberList = this.AllMemberList;
     }
     this.Payment.MemberId = 0;
+    this.Payment.Balance = null;
   }
   clearMember() {
+    if (this.isSaving || this.pendingPayment) return;
     this.MemberList = this.AllMemberList;
     this.Payment.MemberId = null;
-    this.Payment = {};
+    this.Payment.MemberName = '';
+    this.Payment.Balance = null;
   }
 
   getMemberList() {
@@ -232,9 +263,7 @@ export class PaymentComponent {
     }))
   }
   clearCustomer() {
-    this.MemberList = this.AllMemberList;
-    this.Payment.MemberId = null;
-    this.Payment = {};
+    this.clearMember();
   }
 
   //  afterMemberSelected(event: any) {
@@ -254,22 +283,77 @@ export class PaymentComponent {
     }
   }
   savePayment() {
+    if (this.isSaving) return;
+    if (!this.action.ResponseReceived || !(this.Payment.PaymentId > 0 ? this.action.CanEdit : this.action.CanCreate)) {
+      this.toastr.error("You do not have permission to save this payment");
+      return;
+    }
+    if (this.pendingPayment) {
+      this.submitPayment(this.pendingPayment);
+      return;
+    }
     this.isSubmitted = true;
     this.formPayment.control.markAllAsTouched();
     if (this.formPayment.invalid) {
       this.toastr.error("Fill all the required fields !!")
       return
     }
-    this.Payment.PaymentDate = this.loadData.loadDateTime(this.Payment.PaymentDate);
-    this.Payment.UpdatedBy = this.staffLogin.StaffLoginId;
-    this.Payment.CreatedBy = this.staffLogin.StaffLoginId;
-    var obj: RequestModel = {
-      request: this.localService.encrypt(JSON.stringify(this.Payment)).toString()
+    if (!Number.isInteger(Number(this.Payment.VoucherNo)) || Number(this.Payment.VoucherNo) <= 0 || Number(this.Payment.VoucherNo) > 2147483647) {
+      this.toastr.error("Enter a positive whole voucher number");
+      return;
     }
+    if (!this.HeadList.some((x: any) => x.HeadId == this.Payment.HeadId)) {
+      this.toastr.error("Select a valid head from the list");
+      return;
+    }
+    if (!this.AllMemberList.some((x: any) => x.MemberId == this.Payment.MemberId)) {
+      this.toastr.error("Select a valid member from the list");
+      return;
+    }
+    if (!Number.isFinite(Number(this.Payment.Amount)) || Number(this.Payment.Amount) <= 0) {
+      this.toastr.error("Amount must be greater than zero");
+      return;
+    }
+    if (this.Payment.BankCashType == BankCashType.Bank && !this.BankList.some((x: any) => x.BankId == this.Payment.BankId)) {
+      this.toastr.error("Select a bank for bank payments");
+      return;
+    }
+    this.onBankCashTypeChange();
+    const payment = {
+      ...this.Payment,
+      RequestKey: this.createRequestKey(),
+      PaymentDate: this.loadData.loadDateTime(this.Payment.PaymentDate),
+      UpdatedBy: this.staffLogin.StaffLoginId,
+      CreatedBy: this.staffLogin.StaffLoginId
+    };
+    this.submitPayment(payment);
+  }
+  createRequestKey() {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = (bytes[6] & 15) | 64;
+    bytes[8] = (bytes[8] & 63) | 128;
+    const value = Array.from(bytes, x => x.toString(16).padStart(2, '0')).join('');
+    return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+  }
+  submitPayment(payment: any) {
+    try {
+      sessionStorage.setItem('PaymentPending:' + this.staffLogin.StaffLoginId, this.localService.encrypt(JSON.stringify(payment)).toString());
+    } catch {
+      this.toastr.error("Unable to retain the payment request for safe retry. Enable browser session storage.");
+      return;
+    }
+    this.pendingPayment = payment;
+    var obj: RequestModel = {
+      request: this.localService.encrypt(JSON.stringify(payment)).toString()
+    }
+    this.isSaving = true;
     this.service.savePayment(obj).subscribe(r1 => {
+      this.isSaving = false;
       let response = r1 as any
       if (response.Message == ConstantData.SuccessMessage) {
-        if (this.Payment.PaymentId > 0) {
+        this.pendingPayment = null;
+        sessionStorage.removeItem('PaymentPending:' + this.staffLogin.StaffLoginId);
+        if (payment.PaymentId > 0) {
           this.toastr.success("Payment detail updated successfully")
           $('#staticBackdrop').modal('hide')
         } else {
@@ -281,31 +365,72 @@ export class PaymentComponent {
         this.toastr.error(response.Message)
       }
     }, (err => {
-      this.toastr.error("Error occured while submitting data")
+      this.isSaving = false;
+      if ([400, 401, 403, 404, 409].includes(err.status)) {
+        this.pendingPayment = null;
+        sessionStorage.removeItem('PaymentPending:' + this.staffLogin.StaffLoginId);
+      }
+      this.toastr.error(err.error?.Message || "Payment confirmation unavailable. Retry the same payment.")
     }))
   }
   getPaymentList() {
+    const requestNo = ++this.listRequest;
     var obj: RequestModel = {
-      request: this.localService.encrypt(JSON.stringify({})).toString()
+      request: this.localService.encrypt(JSON.stringify({
+        PageNumber: this.p,
+        PageSize: Number(this.itemPerPage),
+        FromDate: this.FromDate ? this.loadData.loadDateYMD(this.FromDate) : null,
+        ToDate: this.ToDate ? this.loadData.loadDateYMD(this.ToDate) : null,
+        Search: this.Search,
+        SortKey: this.sortKey,
+        Reverse: this.reverse
+      })).toString()
     }
     this.dataLoading = true
     this.service.getPaymentList(obj).subscribe(r1 => {
+      if (requestNo != this.listRequest) return;
       let response = r1 as any
       if (response.Message == ConstantData.SuccessMessage) {
         this.PaymentList = response.PaymentList;
+        this.TotalRecords = response.TotalRecords;
+        this.p = response.PageNumber;
       } else {
         this.toastr.error(response.Message)
       }
       this.dataLoading = false
     }, (err => {
-      this.toastr.error("Error while fetching records")
+      if (requestNo != this.listRequest) return;
+      this.dataLoading = false;
+      this.PaymentList = [];
+      this.TotalRecords = 0;
+      this.toastr.error(err.error?.Message || "Error while fetching records")
     }))
   }
+  filterPaymentList() {
+    const fromDate = this.FromDate ? this.loadData.loadDateYMD(this.FromDate) : null;
+    const toDate = this.ToDate ? this.loadData.loadDateYMD(this.ToDate) : null;
+    this.p = 1;
+    this.listRequest++;
+    if ((fromDate && fromDate.includes('NaN')) || (toDate && toDate.includes('NaN')) || (fromDate && toDate && fromDate > toDate)) {
+      this.PaymentList = [];
+      this.TotalRecords = 0;
+      this.dataLoading = false;
+      this.toastr.error("Select a valid date range");
+      return;
+    }
+    this.getPaymentList();
+  }
+  clearDateFilter() {
+    this.FromDate = null;
+    this.ToDate = null;
+    this.filterPaymentList();
+  }
   DebitCreditShort: any = {
-  [DebitCreditType.Debit]: 'Dr',
-  [DebitCreditType.Credit]: 'Cr'
-};
+    [DebitCreditType.Debit]: 'Dr',
+    [DebitCreditType.Credit]: 'Cr'
+  };
   deletePayment(obj: any) {
+    if (this.isSaving || this.pendingPayment || !this.action.CanDelete) return;
     if (confirm("Are your sure you want to delete this recored")) {
       var request: RequestModel = {
         request: this.localService.encrypt(JSON.stringify(obj)).toString()
@@ -321,15 +446,21 @@ export class PaymentComponent {
           this.dataLoading = false
         }
       }, (err => {
-        this.toastr.error("Error occured while deleteing the recored")
+        this.toastr.error(err.error?.Message || "Error occured while deleteing the recored")
         this.dataLoading = false
       }))
     }
   }
 
   editPayment(obj: any) {
-    this.resetForm()
-    this.Payment = obj
+    if (this.isSaving || this.pendingPayment || !this.action.CanEdit) return;
+    this.transactionNoRequest++;
+    this.Payment = { ...obj, PaymentDate: this.loadData.loadDate(obj.PaymentDate), Balance: null };
+    if (this.formPayment) this.formPayment.resetForm(this.Payment);
+    this.isSubmitted = false;
+    this.onHeadChange(this.Payment.HeadId);
+    this.onBankChange(this.Payment.BankId);
+    this.onBankCashTypeChange();
 
   }
 

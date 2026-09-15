@@ -23,12 +23,13 @@
             <div class="col-lg-5">
                 <div class="card h-100">
                     <div class="card-header">
-                        <h5 class="card-title">New Payment</h5>
+                        <h5 class="card-title">{{Payment.PaymentId > 0 ? 'Edit Payment' : 'New Payment'}}</h5>
                     </div>
                     <div class="card-body">
 
                         <form #formPayment="ngForm" class="d-flex justify-content-evenly flex-wrap">
-                            <div class="row">
+                            <div class="row" [attr.inert]="isSaving || pendingPayment ? '' : null"
+                                [style.pointer-events]="isSaving || pendingPayment ? 'none' : null">
                                 <mat-form-field appearance="outline" class="col-sm-4" readonly-field>
                                     <mat-label>Trn No.</mat-label>
                                     <input matInput #TrnNo="ngModel" name="TrnNo" [(ngModel)]="Payment.TrnNo" required
@@ -39,30 +40,30 @@
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-4">
                                     <mat-label>VoucherNo</mat-label>
-                                    <input matInput #VoucherNo="ngModel" name="VoucherNo"
-                                        [(ngModel)]="Payment.VoucherNo" required autofocus>
+                                    <input type="number" min="1" max="2147483647" step="1" matInput #VoucherNo="ngModel"
+                                        name="VoucherNo" [(ngModel)]="Payment.VoucherNo" required autofocus>
                                     <mat-error>
-                                        Voucher No. is <strong>required</strong>
+                                        Enter a <strong>positive whole voucher number</strong>
                                     </mat-error>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-4 form-group">
                                     <mat-label>Payment Date</mat-label>
                                     <input matInput #PaymentDate="ngModel" name="PaymentDate"
-                                        [(ngModel)]="Payment.PaymentDate" [matDatepicker]="PaymentDatePicker">
+                                        [(ngModel)]="Payment.PaymentDate" [matDatepicker]="PaymentDatePicker" required>
                                     <mat-datepicker-toggle matIconSuffix
                                         [for]="PaymentDatePicker"></mat-datepicker-toggle>
                                     <mat-datepicker #PaymentDatePicker></mat-datepicker>
+                                    <mat-error>A valid payment date is required</mat-error>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-8">
                                     <mat-label [ariaSetSize]="8">Select Head</mat-label>
                                     <mat-select #HeadId="ngModel" name="HeadId" [(ngModel)]="Payment.HeadId"
-                                        (selectionChange)="onHeadChange($event.value)">
-                                        <mat-option *ngFor="let option of HeadList"
-                                            (onSelectionChange)="Payment.HeadId = option.HeadId"
-                                            [value]="option.HeadId">
+                                        (selectionChange)="onHeadChange($event.value)" required>
+                                        <mat-option *ngFor="let option of HeadList" [value]="option.HeadId">
                                             {{option.HeadName}}
                                         </mat-option>
                                     </mat-select>
+                                    <mat-error>Head is required</mat-error>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-4">
                                     <mat-label>Head Balance</mat-label>
@@ -82,26 +83,31 @@
                                         <mat-option *ngFor="let option of MemberList" [id]="option.MemberId"
                                             [value]="option.MemberName">{{option.SearchMember}}</mat-option>
                                     </mat-autocomplete>
-                                    <button mat-icon-button matSuffix *ngIf="Payment.MemberName" color="primary"
-                                        (click)="clearMember()">
+                                    <button type="button" mat-icon-button matSuffix *ngIf="Payment.MemberName"
+                                        color="primary" [disabled]="isSaving" (click)="clearMember()">
                                         <mat-icon><i class="ri-close-circle-line"></i> </mat-icon>
                                     </button>
                                     <mat-error>
                                         Member Name required !!
                                     </mat-error>
+                                    <mat-hint *ngIf="Payment.MemberName && !Payment.MemberId">Select a member from the
+                                        suggestions</mat-hint>
                                 </mat-form-field>
 
 
                                 <mat-form-field appearance="outline" class="col-sm-12">
-                                    <mat-label>Balance</mat-label>
-                                    <input matInput #Balance="ngModel" name="Balance" [(ngModel)]="Payment.Balance"
+                                    <mat-label>Member Balance</mat-label>
+                                    <input matInput
+                                        [value]="Payment.Balance == null ? 'Not available' : Payment.Balance"
                                         readonly="true">
+                                    <mat-hint>Member balance is currently unavailable</mat-hint>
                                 </mat-form-field>
 
                                 <mat-form-field appearance="outline" class="col-sm-6">
                                     <mat-label>Bank/Cash</mat-label>
                                     <mat-select #BankCashType="ngModel" name="BankCashType"
-                                        [(ngModel)]="Payment.BankCashType" required>
+                                        [(ngModel)]="Payment.BankCashType" (selectionChange)="onBankCashTypeChange()"
+                                        required>
                                         <mat-option [value]="BankCashType.Key"
                                             *ngFor="let BankCashType of BankCashTypeList">{{BankCashType.Value}}</mat-option>
                                     </mat-select>
@@ -117,49 +123,55 @@
 
                                 <input type="hidden" name="DebitCreditType" [(ngModel)]="Payment.DebitCreditType">
 
+                                <div class="amount-error col-sm-12"
+                                    *ngIf="Amount.invalid && (Amount.touched || isSubmitted)">
+                                    Enter an amount <strong>greater than zero</strong>
+                                </div>
                                 <mat-form-field appearance="outline" class="col-sm-4">
                                     <mat-label>Amount</mat-label>
                                     <input type="number" matInput #Amount="ngModel" name="Amount"
-                                        [(ngModel)]="Payment.Amount" required autofocus>
-                                    <mat-error>
-                                        Amount is <strong>required</strong>
-                                    </mat-error>
+                                        [(ngModel)]="Payment.Amount" min="0.01" step="0.01" required autofocus>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-8">
                                     <mat-label [ariaSetSize]="8">Select Bank</mat-label>
                                     <mat-select #BankId="ngModel" name="BankId" [(ngModel)]="Payment.BankId"
                                         [disabled]="Payment.BankCashType == 2"
+                                        [required]="Payment.BankCashType == AllBankCashTypeList.Bank"
                                         (selectionChange)="onBankChange($event.value)">
-                                        <mat-option *ngFor="let option of BankList"
-                                            (onSelectionChange)="Payment.BankId = option.BankId"
-                                            [value]="option.BankId">
+                                        <mat-option *ngFor="let option of BankList" [value]="option.BankId">
                                             {{option.BankName}}
                                         </mat-option>
                                     </mat-select>
+                                    <mat-error>Bank is required for bank payments</mat-error>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
-                                    <mat-label>Current Bank Balance</mat-label>
+                                    <mat-label>Bank Opening Balance</mat-label>
                                     <input matInput #OpeningBalance="ngModel" name="OpeningBalance"
                                         [(ngModel)]="Payment.OpeningBalance" readonly="true">
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
                                     <mat-label>Cheque No.</mat-label>
                                     <input matInput #ChequeNo="ngModel" name="ChequeNo" [(ngModel)]="Payment.ChequeNo"
-                                        [readonly]="Payment.BankCashType == 2">
+                                        [readonly]="Payment.BankCashType == 2" maxlength="10">
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-12">
                                     <mat-label>Narration</mat-label>
                                     <textarea matInput #Narration="ngModel" name="Narration"
-                                        [(ngModel)]="Payment.Narration" rows="3"></textarea>
+                                        [(ngModel)]="Payment.Narration" rows="3" maxlength="250"></textarea>
                                 </mat-form-field>
-                               
+
                             </div>
 
                             <button type="button" mat-raised-button color="warn" class="col-sm-5 me-2"
-                                    data-bs-dismiss="modal" (click)="resetForm()">Cancel</button>
-                                <button mat-raised-button color="primary" (click)="savePayment()"
-                                    class="col-sm-6">{{Payment.PaymentId >
-                                    0 ? 'Update':'Submit'}}</button>
+                                data-bs-dismiss="modal" [disabled]="isSaving || !!pendingPayment"
+                                (click)="resetForm()">Cancel</button>
+                            <button type="button" mat-raised-button color="primary" (click)="savePayment()"
+                                *ngIf="Payment.PaymentId > 0 ? action.CanEdit : action.CanCreate" [disabled]="isSaving"
+                                class="col-sm-6">{{isSaving ? 'Saving...' : (pendingPayment ? 'Retry payment' :
+                                (Payment.PaymentId >
+                                0 ? 'Update':'Submit'))}}</button>
+                            <p class="col-12 mt-3" *ngIf="pendingPayment">Payment confirmation is pending. Retry this
+                                payment before entering another.</p>
                         </form>
 
                     </div>
@@ -172,18 +184,39 @@
                         <h5 class="card-title">Payment List</h5>
                     </div>
                     <div class="card-body">
+                        <div class="row">
+                            <mat-form-field appearance="outline" class="col-sm-6">
+                                <mat-label>From Date</mat-label>
+                                <input matInput [(ngModel)]="FromDate" [matDatepicker]="FromDatePicker"
+                                    (dateChange)="filterPaymentList()">
+                                <mat-datepicker-toggle matIconSuffix [for]="FromDatePicker"></mat-datepicker-toggle>
+                                <mat-datepicker #FromDatePicker></mat-datepicker>
+                            </mat-form-field>
+                            <mat-form-field appearance="outline" class="col-sm-6">
+                                <mat-label>To Date</mat-label>
+                                <input matInput [(ngModel)]="ToDate" [matDatepicker]="ToDatePicker"
+                                    (dateChange)="filterPaymentList()">
+                                <mat-datepicker-toggle matIconSuffix [for]="ToDatePicker"></mat-datepicker-toggle>
+                                <mat-datepicker #ToDatePicker></mat-datepicker>
+                            </mat-form-field>
+                        </div>
+                        <div class="mb-3">
+                            <button type="button" mat-stroked-button (click)="clearDateFilter()">Today</button>
+                            <span class="ms-2" *ngIf="!FromDate && !ToDate">Showing today's payments</span>
+                        </div>
                         <div class="table-container overflow-auto">
                             <div class="dataTable-top">
                                 <div class="dataTable-dropdown d-flex">
                                     <select class="dataTable-selector form-select form-select-sm"
-                                        [(ngModel)]="itemPerPage">
+                                        [(ngModel)]="itemPerPage" (ngModelChange)="filterPaymentList()">
                                         <option *ngFor="let option of PageSize" [value]="option">{{option}} </option>
                                     </select>
                                     <span class="ms-2">Entries per page</span>
                                 </div>
                                 <div class="dataTable-search">
                                     <input class="dataTable-input form-control form-control-sm" [(ngModel)]="Search"
-                                        placeholder="Search..." type="text">
+                                        placeholder="Search..." type="text" maxlength="100"
+                                        (ngModelChange)="filterPaymentList()">
                                 </div>
                             </div>
 
@@ -191,7 +224,7 @@
                                 <thead>
                                     <tr>
                                         <th>S.No</th>
-                                         <th *ngIf="action.CanEdit">Edit</th>
+                                        <th *ngIf="action.CanEdit">Edit</th>
                                         <th *ngIf="action.CanDelete">Delete</th>
                                         <th style="cursor:pointer;" (click)="sort('TrnNo')">Trn No.</th>
                                         <th style="cursor:pointer;text-align: center;" (click)="sort('VoucherNo')">
@@ -199,25 +232,27 @@
                                         <th style="cursor:pointer;" (click)="sort('PaymentDate')">Payment Date</th>
                                         <th style="cursor:pointer;" (click)="sort('HeadName')">Head Name</th>
                                         <th style="cursor:pointer;" (click)="sort('MemberName')">Staff Name/No.</th>
-                                        <th style="cursor:pointer;" (click)="sort('OpeningBalance')">Bank/Cash</th>
+                                        <th style="cursor:pointer;" (click)="sort('BankCashType')">Bank/Cash</th>
                                         <th style="cursor:pointer;" (click)="sort('BankName')">Bank Name</th>
                                         <th style="cursor:pointer;" (click)="sort('Amount')">Amount</th>
                                         <th style="cursor:pointer;" (click)="sort('ChequeNo')">Cheque No.</th>
-                                       
+
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr
-                                        *ngFor="let item of PaymentList |filter:Search|orderBy:sortKey:reverse|paginate: { itemsPerPage: itemPerPage, currentPage: p } ; ; let i = index;">
+                                        *ngFor="let item of PaymentList |paginate: { itemsPerPage: itemPerPage, currentPage: p, totalItems: TotalRecords }; let i = index;">
                                         <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
-                                          <td *ngIf="action.CanEdit">
+                                        <td *ngIf="action.CanEdit">
                                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
-                                                data-bs-target="#staticBackdrop" (click)="editPayment(item)">
+                                                data-bs-target="#staticBackdrop"
+                                                [disabled]="isSaving || !!pendingPayment" (click)="editPayment(item)">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
                                         </td>
                                         <td *ngIf="action.CanDelete">
-                                            <button class="btn btn-sm btn-danger" (click)="deletePayment(item)">
+                                            <button class="btn btn-sm btn-danger"
+                                                [disabled]="isSaving || !!pendingPayment" (click)="deletePayment(item)">
                                                 <i class="bi bi-trash-fill"></i>
                                             </button>
                                         </td>
@@ -231,7 +266,7 @@
                                         <td>{{item.Amount}} {{DebitCreditShort[item.DebitCreditType]}}</td>
                                         <td>{{item.ChequeNo}}</td>
 
-                                      
+
                                     </tr>
                                 </tbody>
                             </table>
