@@ -3,6 +3,14 @@ input[matInput][readonly] {
     border-radius: 4px;
     cursor: not-allowed;
 }
+
+.amount-error {
+    color: #f44336;
+    font-size: 12px;
+    line-height: 16px;
+    margin-bottom: 4px;
+}
+
 .table-container {
     width: 100%;
     overflow-x: auto;
