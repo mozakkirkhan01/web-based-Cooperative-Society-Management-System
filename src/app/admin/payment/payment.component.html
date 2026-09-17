@@ -28,7 +28,7 @@
                     <div class="card-body">
 
                         <form #formPayment="ngForm" class="d-flex justify-content-evenly flex-wrap">
-                            <div class="row" [attr.inert]="isSaving || pendingPayment ? '' : null"
+                            <div class="row  mt-2" [attr.inert]="isSaving || pendingPayment ? '' : null"
                                 [style.pointer-events]="isSaving || pendingPayment ? 'none' : null">
                                 <mat-form-field appearance="outline" class="col-sm-4" readonly-field>
                                     <mat-label>Trn No.</mat-label>
