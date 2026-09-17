@@ -29,7 +29,8 @@
 
                         <form #formReceipt="ngForm" class="d-flex justify-content-evenly flex-wrap">
                             <!-- Lock the inputs while saving; keep the submit button outside this row. -->
-                            <div class="row" [attr.inert]="isSaving || pendingReceipt ? '' : null" [style.pointer-events]="isSaving || pendingReceipt ? 'none' : null">
+                            <div class="row mt-2
+                            " [attr.inert]="isSaving || pendingReceipt ? '' : null" [style.pointer-events]="isSaving || pendingReceipt ? 'none' : null">
                                 <mat-form-field appearance="outline" class="col-sm-4" readonly-field>
                                     <mat-label>Trn No.</mat-label>
                                     <input matInput #TrnNo="ngModel" name="TrnNo" [(ngModel)]="Receipt.TrnNo" required
