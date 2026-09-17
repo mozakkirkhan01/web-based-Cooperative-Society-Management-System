@@ -42,6 +42,9 @@ export class MemberComponent {
   AllGenderList = Gender;
   AllMemberTypeList = MemberType;
   selectedMember: any = {};
+  filterStatus: number = 0;        // 0 = All
+filterDepartmentId: number = 0;  // 0 = All
+filterPsuUnit: number = 0;       // 0 = All
   constructor(
     private service: AppService,
     private toastr: ToastrService,
@@ -125,26 +128,26 @@ export class MemberComponent {
     }
   }
 
-  getMemberList() {
-    var obj: RequestModel = {
-      request: this.localService.encrypt(JSON.stringify({})).toString()
-    }
-    this.dataLoading = true
-    this.service.getMemberList(obj).subscribe(r1 => {
-      let response = r1 as any
-      if (response.Message == ConstantData.SuccessMessage) {
-        this.MemberList = response.MemberList;
-        // console.log(this.MemberList);
-        // console.log(this.MemberList[0].MembershipDate);
-        // console.log(typeof this.MemberList[0].MembershipDate);
-      } else {
-        this.toastr.error(response.Message)
-      }
-      this.dataLoading = false
-    }, (err => {
-      this.toastr.error("Error while fetching records")
-    }))
-  }
+  // getMemberList() {
+  //   var obj: RequestModel = {
+  //     request: this.localService.encrypt(JSON.stringify({})).toString()
+  //   }
+  //   this.dataLoading = true
+  //   this.service.getMemberList(obj).subscribe(r1 => {
+  //     let response = r1 as any
+  //     if (response.Message == ConstantData.SuccessMessage) {
+  //       this.MemberList = response.MemberList;
+  //       // console.log(this.MemberList);
+  //       // console.log(this.MemberList[0].MembershipDate);
+  //       // console.log(typeof this.MemberList[0].MembershipDate);
+  //     } else {
+  //       this.toastr.error(response.Message)
+  //     }
+  //     this.dataLoading = false
+  //   }, (err => {
+  //     this.toastr.error("Error while fetching records")
+  //   }))
+  // }
   onDepartmentChange(departmentId: any) {
 
     let department = this.DepartmentList.find(
@@ -619,5 +622,42 @@ export class MemberComponent {
     this.Member = obj
 
   }
+filteredMemberList: any[] = [];
 
+getMemberList() {
+  var obj: RequestModel = {
+    request: this.localService.encrypt(JSON.stringify({})).toString()
+  }
+  this.dataLoading = true
+  this.service.getMemberList(obj).subscribe(r1 => {
+    let response = r1 as any
+    if (response.Message == ConstantData.SuccessMessage) {
+      this.MemberList = response.MemberList;
+      this.applyFilter();   // apply filter after loading
+    } else {
+      this.toastr.error(response.Message)
+    }
+    this.dataLoading = false
+  }, (err => {
+    this.toastr.error("Error while fetching records")
+    this.dataLoading = false
+  }))
+}
+
+applyFilter() {
+  this.filteredMemberList = this.MemberList.filter((item: any) => {
+    const matchStatus = this.filterStatus == 0 || item.Status == this.filterStatus;
+    const matchDept = this.filterDepartmentId == 0 || item.DepartmentId == this.filterDepartmentId;
+    const matchPsu = this.filterPsuUnit == 0 || item.PsuUnit == this.filterPsuUnit;
+    return matchStatus && matchDept && matchPsu;
+  });
+  this.p = 1; // reset to first page
+}
+
+clearFilters() {
+  this.filterStatus = 0;
+  this.filterDepartmentId = 0;
+  this.filterPsuUnit = 0;
+  this.applyFilter();
+}
 }
