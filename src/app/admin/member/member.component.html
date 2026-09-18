@@ -340,7 +340,6 @@
                         <!-- Member Form End -->
                     </div>
                 </div>
-
                 <div class="card">
                     <div class="card-header">
                         <h5 class="card-title"> Member List</h5>
@@ -349,13 +348,67 @@
                         <!-- Member List Start -->
                         <div class="table-container overflow-auto">
                             <div class="dataTable-top">
-                                <div class="dataTable-dropdown d-flex">
+                                <div class="dataTable-dropdown d-flex entries-per-page">
                                     <select class="dataTable-selector form-select form-select-sm"
                                         [(ngModel)]="itemPerPage">
                                         <option *ngFor="let option of PageSize" [value]="option">{{option}} </option>
                                     </select>
                                     <span class="ms-2">Entries per page</span>
                                 </div>
+                                
+<div class="row mb-3">
+  <!-- Status Filter -->
+  <div class="col-md-3">
+    <mat-form-field appearance="outline" class="w-100">
+      <mat-label>Status</mat-label>
+    <mat-select [(ngModel)]="filterStatus">
+        <mat-option [value]="0">All Status</mat-option>
+        <mat-option *ngFor="let s of StatusList" [value]="s.Key">
+          {{s.Value}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Department Filter -->
+  <div class="col-md-3">
+    <mat-form-field appearance="outline" class="w-100">
+      <mat-label>Department</mat-label>
+    <mat-select [(ngModel)]="filterDepartmentId">
+        <mat-option [value]="0">All Departments</mat-option>
+        <mat-option *ngFor="let d of DepartmentList" [value]="d.DepartmentId">
+          {{d.DepartmentName}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- PSU Unit Filter -->
+  <div class="col-md-3">
+    <mat-form-field appearance="outline" class="w-100">
+      <mat-label>PSU Unit</mat-label>
+    <mat-select [(ngModel)]="filterPsuUnit">
+        <mat-option [value]="0">All Units</mat-option>
+        <mat-option *ngFor="let p of PsuUnitList" [value]="p.Key">
+          {{p.Value}}
+        </mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <!-- Clear Filters -->
+    <div class="col-md-3 d-flex align-items-center gap-2">
+        <button type="button" mat-icon-button color="primary" (click)="applyFilter()"
+            aria-label="Apply filters" title="Apply filters">
+            <mat-icon>filter_alt</mat-icon>
+        </button>
+        <button type="button" mat-stroked-button color="warn" (click)="clearFilters()"
+            aria-label="Clear filters" title="Clear filters">
+            <mat-icon>clear_all</mat-icon>
+      Clear Filters
+    </button>
+  </div>
+</div>
                                 <div class="dataTable-search">
                                     <input class="dataTable-input form-control form-control-sm" [(ngModel)]="Search"
                                         placeholder="Search..." type="text">
@@ -392,7 +445,7 @@
                                 </thead>
                                 <tbody>
                                     <tr
-                                        *ngFor="let item of MemberList |filter:Search|orderBy:sortKey:reverse|paginate: { itemsPerPage: itemPerPage, currentPage: p } ; ; let i = index;">
+                                        *ngFor="let item of filteredMemberList |filter:Search|orderBy:sortKey:reverse|paginate: { itemsPerPage: itemPerPage, currentPage: p } ; ; let i = index;">
                                         <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
                                         <td>
                                             <button class="btn btn-sm btn-danger" (click)="downloadMemberPDF(item)">
