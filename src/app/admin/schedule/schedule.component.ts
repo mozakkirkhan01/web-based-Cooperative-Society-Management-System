@@ -212,7 +212,7 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       const source = this.RecoveryRows.filter(x => String(x.COOP_SOCNO) == this.RecoverySociety && String(x.REC_CODE).trim() === this.SelectedRecoveryCode);
       const rows = source.map(x => {
         if (!/^\d+$/.test(String(x.STAFF).trim()) || !Number.isFinite(Number(x.AMOUNT)) || Number(x.AMOUNT) < 0) throw new Error('Invalid staff number or recovery amount for ' + x.STAFF);
-        return { StaffNo: Number(x.STAFF), MemberNo: 0, HeadName: this.headName(selectedMapping.HeadId), Debit: 0, Credit: Number(x.AMOUNT), Narration: String(x.REC_CODE) + ' / ' + x.NAME + ' / ' + this.SourceMonth };
+        return { StaffNo: Number(x.STAFF), MemberNo: 0, HeadName: this.headName(selectedMapping.HeadId), Debit: 0, Credit: Number(x.AMOUNT), Narration: String(x.REC_CODE) + ' / ' + x.NAME };
       });
       this.loadImportPreview(rows);
     } catch (error: any) { this.toastr.error(error.message); }

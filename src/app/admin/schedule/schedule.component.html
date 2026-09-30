@@ -159,7 +159,8 @@
             <thead>
               <tr>
                 <th>Head</th>
-                <th>Member / Staff</th>
+                <th>Member Name / No.</th>
+                <th>Staff No.</th>
                 <th>Month</th>
                 <th class="text-end">Debit</th>
                 <th class="text-end">Credit</th>
@@ -172,7 +173,8 @@
                 *ngFor="let row of PreviewRows | paginate: { id: 'schedule-preview', itemsPerPage: itemPerPage, currentPage: PreviewPage }"
                 [class.table-danger]="row.Issue">
                 <td>{{row.HeadName}}</td>
-                <td>{{row.MemberName}}<small class="d-block">{{row.MemberNo}} / {{row.StaffNo}}</small></td>
+                <td>{{row.MemberName}}<small class="d-block">{{row.MemberNo}}</small></td>
+                <td>{{row.StaffNo}}</td>
                 <td>{{formatMonth(SourceMonth)}}</td>
                 <td class="text-end">{{row.Debit | number:'1.2-2'}}</td>
                 <td class="text-end">{{row.Credit | number:'1.2-2'}}</td>
