@@ -43,6 +43,15 @@
             ]
           },
           "configurations": {
+            "access-test": {
+              "buildOptimizer": false,
+              "optimization": false,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true,
+              "fileReplacements": [{ "replace": "src/app/utils/runtime-config.ts", "with": "src/app/utils/runtime-config.access-test.ts" }]
+            },
             "production": {
               "budgets": [
                 {
@@ -72,6 +81,11 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
+            "access-test": {
+              "browserTarget": "PathlogyUI:build:access-test",
+              "port": 4201,
+              "host": "localhost"
+            },
             "production": {
               "browserTarget": "PathlogyUI:build:production"
             },

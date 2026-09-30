@@ -16,6 +16,11 @@ declare var $: any;
   styleUrls: ['./payment.component.css']
 })
 export class PaymentComponent {
+  balanceRefresh = 0;
+  SocietyList: any[] = [];
+  AccountingBalance: any = {};
+  balanceLoading = false;
+  balanceRequest = 0;
   BankList: any[] = [];
   // IMPORTANT: expose enum for HTML
   BankCashType = BankCashType;
@@ -107,7 +112,7 @@ export class PaymentComponent {
       Balance: null,
       PaymentDate: new Date(),
       Status: 1,
-      DebitCreditType: 1,
+      DebitCreditType: 2,
       BankCashType: null
     };
 
@@ -115,7 +120,7 @@ export class PaymentComponent {
       this.formPayment.resetForm({
         PaymentDate: new Date(),
         Status: 1,
-        DebitCreditType: 1,
+        DebitCreditType: 2,
         HeadId: null,
         BankId: null
       });
@@ -125,6 +130,40 @@ export class PaymentComponent {
 
     // Auto generate new transaction no after reset
     this.getTransactionNo();
+    this.getPaymentBalances();
+  }
+
+  getPaymentBalances() {
+    const request = ++this.balanceRequest;
+    this.AccountingBalance = {};
+    this.balanceLoading = true;
+    const date = this.Payment.PaymentDate ? this.loadData.loadDateYMD(this.Payment.PaymentDate) : null;
+    const data = { StaffLoginId: this.staffLogin.StaffLoginId, SocietyId: this.Payment.SocietyId || 0,
+      HeadId: this.Payment.HeadId || 0, MemberId: this.Payment.MemberId || null,
+      BankId: this.Payment.BankId || null, BankCashType: this.Payment.BankCashType || null,
+      AsOfDate: date && !date.includes('NaN') ? date : null };
+    this.service.accounting('PaymentBalances', { request: this.localService.encrypt(JSON.stringify(data)).toString() }).subscribe((response: any) => {
+      if (request != this.balanceRequest) return;
+      this.balanceLoading = false;
+      if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
+      this.SocietyList = response.SocietyList;
+      this.AccountingBalance = response.Balance;
+      if (!this.Payment.SocietyId && this.SocietyList.length == 1) {
+        this.Payment.SocietyId = this.SocietyList[0].SocietyId;
+        this.getPaymentBalances();
+      }
+    }, err => {
+      if (request != this.balanceRequest) return;
+      this.balanceLoading = false;
+      this.AccountingBalance = { BalanceMessage: err.error?.Message || 'Unable to load balances.' };
+    });
+  }
+
+  formatBalance(value: any, signed = true) {
+    if (value == null) return this.balanceLoading ? 'Loading...' : 'Not available';
+    const amount = signed ? Math.abs(value) : value;
+    return amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+      (signed ? (value > 0 ? ' Dr' : value < 0 ? ' Cr' : '') : '');
   }
 
   sort(key: any) {
@@ -165,6 +204,7 @@ export class PaymentComponent {
     } else {
       this.Payment.HeadBalance = 0;
     }
+    this.getPaymentBalances();
   }
 
   getBankList() {
@@ -195,6 +235,7 @@ export class PaymentComponent {
     } else {
       this.Payment.OpeningBalance = 0;
     }
+    this.getPaymentBalances();
   }
   getTransactionNo() {
     const requestNo = ++this.transactionNoRequest;
@@ -220,6 +261,7 @@ export class PaymentComponent {
       this.Payment.ChequeNo = '';
       this.Payment.OpeningBalance = null;
     }
+    this.getPaymentBalances();
   }
 
   //mat auto complete
@@ -233,6 +275,7 @@ export class PaymentComponent {
     }
     this.Payment.MemberId = 0;
     this.Payment.Balance = null;
+    this.getPaymentBalances();
   }
   clearMember() {
     if (this.isSaving || this.pendingPayment) return;
@@ -240,6 +283,7 @@ export class PaymentComponent {
     this.Payment.MemberId = null;
     this.Payment.MemberName = '';
     this.Payment.Balance = null;
+    this.getPaymentBalances();
   }
 
   getMemberList() {
@@ -281,6 +325,7 @@ export class PaymentComponent {
     if (member) {
       this.Payment.MemberName = member.SearchMember;
     }
+    this.getPaymentBalances();
   }
   savePayment() {
     if (this.isSaving) return;
@@ -292,6 +337,8 @@ export class PaymentComponent {
       this.submitPayment(this.pendingPayment);
       return;
     }
+    if (!this.Payment.SocietyId) { this.toastr.error('Select a society for accounting'); return; }
+    if (this.balanceLoading || !this.AccountingBalance.CanPost) { this.toastr.error(this.AccountingBalance.BalanceMessage || 'Wait for the balances to load'); return; }
     this.isSubmitted = true;
     this.formPayment.control.markAllAsTouched();
     if (this.formPayment.invalid) {
@@ -318,9 +365,9 @@ export class PaymentComponent {
       this.toastr.error("Select a bank for bank payments");
       return;
     }
-    this.onBankCashTypeChange();
     const payment = {
       ...this.Payment,
+      DebitCreditType: 2,
       RequestKey: this.createRequestKey(),
       PaymentDate: this.loadData.loadDateTime(this.Payment.PaymentDate),
       UpdatedBy: this.staffLogin.StaffLoginId,
@@ -359,7 +406,14 @@ export class PaymentComponent {
         } else {
           this.toastr.success("Payment added successfully")
         }
-        this.resetForm()
+        this.resetForm();
+        // Keep the selected accounts visible after posting, but clear the amount/voucher to prevent a second save.
+        Object.assign(this.Payment, { SocietyId: payment.SocietyId, HeadId: payment.HeadId, MemberId: payment.MemberId,
+          MemberName: payment.MemberName, BankCashType: payment.BankCashType, BankId: payment.BankId,
+          PaymentDate: this.loadData.loadDate(payment.PaymentDate) });
+        if (this.formPayment) this.formPayment.resetForm(this.Payment);
+        this.getPaymentBalances();
+        this.balanceRefresh++;
         this.getPaymentList()
       } else {
         this.toastr.error(response.Message)
@@ -378,6 +432,7 @@ export class PaymentComponent {
     var obj: RequestModel = {
       request: this.localService.encrypt(JSON.stringify({
         PageNumber: this.p,
+        StaffLoginId: this.staffLogin.StaffLoginId,
         PageSize: Number(this.itemPerPage),
         FromDate: this.FromDate ? this.loadData.loadDateYMD(this.FromDate) : null,
         ToDate: this.ToDate ? this.loadData.loadDateYMD(this.ToDate) : null,
@@ -391,7 +446,7 @@ export class PaymentComponent {
       if (requestNo != this.listRequest) return;
       let response = r1 as any
       if (response.Message == ConstantData.SuccessMessage) {
-        this.PaymentList = response.PaymentList;
+        this.PaymentList = response.PaymentList.map((x: any) => ({ ...x, AccountingPosted: (response.PostedIds || []).includes(x.PaymentId) }));
         this.TotalRecords = response.TotalRecords;
         this.p = response.PageNumber;
       } else {
@@ -433,7 +488,7 @@ export class PaymentComponent {
     if (this.isSaving || this.pendingPayment || !this.action.CanDelete) return;
     if (confirm("Are your sure you want to delete this recored")) {
       var request: RequestModel = {
-        request: this.localService.encrypt(JSON.stringify(obj)).toString()
+        request: this.localService.encrypt(JSON.stringify({ ...obj, StaffLoginId: this.staffLogin.StaffLoginId })).toString()
       }
       this.dataLoading = true
       this.service.deletePayment(request).subscribe(r1 => {

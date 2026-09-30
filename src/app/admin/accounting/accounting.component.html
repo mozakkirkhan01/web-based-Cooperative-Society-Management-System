@@ -1,0 +1,292 @@
+<app-progress *ngIf="dataLoading || isSaving"></app-progress>
+<section class="section dashboard mt-4">
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Year-wise accounting</h5>
+      <p>Set up the society and account heads, post the opening balances once, then enter or import dated transactions.
+      </p>
+      <div class="row">
+        <mat-form-field appearance="outline" class="col-md-4">
+          <mat-label>Society</mat-label>
+          <mat-select [(ngModel)]="SocietyId" (selectionChange)="clearReport()" [disabled]="isSaving || !!pendingBatch">
+            <mat-option *ngFor="let item of SocietyList" [value]="item.SocietyId">{{item.SocietyName}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="col-md-4">
+          <mat-label>Financial year</mat-label>
+          <mat-select [(ngModel)]="FinancialYearId" (selectionChange)="clearReport()" [disabled]="isSaving">
+            <mat-option *ngFor="let item of FinancialYearList"
+              [value]="item.FinancialYearId">{{item.FinancialYearName}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <div class="col-md-4 mb-3 d-flex gap-2 align-items-start">
+          <button type="button" mat-stroked-button (click)="getSetup()" [disabled]="isSaving">Refresh years</button>
+          <button type="button" mat-raised-button color="primary" (click)="getReport()"
+            [disabled]="isSaving || !SocietyId || !FinancialYearId">Load balances</button>
+        </div>
+      </div>
+
+      <details class="mb-3" *ngIf="action.CanCreate || action.CanEdit">
+        <summary>Accounting setup</summary>
+        <fieldset [disabled]="isSaving || !!pendingBatch">
+          <h6 class="mt-3">Society from Manage Company</h6>
+          <p>Your society details are maintained in <a routerLink="/admin/company">Manage Company</a>. Use the saved company here once to enable accounting.</p>
+          <div class="row" *ngIf="action.CanCreate && unlinkedCompanies.length">
+            <mat-form-field appearance="outline" class="col-md-8">
+              <mat-label>Company</mat-label>
+              <mat-select [(ngModel)]="CompanyId" [disabled]="isSaving || !!pendingBatch">
+                <mat-option *ngFor="let item of unlinkedCompanies" [value]="item.CompanyId">{{item.CompanyName}}</mat-option>
+              </mat-select>
+            </mat-form-field>
+            <div class="col-md-4">
+              <button type="button" mat-raised-button color="primary" [disabled]="isSaving || !!pendingBatch || !CompanyId"
+                (click)="save('SaveSociety', { CompanyId: CompanyId })">Use company for accounting</button>
+            </div>
+          </div>
+          <p *ngIf="!CompanyList.length">No active company found. Add or activate your society in Manage Company first.</p>
+          <p class="mt-3">Add financial years using New Financial Year. Select a society and year, then create its
+            twelve monthly periods.</p>
+          <button type="button" class="btn btn-outline-primary" *ngIf="action.CanCreate"
+            [disabled]="!SocietyId || !FinancialYearId" (click)="save('CreatePeriods', {})">Create monthly
+            periods</button>
+
+          <div *ngIf="action.CanEdit">
+            <h6 class="mt-4">Head entry requirements</h6>
+            <p>Member heads require a member automatically. Set loan or deposit details only when needed. A used head's requirements are locked.</p>
+            <div class="row g-2">
+              <div class="col-md-6"><label>Head<select class="form-select" [(ngModel)]="Rule.HeadId"
+                    (ngModelChange)="selectRule()">
+                    <option [ngValue]="null">Select head</option>
+                    <option *ngFor="let h of HeadList" [ngValue]="h.HeadId">{{h.HeadName}}</option>
+                  </select></label></div>
+              <div class="col-md-3 pt-4"><button type="button" class="btn btn-primary"
+                  (click)="save('SaveRule', Rule)">Save requirements</button></div>
+            </div>
+            <div class="d-flex gap-3 my-3">
+              <label><input type="checkbox" [(ngModel)]="Rule.RequiresMember"> Requires member</label>
+              <label><input type="checkbox" [(ngModel)]="Rule.RequiresLoan"> Requires loan</label>
+              <label><input type="checkbox" [(ngModel)]="Rule.RequiresDepositAccount"> Requires deposit account</label>
+            </div>
+            <p>Loan/deposit-required heads must be posted through journals with those details. The payment and receipt
+              forms currently collect a member only.</p>
+            <h6 class="mt-4">Cash and bank mapping</h6>
+            <div class="row g-2">
+              <div class="col-md-4"><label>Cash / bank<select class="form-select" [(ngModel)]="Settlement.BankId">
+                    <option [ngValue]="null">Cash in hand</option>
+                    <option *ngFor="let b of BankList" [ngValue]="b.BankId">{{b.BankName}}</option>
+                  </select></label></div>
+              <div class="col-md-5"><label>Cash / bank head<select class="form-select" [(ngModel)]="Settlement.HeadId">
+                    <option *ngFor="let h of HeadList" [ngValue]="h.HeadId">{{h.HeadName}}</option>
+                  </select></label></div>
+              <div class="col-md-3 pt-4"><button type="button" class="btn btn-primary" [disabled]="!SocietyId"
+                  (click)="save('SaveSettlement', Settlement)">Save mapping</button></div>
+            </div>
+            <ul class="mt-3"><ng-container *ngFor="let item of SettlementList">
+                <li *ngIf="item.SocietyId == SocietyId">{{bankName(item.BankId)}} → {{headName(item.HeadId)}}</li>
+              </ng-container></ul>
+          </div>
+        </fieldset>
+      </details>
+
+      <details class="mb-3" *ngIf="action.CanCreate" [open]="!!pendingBatch">
+        <summary>Opening balances and historical journals</summary>
+        <p class="mt-3">Post one initial opening voucher dated on the first day of your starting financial year (for
+          example 2019-04-01). Include all debit and credit balances. Later years derive their opening from the previous
+          posted history.</p>
+        <p>Do not also import transactions already saved as payments or receipts. Post those using the unposted list
+          below.</p>
+        <fieldset [disabled]="isSaving || !!pendingBatch">
+          <div class="row g-2">
+            <div class="col-md-3"><label>Purpose<select class="form-select" [(ngModel)]="Journal.Purpose">
+                  <option value="OPENING">Initial opening balances</option>
+                  <option value="NORMAL">Historical / correcting journal</option>
+                </select></label></div>
+            <div class="col-md-3"><label>Voucher date<input class="form-control" type="date"
+                  [(ngModel)]="Journal.VoucherDate"></label></div>
+            <div class="col-md-6"><label>Narration / reference<input class="form-control"
+                  [(ngModel)]="Journal.Narration" maxlength="1000"></label></div>
+          </div>
+          <div class="table-responsive mt-3" *ngIf="!ImportList.length">
+            <table class="table table-bordered journal-table">
+              <thead>
+                <tr>
+                  <th>Head</th>
+                  <th>Debit</th>
+                  <th>Credit</th>
+                  <th>Member ID</th>
+                  <th>Loan ID</th>
+                  <th>Deposit ID</th>
+                  <th>Component</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let line of Journal.Lines; let i = index">
+                  <td><select class="form-select" aria-label="Head" [(ngModel)]="line.HeadId">
+                      <option [ngValue]="null">Select head</option>
+                      <option *ngFor="let h of HeadList" [ngValue]="h.HeadId">{{h.HeadName}}</option>
+                    </select></td>
+                  <td><input aria-label="Debit" class="form-control" type="number" min="0" step="0.01"
+                      [(ngModel)]="line.Debit"></td>
+                  <td><input aria-label="Credit" class="form-control" type="number" min="0" step="0.01"
+                      [(ngModel)]="line.Credit"></td>
+                  <td><input aria-label="Member ID" class="form-control" type="number" min="1"
+                      [(ngModel)]="line.MemberId"></td>
+                  <td><input aria-label="Loan ID" class="form-control" type="number" min="1" [(ngModel)]="line.LoanId">
+                  </td>
+                  <td><input aria-label="Deposit ID" class="form-control" type="number" min="1"
+                      [(ngModel)]="line.DepositAccountId"></td>
+                  <td><select aria-label="Component" class="form-select" [(ngModel)]="line.Component">
+                      <option [ngValue]="null">None</option>
+                      <option>PRINCIPAL</option>
+                      <option>INTEREST</option>
+                      <option>PENALTY</option>
+                      <option>DEPOSIT</option>
+                      <option>DEPOSIT_INTEREST</option>
+                      <option>SHARE_CAPITAL</option>
+                    </select></td>
+                  <td><button type="button" class="btn btn-outline-danger" (click)="Journal.Lines.splice(i, 1)"
+                      [disabled]="Journal.Lines.length <= 2">Remove</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" class="btn btn-outline-primary" (click)="Journal.Lines.push(newLine())">Add
+              line</button>
+            <span class="ms-3">Debit: {{total(Journal.Lines, 'Debit') | number:'1.2-2'}} · Credit:
+              {{total(Journal.Lines, 'Credit') | number:'1.2-2'}}</span>
+          </div>
+          <div class="my-3"><button type="button" class="btn btn-outline-secondary me-3"
+              (click)="downloadTemplate()">Download CSV template</button><label>Import CSV <input type="file"
+                accept=".csv" (change)="importCsv($event)"></label></div>
+          <p>For multiple vouchers, use a unique Reference per voucher, dates in YYYY-MM-DD format and Purpose OPENING
+            or NORMAL. Review the preview before posting. Maximum 100 vouchers / 10000 lines per batch.</p>
+          <div *ngIf="ImportList.length">
+            <button type="button" class="btn btn-outline-secondary mb-2" (click)="ImportList = []">Clear import
+              preview</button>
+            <details *ngFor="let j of ImportList" class="mb-2">
+              <summary>{{j.VoucherDate}} · {{j.Narration}} · {{j.Purpose}} · {{j.Lines.length}} lines · Debit
+                {{total(j.Lines,'Debit') | number:'1.2-2'}} / Credit {{total(j.Lines,'Credit') | number:'1.2-2'}}
+              </summary>
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Head</th>
+                    <th>Member</th>
+                    <th>Debit</th>
+                    <th>Credit</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let l of j.Lines">
+                    <td>{{headName(l.HeadId)}}</td>
+                    <td>{{l.MemberId}}</td>
+                    <td>{{l.Debit}}</td>
+                    <td>{{l.Credit}}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </details>
+          </div>
+        </fieldset>
+        <p *ngIf="pendingBatch" class="text-warning">A journal batch is awaiting confirmation. Retry it before entering
+          another batch.</p>
+        <button type="button" class="btn btn-primary my-3" [disabled]="isSaving || (!SocietyId && !pendingBatch)"
+          (click)="postJournals()">{{pendingBatch ? 'Retry pending batch' : 'Post reviewed vouchers'}}</button>
+      </details>
+
+      <div *ngIf="reportLoaded">
+        <div class="d-flex flex-wrap gap-3 align-items-end mb-3">
+          <label>Balance through date (optional)<input class="form-control" type="date" [(ngModel)]="AsOfDate"
+              (change)="getReport()"></label>
+          <button type="button" class="btn btn-outline-secondary" (click)="AsOfDate = ''; getReport()">Full financial
+            year</button>
+          <button type="button" class="btn btn-outline-primary" (click)="exportBalances()">Export balances</button>
+        </div>
+        <p>{{PeriodList.length}} monthly periods · {{closed ? 'Closed' : 'Open / setup pending'}} <span
+            *ngIf="OpeningDate">· Initial opening: {{OpeningDate | date:'dd-MM-yyyy'}}</span></p>
+        <p class="text-warning" *ngIf="!OpeningDate">Opening balances have not been posted. These figures are not a
+          complete accounting balance.</p>
+        <p class="text-warning" *ngIf="PriorYearsOpen">Earlier years are still open. Carried balances remain provisional until those years are reconciled and closed.</p>
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover">
+            <thead>
+              <tr>
+                <th>Head</th>
+                <th>Opening</th>
+                <th>Debit movement</th>
+                <th>Credit movement</th>
+                <th>Closing / as-of balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let b of BalanceList">
+                <td>{{b.HeadName}}</td>
+                <td>{{balance(b.OpeningBalance)}}</td>
+                <td>{{b.Debit | number:'1.2-2'}}</td>
+                <td>{{b.Credit | number:'1.2-2'}}</td>
+                <td>{{balance(b.ClosingBalance)}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <details class="my-3">
+          <summary>Unposted payments / receipts ({{UnpostedList.length}})</summary>
+          <p>These legacy records have no society assigned. Verify that each belongs to the selected society before
+            posting it.</p>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Number</th>
+                <th>Amount</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of UnpostedList">
+                <td>{{row.TransactionDate | date:'dd-MM-yyyy'}}</td>
+                <td>{{row.SourceType}}</td>
+                <td>{{row.TrnNo}}</td>
+                <td>{{row.Amount}}</td>
+                <td><button type="button" class="btn btn-outline-primary" *ngIf="action.CanCreate"
+                    [disabled]="isSaving || closed || !OpeningDate || !!pendingBatch"
+                    (click)="save('PostLegacySource', row)">Post to selected society</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details class="my-3">
+          <summary>Latest vouchers (up to 200)</summary>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Number</th>
+                <th>Narration</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let v of VoucherList">
+                <td>{{v.VoucherDate | date:'dd-MM-yyyy'}}</td>
+                <td>{{v.VoucherNumber}}</td>
+                <td>{{v.Narration}}</td>
+                <td>{{v.Status}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </details>
+        <details *ngIf="action.CanEdit && !closed" class="my-3">
+          <summary>Close financial year</summary>
+          <p class="mt-3">Post and reconcile any year-end adjustment journals before closing. Closing locks the year's periods without creating automatic transfers or resetting heads. Next year's opening comes from the closing balances; no duplicate opening voucher is created.</p>
+          <label class="d-block my-3"><input type="checkbox" [(ngModel)]="Reconciled" [disabled]="isSaving"> I have
+            reconciled the full year's transactions and balances.</label>
+          <button type="button" class="btn btn-danger"
+            [disabled]="isSaving || !!pendingBatch || !Reconciled || !!AsOfDate || UnpostedList.length > 0 || PeriodList.length != 12 || !OpeningDate"
+            (click)="closeYear()">Close financial year</button>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>

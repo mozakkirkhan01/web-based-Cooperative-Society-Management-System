@@ -1,0 +1,216 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main">
+  <div class="pagetitle dashboard">
+    <h1>Access 2025–26 Review</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+        <li class="breadcrumb-item active">Access data review</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Access data review — FY 2025–26</h5>
+      <div class="alert alert-warning">
+        <strong>Separate test database: {{Summary.DatabaseName || 'SailAccess_Test_2025_26'}}</strong><br>
+        Imported draft balances as of 31 March 2026. Head classifications and allocation to individual loans still need
+        review.
+        These figures include the imported drafts; ordinary accounting reports include posted entries only.
+      </div>
+      <p>{{Summary.HeadList?.length || 0}} heads · {{Summary.Members || 0}} imported members · {{Summary.LoanMembers ||
+        0}} members with loan ledger entries ·
+        {{Summary.LoanApplications || 0}} historical loan applications · {{Summary.Vouchers || 0}} draft vouchers</p>
+      <p *ngIf="Summary.Issues?.length" class="text-danger">{{Summary.Issues.length}} unmatched source references need
+        review. See Import checks. Head totals retain all amounts; member totals include only matched identities.</p>
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        <button type="button" mat-raised-button [color]="Mode == 'Heads' ? 'primary' : undefined"
+          (click)="selectMode('Heads')">Head closing balances</button>
+        <button type="button" mat-raised-button [color]="Mode == 'Loans' ? 'primary' : undefined"
+          (click)="selectMode('Loans')">Member loan balances</button>
+        <button type="button" mat-raised-button [color]="Mode == 'Applications' ? 'primary' : undefined"
+          (click)="selectMode('Applications')">Loan applications</button>
+        <button type="button" mat-raised-button [color]="Mode == 'Ledger' ? 'primary' : undefined"
+          (click)="selectMode('Ledger')">Transaction ledger</button>
+        <button type="button" mat-raised-button [color]="Mode == 'Checks' ? 'primary' : undefined"
+          (click)="selectMode('Checks')">Import checks</button>
+      </div>
+      <p *ngIf="Mode == 'Loans'">Principal balances combine LOAN TO MEMBER and LOAN TO STAFF. Debit additions and credit
+        reductions include adjustments; they are not automatically classified as disbursements or repayments.</p>
+      <p *ngIf="Mode == 'Applications'">Applications include earlier years. A passed or sanctioned application does not
+        prove disbursement. {{Summary.UnmatchedApplications || 0}} applications have no matching member in this file.
+      </p>
+      <p *ngIf="MemberId"><strong>Member: {{MemberName}}</strong> <button type="button" class="btn btn-link"
+          (click)="MemberId = null; MemberName = ''; search()">Clear member filter</button></p>
+      <div class="row" *ngIf="Mode != 'Checks'">
+        <div class="col-md-5"><mat-form-field appearance="outline" class="w-100"><mat-label>Search name, code or
+              reference</mat-label><input matInput [(ngModel)]="Search" (keyup.enter)="search()"></mat-form-field></div>
+        <div class="col-md-4" *ngIf="Mode == 'Ledger'"><mat-form-field appearance="outline"
+            class="w-100"><mat-label>Head</mat-label><mat-select [(ngModel)]="HeadId"
+              (selectionChange)="search()"><mat-option [value]="null">All heads</mat-option><mat-option
+                *ngFor="let h of Summary.HeadList" [value]="h.HeadId">{{h.HeadCode}} —
+                {{h.HeadName}}</mat-option></mat-select></mat-form-field></div>
+        <div class="col-md-3"><button type="button" mat-raised-button color="primary" (click)="search()"
+            [disabled]="dataLoading">Search</button></div>
+      </div>
+      <mat-checkbox *ngIf="Mode == 'Applications'" [(ngModel)]="IncludeDeleted" (change)="search()">Include deleted
+        applications</mat-checkbox>
+      <div class="table-responsive" *ngIf="Mode == 'Heads' || Mode == 'Loans'">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>{{Mode == 'Heads' ? 'Code' : 'Member / staff no.'}}</th>
+              <th>{{Mode == 'Heads' ? 'Head' : 'Member'}}</th>
+              <th>Opening 01-Apr-2025</th>
+              <th>Year debits</th>
+              <th>Year credits</th>
+              <th>Closing 31-Mar-2026</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of (Mode == 'Heads' ? visibleHeads : Rows)">
+              <td>{{Mode == 'Heads' ? item.HeadCode : item.MemberNo + ' / ' + item.StaffNo}}</td>
+              <td>{{item.HeadName || item.MemberName}}</td>
+              <td>{{balance(item.Opening)}}</td>
+              <td>{{item.Debit | number:'1.2-2'}}</td>
+              <td>{{item.Credit | number:'1.2-2'}}</td>
+              <td><strong>{{balance(item.Closing)}}</strong></td>
+              <td><button type="button" class="btn btn-sm btn-outline-primary"
+                  (click)="ledger(item.HeadId || null, Mode == 'Loans' ? item : null)">Ledger</button> <button
+                  *ngIf="Mode == 'Loans'" type="button" class="btn btn-sm btn-outline-primary"
+                  (click)="applications(item)">Applications</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-responsive" *ngIf="Mode == 'Applications'">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Application / type</th>
+              <th>Member / staff</th>
+              <th>Checked</th>
+              <th>Requested</th>
+              <th>Sanctioned</th>
+              <th>Payable (source)</th>
+              <th>Instalment (source)</th>
+              <th>Passed</th>
+              <th>Deleted</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of Rows">
+              <td>{{r.ApplicationNumber}} / {{r.LoanType}}</td>
+              <td>{{r.MemberName}}<br>{{r.MemberNo}} / {{r.StaffNo}}</td>
+              <td>{{r.CheckedDate | date:'dd-MM-yyyy'}}</td>
+              <td>{{r.Requested | number:'1.2-2'}}</td>
+              <td>{{r.Sanctioned | number:'1.2-2'}}</td>
+              <td>{{r.Payable | number:'1.2-2'}}</td>
+              <td>{{r.Instalment | number:'1.2-2'}}</td>
+              <td>{{r.Passed == null ? 'Unknown' : r.Passed ? 'Yes' : 'No'}}</td>
+              <td>{{r.Deleted ? 'Yes' : 'No'}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-responsive" *ngIf="Mode == 'Ledger'">
+        <table class="table table-bordered table-striped">
+          <thead>
+            <tr>
+              <th>Date / voucher</th>
+              <th>Head</th>
+              <th>Member</th>
+              <th>Debit</th>
+              <th>Credit</th>
+              <th>Source narration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of Rows">
+              <td>{{r.VoucherDate | date:'dd-MM-yyyy'}}<br>{{r.VoucherNumber}}<br>{{r.Status}}</td>
+              <td>{{r.HeadName}}</td>
+              <td>{{r.MemberName}}</td>
+              <td>{{r.Debit | number:'1.2-2'}}</td>
+              <td>{{r.Credit | number:'1.2-2'}}</td>
+              <td>{{r.Narration}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p *ngIf="!dataLoading && Mode != 'Checks' && (Mode == 'Heads' ? heads.length == 0 : Rows.length == 0)">No
+        matching records.</p>
+      <div class="d-flex align-items-center justify-content-between my-3" *ngIf="Mode != 'Checks'">
+        <span>{{totalRecords}} records · Page {{PageNumber}}</span>
+        <div><button type="button" mat-button (click)="page(-1)"
+            [disabled]="dataLoading || PageNumber == 1">Previous</button><button type="button" mat-button
+            (click)="page(1)" [disabled]="dataLoading || PageNumber * PageSize >= totalRecords">Next</button></div>
+      </div>
+      <div *ngIf="Mode == 'Checks'">
+        <div class="table-responsive" *ngIf="Summary.Issues?.length">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Source reference</th>
+                <th>Member / staff</th>
+                <th>Detail</th>
+                <th>Amount</th>
+                <th>Review reason</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of Summary.Issues">
+                <td>{{r.IssueId}}</td>
+                <td>{{r.MemberNo}} / {{r.StaffNo}}</td>
+                <td>{{r.Detail}}</td>
+                <td>{{r.Amount | number:'1.2-2'}}</td>
+                <td>{{r.Reason}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>The original Access file is preserved. Deleted transactions, archive tables and report caches are retained
+          separately and are not counted again in the ledger. Opening signs are converted from Access credit-positive to
+          SQL debit-positive.</p>
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Check</th>
+                <th>Access</th>
+                <th>SQL</th>
+                <th>Result</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of Summary.Checks">
+                <td>{{r.CheckName}}</td>
+                <td>{{r.SourceValue | number:'1.2-2'}}</td>
+                <td>{{r.TargetValue | number:'1.2-2'}}</td>
+                <td>{{r.SourceValue == r.TargetValue ? 'Matched' : 'Needs review'}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Preserved Access table</th>
+                <th>Source rows</th>
+                <th>SQL rows</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of Summary.Tables">
+                <td>{{r.TableName}}</td>
+                <td>{{r.SourceRows}}</td>
+                <td>{{r.ImportedRows}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

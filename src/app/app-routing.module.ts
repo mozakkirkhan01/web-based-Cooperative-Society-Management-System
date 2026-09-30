@@ -24,6 +24,13 @@ import { BankComponent } from './admin/bank/bank.component';
 import { PaymentComponent } from './admin/payment/payment.component';
 import { MemberDocComponent } from './admin/member-doc/member-doc.component';
 import { ReceiptComponent } from './admin/receipt/receipt.component';
+import { AccessReviewComponent } from './admin/accounting/access-review.component';
+import { MemberPassbookComponent } from './admin/member-passbook/member-passbook.component';
+import { AccessReportsComponent } from './admin/accounting/access-reports.component';
+import { ConstantData } from './utils/constant-data';
+import { ContraComponent } from './admin/contra/contra.component';
+import { TransferComponent } from './admin/transfer/transfer.component';
+import { ScheduleComponent } from './admin/schedule/schedule.component';
 const routes: Routes = [
   { path: '', redirectTo: "/admin-login", pathMatch: 'full' },
   { path: 'admin-login', component: AdminLoginComponent },
@@ -45,13 +52,26 @@ const routes: Routes = [
       { path: 'change-password', component: ChangePasswordComponent },
       { path: 'company', component: CompanyComponent },
       { path: 'financial-year', component: FinancialYearComponent },
+      { path: 'access-review', component: AccessReportsComponent, data: { report: 'Checks', title: 'Import Checks' } },
+      { path: 'member-passbook', component: MemberPassbookComponent },
+      { path: 'member-ledger', component: AccessReportsComponent, data: { report: 'MemberLedger', title: 'Member Ledger' } },
+      { path: 'day-book', component: AccessReportsComponent, data: { report: 'DayBook', title: 'Day Book' } },
+      { path: 'head-ledger', component: AccessReportsComponent, data: { report: 'HeadLedger', title: 'Head Ledger' } },
+      { path: 'cash-bank-book', component: AccessReportsComponent, data: { report: 'CashBank', title: 'Cash / Bank Book' } },
+      { path: 'trial-balance', component: AccessReportsComponent, data: { report: 'TrialBalance', title: 'Trial Balance' } },
+      { path: 'member-balances', component: AccessReportsComponent, data: { report: 'MemberBalances', title: 'Member Balances' } },
+      { path: 'loan-applications', component: AccessReportsComponent, data: { report: 'LoanApplications', title: 'Loan Applications' } },
+      ...(ConstantData.AccessReview ? [{ path: 'access-2025-review', component: AccessReviewComponent }] : []),
       { path: 'member', component: MemberComponent },
       { path: 'head', component: HeadComponent },
       { path: 'bank', component: BankComponent },
       { path: 'payment', component: PaymentComponent },
       { path: 'member-doc', component: MemberDocComponent },
-      { path: 'receipt', component: ReceiptComponent }
-      
+      { path: 'receipt', component: ReceiptComponent },
+      { path: 'contra', component: ContraComponent },
+      { path: 'transfer', component: TransferComponent },
+      { path: 'schedule', component: ScheduleComponent },
+
     ]
   },
   { path: 'page-not-found', component: PageNotFoundComponent },
@@ -63,3 +83,5 @@ const routes: Routes = [
   exports: [RouterModule]
 })
 export class AppRoutingModule { }
+
+

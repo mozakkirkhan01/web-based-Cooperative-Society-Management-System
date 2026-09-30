@@ -17,6 +17,10 @@ export class AppService {
     return ConstantData.getBaseUrl();
   }
 
+  accessReport(obj: any) {
+    return this.http.post(this.apiUrl + 'AccessReports/Report', obj, { headers: this.headers });
+  }
+
   //Receipt
   getReceiptTransactionNo(obj: any) {
     return this.http.post(this.apiUrl + "Receipt/getReceiptTransactionNo", obj, { headers: this.headers });
@@ -100,6 +104,10 @@ export class AppService {
     return this.http.post(this.apiUrl + "Member/deleteMember", obj, { headers: this.headers })
   }
   //FinancialYear
+  accounting(action: string, obj: any) {
+    return this.http.post(this.apiUrl + 'Accounting/' + action, obj, { headers: this.headers });
+  }
+
   getFinancialYearList(obj: any) {
     return this.http.post(this.apiUrl + "FinancialYear/FinancialYearList", obj, { headers: this.headers })
   }

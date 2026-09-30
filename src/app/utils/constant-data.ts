@@ -1,4 +1,7 @@
+import { RuntimeConfig } from './runtime-config';
+
 export class ConstantData {
+    public static readonly AccessReview = RuntimeConfig.accessReview;
     public static SuccessMessage = "Success";
     public static AccessDenied = "Access Denied";
     private static readonly noImageUrl = "assets/img/no-image.avif";
@@ -8,8 +11,8 @@ export class ConstantData {
     public static DestinationTypeList = [{ Key: 1, Value: "Domestic" }, { Key: 2, Value: "International" }];
     public static BoolList = [{ Key: true, Value: "Yes" }, { Key: false, Value: "No" }];
     private static readonly adminKey = "52F4785C-7EE7-426E-A1AE-C2300972E70A";
-    //private static readonly baseUrl: string = "https://localhost:44302/";
-    private static readonly baseUrl: string = "https://intranetapi.apjcop.com/";
+    private static readonly baseUrl: string = RuntimeConfig.apiUrl;
+    // private static readonly baseUrl: string = "https://intranetapi.apjcop.com/";
 
     public static getBaseUrl(): string {
         return this.baseUrl;

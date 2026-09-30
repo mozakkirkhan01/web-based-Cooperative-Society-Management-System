@@ -1,0 +1,108 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main">
+  <div class="pagetitle dashboard">
+    <h1>Member Passbook</h1>
+    <nav><ol class="breadcrumb"><li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li><li class="breadcrumb-item">Reports</li><li class="breadcrumb-item active">Member Passbook</li></ol></nav>
+  </div>
+  <div class="alert alert-danger" *ngIf="Error">{{Error}}</div>
+  <div class="card" *ngIf="Allowed"><div class="card-body">
+    <h5 class="card-title">Member Passbook</h5>
+    <div class="row align-items-start">
+      <div class="col-md-3">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Financial year</mat-label>
+          <mat-select [(ngModel)]="YearId" (selectionChange)="yearChanged()" [disabled]="dataLoading">
+            <mat-option *ngFor="let year of Years" [value]="year.YearId">{{year.YearName}}</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+      <div class="col-md-7">
+        <mat-form-field appearance="outline" class="w-100">
+          <mat-label>Search member by staff no., member no. or name</mat-label>
+          <input matInput [(ngModel)]="MemberSearch" (input)="findMembers()" [matAutocomplete]="memberAuto">
+          <mat-autocomplete #memberAuto="matAutocomplete">
+            <mat-option *ngFor="let member of Members" [value]="member.MemberName + ' — ' + member.MemberNo + ' / ' + member.StaffNo" (onSelectionChange)="$event.isUserInput && selectMember(member)">
+              {{member.MemberName}} — {{member.MemberNo}} / {{member.StaffNo}}{{member.IsDeleted ? ' (inactive in source)' : ''}}
+            </mat-option>
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+      <div class="col-md-2 mb-3"><button mat-raised-button color="primary" (click)="show()" [disabled]="dataLoading || !MemberKey">Show</button></div>
+    </div>
+    <p *ngIf="!MemberKey">Select a member to open their passbook for the selected financial year.</p>
+  </div></div>
+  <div class="card member-passbook" *ngIf="Loaded">
+    <div class="card-body">
+      <div class="text-end mt-3 passbook-actions"><button mat-raised-button color="primary"
+          (click)="printPassbook()">Print</button></div>
+      <div class="text-center">
+        <h5 class="card-title pb-1">{{Passbook.Company?.CompanyName}}</h5>
+        <p>{{Passbook.Company?.CompanyAddress}}</p>
+        <h5>Member Passbook</h5>
+      </div>
+      <div class="row mb-3">
+        <div class="col-sm-6">Staff No.: <strong>{{Passbook.Member?.StaffNo}}</strong><br>Member No.:
+          <strong>{{Passbook.Member?.MemberNo}}</strong><br>Name: <strong>{{Passbook.Member?.MemberName}}</strong></div>
+        <div class="col-sm-6 text-sm-end">Financial year: <strong>{{Passbook.Year}}</strong><br>Period: {{Passbook.FromDate
+          | date:'dd-MM-yyyy'}} to {{Passbook.ToDate | date:'dd-MM-yyyy'}}</div>
+      </div>
+      <div class="table-responsive" *ngFor="let section of Rows">
+        <table class="table table-bordered passbook-months">
+          <thead>
+            <tr>
+              <th colspan="14">{{section.HeadName}}</th>
+            </tr>
+            <tr>
+              <th></th>
+              <th *ngFor="let month of Passbook.Months" class="text-end">{{month | date:'MMM'}}</th>
+              <th class="text-end">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Debit</td>
+              <td *ngFor="let month of section.Months" class="text-end">{{month.Debit | number:'1.2-2'}}</td>
+              <td class="text-end">{{section.Debit | number:'1.2-2'}}</td>
+            </tr>
+            <tr>
+              <td>Credit</td>
+              <td *ngFor="let month of section.Months" class="text-end">{{month.Credit | number:'1.2-2'}}</td>
+              <td class="text-end">{{section.Credit | number:'1.2-2'}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-responsive mt-3">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Deposit head</th>
+              <th class="text-end">Opening balance</th>
+              <th class="text-end">Debits</th>
+              <th class="text-end">Credits</th>
+              <th class="text-end">Closing balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let section of Rows">
+              <td>{{section.HeadName}}</td>
+              <td class="text-end">{{balance(section.Opening)}}</td>
+              <td class="text-end">{{section.Debit | number:'1.2-2'}}</td>
+              <td class="text-end">{{section.Credit | number:'1.2-2'}}</td>
+              <td class="text-end">{{balance(section.Closing)}}</td>
+            </tr>
+            <tr class="table-info">
+              <td>Total deposits</td>
+              <td class="text-end">{{balance(Totals.Opening)}}</td>
+              <td class="text-end">{{Totals.Debit | number:'1.2-2'}}</td>
+              <td class="text-end">{{Totals.Credit | number:'1.2-2'}}</td>
+              <td class="text-end">{{balance(Totals.Closing)}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="small text-muted">Interest shown is recorded interest. This passbook does not calculate or post new
+        interest.</p>
+    </div>
+  </div>
+</main>

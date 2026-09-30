@@ -16,6 +16,7 @@ declare var $: any;
   styleUrls: ['./financial-year.component.css']
 })
 export class FinancialYearComponent {
+  isAccessReview = ConstantData.AccessReview;
 dataLoading: boolean = false
   FinancialYearList: any = []
   FinancialYear: any = {}
@@ -126,28 +127,6 @@ dataLoading: boolean = false
     }, (err => {
       this.toastr.error("Error occured while submitting data")
     }))
-  }
-
-  deleteFinancialYear(obj: any) {
-    if (confirm("Are your sure you want to delete this recored")) {
-      var request: RequestModel = {
-        request: this.localService.encrypt(JSON.stringify(obj)).toString()
-      }
-      this.dataLoading = true
-      this.service.deleteFinancialYear(request).subscribe(r1 => {
-        let response = r1 as any
-        if (response.Message == ConstantData.SuccessMessage) {
-          this.toastr.success("Record Deleted successfully")
-          this.getFinancialYearList()
-        } else {
-          this.toastr.error(response.Message)
-          this.dataLoading = false
-        }
-      }, (err => {
-        this.toastr.error("Error occured while deleteing the recored")
-        this.dataLoading = false
-      }))
-    }
   }
 
   editFinancialYear(obj: any) {

@@ -744,3 +744,19 @@
 }
 
 
+
+@media print {
+  body:has(.member-passbook) #header,
+  body:has(.member-passbook) #sidebar,
+  body:has(.member-passbook) #footer,
+  body:has(.member-passbook) .back-to-top,
+  body:has(.member-passbook) #main > :not(.member-passbook),
+  body:has(.member-passbook) .passbook-actions { display: none !important; }
+  body:has(.member-passbook) #main { margin: 0 !important; padding: 0 !important; }
+  .member-passbook { box-shadow: none !important; border: 0 !important; font-size: 10px; }
+  .member-passbook .card-body { padding: 0; }
+  .member-passbook .table-responsive { overflow: visible; }
+  .member-passbook table { width: 100%; font-size: 9px; }
+  .member-passbook th, .member-passbook td { padding: 3px !important; }
+  .member-passbook tr { break-inside: avoid; }
+}

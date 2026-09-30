@@ -24,6 +24,7 @@
                 <div class="card h-100">
                     <div class="card-header">
                         <h5 class="card-title">{{Payment.PaymentId > 0 ? 'Edit Payment' : 'New Payment'}}</h5>
+                        <p class="mb-2">Member collection into the society's bank or cash account</p>
                     </div>
                     <div class="card-body">
 
@@ -49,7 +50,7 @@
                                 <mat-form-field appearance="outline" class="col-sm-4 form-group">
                                     <mat-label>Payment Date</mat-label>
                                     <input matInput #PaymentDate="ngModel" name="PaymentDate"
-                                        [(ngModel)]="Payment.PaymentDate" [matDatepicker]="PaymentDatePicker" required>
+                                        [(ngModel)]="Payment.PaymentDate" [matDatepicker]="PaymentDatePicker" (dateChange)="getPaymentBalances()" required>
                                     <mat-datepicker-toggle matIconSuffix
                                         [for]="PaymentDatePicker"></mat-datepicker-toggle>
                                     <mat-datepicker #PaymentDatePicker></mat-datepicker>
@@ -65,11 +66,21 @@
                                     </mat-select>
                                     <mat-error>Head is required</mat-error>
                                 </mat-form-field>
-                                <mat-form-field appearance="outline" class="col-sm-4">
-                                    <mat-label>Head Balance</mat-label>
-                                    <input matInput #HeadBalance="ngModel" name="HeadBalance"
-                                        [(ngModel)]="Payment.HeadBalance" readonly="true">
+                                <mat-form-field appearance="outline" class="col-sm-12">
+                                    <mat-label>Society</mat-label>
+                                    <mat-select name="SocietyId" [(ngModel)]="Payment.SocietyId" (selectionChange)="getPaymentBalances()" required>
+                                        <mat-option *ngFor="let item of SocietyList" [value]="item.SocietyId">{{item.SocietyName}}</mat-option>
+                                    </mat-select>
                                 </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Financial year (from payment date)</mat-label>
+                                    <input matInput readonly [value]="AccountingBalance.FinancialYearName || 'Not available'">
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Head current balance</mat-label>
+                                    <input matInput readonly [value]="formatBalance(AccountingBalance.HeadBalance)">
+                                </mat-form-field>
+                                <p class="small col-12" aria-live="polite">{{balanceLoading ? 'Loading balances...' : AccountingBalance.BalanceMessage}}</p>
 
                                 <!-- mat auto complete -->
                                 <mat-form-field appearance="outline" class="col-sm-12">
@@ -96,11 +107,11 @@
 
 
                                 <mat-form-field appearance="outline" class="col-sm-12">
-                                    <mat-label>Member Balance</mat-label>
+                                    <mat-label>Member paid for selected head</mat-label>
                                     <input matInput
-                                        [value]="Payment.Balance == null ? 'Not available' : Payment.Balance"
+                                        [value]="formatBalance(AccountingBalance.MemberPaid, false)"
                                         readonly="true">
-                                    <mat-hint>Member balance is currently unavailable</mat-hint>
+                                    <mat-hint>Selected financial year through payment date, after adjustments</mat-hint>
                                 </mat-form-field>
 
                                 <mat-form-field appearance="outline" class="col-sm-6">
@@ -118,7 +129,7 @@
 
                                 <mat-form-field appearance="outline" class="col-sm-6">
                                     <mat-label>Debit / Credit</mat-label>
-                                    <input matInput value="Debit" readonly>
+                                    <input matInput value="Credit" readonly>
                                 </mat-form-field>
 
                                 <input type="hidden" name="DebitCreditType" [(ngModel)]="Payment.DebitCreditType">
@@ -145,9 +156,8 @@
                                     <mat-error>Bank is required for bank payments</mat-error>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
-                                    <mat-label>Bank Opening Balance</mat-label>
-                                    <input matInput #OpeningBalance="ngModel" name="OpeningBalance"
-                                        [(ngModel)]="Payment.OpeningBalance" readonly="true">
+                                    <mat-label>Society bank/cash current balance</mat-label>
+                                    <input matInput [value]="formatBalance(AccountingBalance.BankBalance)" readonly="true">
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
                                     <mat-label>Cheque No.</mat-label>
@@ -246,13 +256,13 @@
                                         <td *ngIf="action.CanEdit">
                                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
                                                 data-bs-target="#staticBackdrop"
-                                                [disabled]="isSaving || !!pendingPayment" (click)="editPayment(item)">
+                                                [disabled]="isSaving || !!pendingPayment || item.AccountingPosted" title="Posted payments are corrected through journals" (click)="editPayment(item)">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
                                         </td>
                                         <td *ngIf="action.CanDelete">
                                             <button class="btn btn-sm btn-danger"
-                                                [disabled]="isSaving || !!pendingPayment" (click)="deletePayment(item)">
+                                                [disabled]="isSaving || !!pendingPayment || item.AccountingPosted" title="Posted payments are corrected through journals" (click)="deletePayment(item)">
                                                 <i class="bi bi-trash-fill"></i>
                                             </button>
                                         </td>

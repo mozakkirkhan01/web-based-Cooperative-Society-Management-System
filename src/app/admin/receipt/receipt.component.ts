@@ -15,6 +15,7 @@ declare var $: any;
   styleUrls: ['./receipt.component.css']
 })
 export class ReceiptComponent {
+  balanceRefresh = 0;
   BankList: any[] = [];
   // IMPORTANT: expose enum for HTML
   BankCashType = BankCashType;
@@ -181,15 +182,12 @@ export class ReceiptComponent {
     }))
   }
   onBankChange(BankId: any) {
-    const selectedBank = this.BankList.find(
-      (x: any) => x.BankId == BankId
-    );
-
-    if (selectedBank) {
-      this.Receipt.OpeningBalance = selectedBank.OpeningBalance;
-    } else {
-      this.Receipt.OpeningBalance = 0;
-    }
+    this.Receipt.OpeningBalance = null;
+    this.balanceRefresh++;
+  }
+  onAccountingBalance(balance: any) {
+    this.Receipt.Balance = balance?.MemberPaid ?? null;
+    this.Receipt.OpeningBalance = balance?.BankBalance ?? null;
   }
   getReceiptTransactionNo() {
     // The API assigns the actual number when a new receipt is saved.
@@ -202,7 +200,7 @@ onBankCashTypeChange() {
   if (this.Receipt.BankCashType == BankCashType.Cash) {
     this.Receipt.BankId = null;
     this.Receipt.ChequeNo = '';
-    this.Receipt.OpeningBalance = 0;
+    this.Receipt.OpeningBalance = null;
   }
 }
 
@@ -282,6 +280,7 @@ onBankCashTypeChange() {
       this.submitReceipt(this.pendingReceipt);
       return;
     }
+    if (!this.Receipt.SocietyId) { this.toastr.error('Select a society for accounting'); return; }
     this.isSubmitted = true;
     this.formReceipt.control.markAllAsTouched();
     if (this.formReceipt.invalid) {
@@ -356,6 +355,7 @@ onBankCashTypeChange() {
           this.toastr.success("Receipt added successfully")
         }
         this.resetForm()
+        this.balanceRefresh++;
         this.getReceiptList()
       } else {
         this.toastr.error(response.Message)
@@ -388,7 +388,7 @@ onBankCashTypeChange() {
       if (requestNo != this.listRequest) return;
       let response = r1 as any
       if (response.Message == ConstantData.SuccessMessage) {
-        this.ReceiptList = response.ReceiptList;
+        this.ReceiptList = response.ReceiptList.map((x: any) => ({ ...x, AccountingPosted: (response.PostedIds || []).includes(x.ReceiptId) }));
         this.TotalRecords = response.TotalRecords;
         this.p = response.PageNumber;
       } else {

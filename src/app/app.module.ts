@@ -38,6 +38,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { DateAdapter, MAT_DATE_FORMATS, MAT_DATE_LOCALE, MatNativeDateModule } from '@angular/material/core';
 import { NgxMatDatetimePickerModule, NgxMatNativeDateModule, NgxMatTimepickerModule } from '@angular-material-components/datetime-picker';
 import { FinancialYearComponent } from './admin/financial-year/financial-year.component';
+import { AccountingComponent } from './admin/accounting/accounting.component';
+import { AccessReviewComponent } from './admin/accounting/access-review.component';
+import { AccessReportsComponent } from './admin/accounting/access-reports.component';
+import { AccountingBalanceComponent } from './admin/accounting/accounting-balance.component';
 import { MemberComponent } from './admin/member/member.component';
 import { HeadComponent } from './admin/head/head.component';
 import { BankComponent } from './admin/bank/bank.component';
@@ -47,6 +51,10 @@ import { ReceiptComponent } from './admin/receipt/receipt.component';
 import { MatMomentDateModule, MomentDateAdapter, MAT_MOMENT_DATE_ADAPTER_OPTIONS } from '@angular/material-moment-adapter';
 import { APP_DATE_FORMATS } from './date-format';
 import { NgxMaskDirective, NgxMaskPipe, provideNgxMask } from 'ngx-mask';
+import { ContraComponent } from './admin/contra/contra.component';
+import { TransferComponent } from './admin/transfer/transfer.component';
+import { ScheduleComponent } from './admin/schedule/schedule.component';
+import { MemberPassbookComponent } from './admin/member-passbook/member-passbook.component';
 
 @NgModule({
   declarations: [
@@ -74,12 +82,20 @@ import { NgxMaskDirective, NgxMaskPipe, provideNgxMask } from 'ngx-mask';
     FilterPipe,
     CompanyComponent,
     FinancialYearComponent,
+    AccountingComponent,
+    AccessReviewComponent,
+    AccessReportsComponent,
+    AccountingBalanceComponent,
     MemberComponent,
     HeadComponent,
     BankComponent,
     PaymentComponent,
     MemberDocComponent,
-    ReceiptComponent
+    ReceiptComponent,
+    ContraComponent,
+    TransferComponent,
+    ScheduleComponent,
+    MemberPassbookComponent
   ],
   imports: [
     BrowserModule,

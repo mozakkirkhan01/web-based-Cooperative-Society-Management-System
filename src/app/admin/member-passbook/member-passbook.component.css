@@ -1,0 +1,4 @@
+.table th { white-space: nowrap; }
+.table td { vertical-align: middle; }
+.table-responsive { max-width: 100%; }
+.table-warning td, .table-info td { font-weight: 600; }

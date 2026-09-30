@@ -1,0 +1,234 @@
+<app-progress *ngIf="dataLoading || isSaving"></app-progress>
+<main id="main" class="main">
+  <div class="pagetitle dashboard">
+    <h1>Schedule</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+        <li class="breadcrumb-item">Transaction</li>
+        <li class="breadcrumb-item active">Schedule</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">New Schedule</h5>
+      <p>Enter monthly member/head allocations manually or import Excel. The selected bank/cash receives the net
+        collection or pays the net debit.</p>
+      <div class="alert alert-warning" *ngIf="pendingTransaction">A submitted transaction is awaiting confirmation.
+        Retry the same saved transaction below. Date: {{pendingTransaction.VoucherDate | date:'dd-MM-yyyy'}} ·
+        {{pendingTransaction.Lines?.length}} rows · {{pendingTransaction.Narration}}</div>
+      <fieldset [disabled]="isSaving || !!pendingTransaction || storageError || !CanCreate">
+        <div class="row">
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Society</mat-label><mat-select
+              [(ngModel)]="SocietyId" (selectionChange)="getContext()"
+              [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
+                *ngFor="let society of SocietyList"
+                [value]="society.SocietyId">{{society.SocietyName}}</mat-option></mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Date</mat-label><input matInput
+              [(ngModel)]="VoucherDate" [matDatepicker]="datePicker" (dateChange)="getContext()"
+              required><mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle><mat-datepicker
+              #datePicker></mat-datepicker></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Financial year</mat-label><input matInput
+              readonly [value]="FinancialYearName"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Transaction no.</mat-label><input matInput
+              readonly value="Assigned on submit"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Unique schedule reference
+              (required)</mat-label><input matInput [(ngModel)]="ExternalReference" [readonly]="!!SourceMonth"
+              maxlength="100"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Cheque no.</mat-label><input matInput
+              [(ngModel)]="ChequeNo" maxlength="50"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-8"><mat-label>Society bank / cash</mat-label><mat-select
+              [(ngModel)]="SettlementHeadId" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
+                *ngFor="let head of BankHeadList"
+                [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Bank / cash balance</mat-label><input
+              matInput readonly [value]="formatBalance(balance(SettlementHeadId))"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-12"><mat-label>Narration</mat-label><textarea matInput
+              [(ngModel)]="Narration" maxlength="800" required></textarea></mat-form-field>
+        </div>
+        <h5 class="card-title">Add entry</h5>
+        <div class="row">
+          <mat-form-field appearance="outline" class="col-md-8"><mat-label>Head</mat-label><mat-select
+              [(ngModel)]="Line.HeadId" (selectionChange)="getContext()"
+              [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option *ngFor="let head of HeadList"
+                [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Head balance at selected
+              date</mat-label><input matInput readonly [value]="formatBalance(balance(Line.HeadId))"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-8"><mat-label>Search member by staff no., member no. or
+              name</mat-label><input matInput [(ngModel)]="MemberSearch" (input)="findMembers()"
+              [matAutocomplete]="memberAuto"><mat-autocomplete #memberAuto="matAutocomplete"><mat-option
+                *ngFor="let member of MemberList"
+                [value]="member.MemberName + ' — ' + member.MemberNo + ' / ' + member.StaffNo"
+                (onSelectionChange)="$event.isUserInput && selectMember(member)">{{member.MemberName}} —
+                {{member.MemberNo}} / {{member.StaffNo}}</mat-option></mat-autocomplete></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Member balance at selected
+              date</mat-label><input matInput readonly [value]="formatBalance(MemberBalance)"></mat-form-field>
+          <ng-container *ngFor="let rule of RuleList"><ng-container *ngIf="rule.HeadId == Line.HeadId">
+              <mat-form-field appearance="outline" class="col-md-4" *ngIf="rule.RequiresLoan"><mat-label>Loan
+                  ID</mat-label><input matInput type="number" [(ngModel)]="Line.LoanId"></mat-form-field>
+              <mat-form-field appearance="outline" class="col-md-4"
+                *ngIf="rule.RequiresDepositAccount"><mat-label>Deposit account ID</mat-label><input matInput
+                  type="number" [(ngModel)]="Line.DepositAccountId"></mat-form-field>
+              <mat-form-field appearance="outline" class="col-md-4" *ngIf="rule.RequiresLoan"><mat-label>Loan
+                  component</mat-label><mat-select [(ngModel)]="Line.Component"
+                  [disabled]="isSaving || !!pendingTransaction"><mat-option
+                    value="PRINCIPAL">Principal</mat-option><mat-option
+                    value="INTEREST">Interest</mat-option><mat-option
+                    value="PENALTY">Penalty</mat-option></mat-select></mat-form-field>
+            </ng-container></ng-container>
+          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Debit / Credit</mat-label><mat-select
+              [(ngModel)]="Line.DebitCredit" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
+                value="Debit">Debit</mat-option><mat-option
+                value="Credit">Credit</mat-option></mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Amount</mat-label><input matInput
+              type="number" min="0.01" step="0.01" [(ngModel)]="Line.Amount"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-6"><mat-label>Entry narration (optional)</mat-label><input
+              matInput [(ngModel)]="Line.Narration" maxlength="500"></mat-form-field>
+        </div>
+        <button mat-raised-button color="primary" (click)="addLine()"
+          [disabled]="isSaving || !!pendingTransaction || !CanCreate">Add entry</button>
+        <div class="mt-3"><button mat-stroked-button (click)="downloadTemplate()">Download Excel template</button><label
+            class="ms-3">Import Excel / CSV / TXT <input type="file" accept=".xlsx,.xls,.csv,.txt"
+              (change)="importFile($event)" [disabled]="dataLoading || isSaving || !!pendingTransaction"></label>
+          <p class="small mt-2">Recovery Excel loads CD (COM), CPL, and CPI codes. Select one recovery code row, assign
+            its head, load preview, resolve members, then Submit. Repeat for each code. Loan TXT loads payroll principal
+            recovery (CPL). Generic template: use exact head names and staff/member numbers. Nothing is saved until
+            Submit.</p>
+        </div>
+        <div class="mt-3" *ngIf="RecoveryRows.length">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h5 class="card-title mb-0">{{ImportKind}}: {{ImportName}}</h5>
+            <mat-form-field appearance="outline" style="min-width:200px; max-width:260px" class="mb-0">
+              <mat-label>Society number in file</mat-label>
+              <mat-select [(ngModel)]="RecoverySociety" (selectionChange)="selectRecoverySociety()"
+                [disabled]="dataLoading || isSaving || !!pendingTransaction">
+                <mat-option *ngFor="let number of RecoverySocieties" [value]="number">{{number}}</mat-option>
+              </mat-select>
+            </mat-form-field>
+          </div>
+          <p>Source month: <strong>{{SourceMonth || 'Select society'}}</strong>. The transaction date must be in this
+            month. Previously imported years cannot be posted again through this form.</p>
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Select</th>
+                <th>Recovery code</th>
+                <th>Rows</th>
+                <th>Amount</th>
+                <th>Credit head</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let mapping of RecoveryMappings"
+                [class.table-primary]="SelectedRecoveryCode === mapping.Code">
+                <td><mat-radio-button [value]="mapping.Code" [checked]="SelectedRecoveryCode === mapping.Code"
+                    (change)="SelectedRecoveryCode = mapping.Code; Lines=[]; Reviewed=false"
+                    [disabled]="dataLoading || isSaving || !!pendingTransaction"></mat-radio-button></td>
+                <td>{{mapping.Code}}</td>
+                <td>{{mapping.Count}}</td>
+                <td>{{mapping.Amount | number:'1.2-2'}}</td>
+                <td><mat-form-field appearance="outline"><mat-label>Select head</mat-label><mat-select
+                      [(ngModel)]="mapping.HeadId" (selectionChange)="Lines=[]; Reviewed=false"
+                      [disabled]="dataLoading || isSaving || !!pendingTransaction"><mat-option
+                        *ngFor="let head of HeadList"
+                        [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field></td>
+              </tr>
+            </tbody>
+          </table>
+          <button mat-stroked-button (click)="previewRecovery()"
+            [disabled]="dataLoading || isSaving || !!pendingTransaction || !SourceMonth || !SelectedRecoveryCode">
+            Load member preview — {{SelectedRecoveryCode || 'select a row first'}}
+          </button>
+        </div>
+        <details class="mt-3" *ngIf="StatementText">
+          <summary>Original loan TXT statement</summary>
+          <p>Only the payroll principal recovery column is loaded for posting. Opening/closing balances, interest
+            balances and separate cash transactions are not added as payroll recoveries.</p>
+          <pre style="max-height: 450px; overflow: auto">{{StatementText}}</pre>
+        </details>
+        <div class="row mt-3">
+          <div class="col-md-6">
+            <p>{{Lines.length}} rows · {{IssueCount}} unresolved</p><mat-checkbox [(ngModel)]="IssuesOnly"
+              (change)="PreviewPage=1">Show unresolved rows only</mat-checkbox>
+          </div><mat-form-field appearance="outline" class="col-md-6"><mat-label>Search preview</mat-label><input
+              matInput [(ngModel)]="PreviewSearch" (ngModelChange)="PreviewPage=1"></mat-form-field>
+        </div>
+        <div class="table-responsive mt-3">
+          <table class="table table-bordered table-hover">
+            <thead>
+              <tr>
+                <th>Head</th>
+                <th>Member / Staff</th>
+                <th>Month</th>
+                <th class="text-end">Debit</th>
+                <th class="text-end">Credit</th>
+                <th>Narration</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                *ngFor="let row of PreviewRows | paginate: { id: 'schedule-preview', itemsPerPage: itemPerPage, currentPage: PreviewPage }"
+                [class.table-danger]="row.Issue">
+                <td>{{row.HeadName}}</td>
+                <td>{{row.MemberName}}<small class="d-block">{{row.MemberNo}} / {{row.StaffNo}}</small></td>
+                <td>{{formatMonth(SourceMonth)}}</td>
+                <td class="text-end">{{row.Debit | number:'1.2-2'}}</td>
+                <td class="text-end">{{row.Credit | number:'1.2-2'}}</td>
+                <td><span *ngIf="!row.Debit && !row.Credit">No recovery — will not be posted.
+                  </span>{{row.Narration}}<strong class="d-block text-danger">{{row.Issue}}</strong></td>
+                <td><button mat-button (click)="editLine(Lines.indexOf(row))"
+                    [disabled]="isSaving || !!pendingTransaction">Edit</button><button mat-button color="warn"
+                    (click)="removeLine(Lines.indexOf(row))"
+                    [disabled]="isSaving || !!pendingTransaction">Remove</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <pagination-controls id="schedule-preview" (pageChange)="PreviewPage=$event"
+          class="my-pagination"></pagination-controls>
+        <div class="text-end mb-3">Total debits: <strong>{{total('Debit') | number:'1.2-2'}}</strong> · Total credits:
+          <strong>{{total('Credit') | number:'1.2-2'}}</strong><br>Bank/cash net debit:
+          <strong>{{formatBalance(total('Credit') - total('Debit'))}}</strong>
+        </div>
+        <button mat-stroked-button (click)="clearImport()" [disabled]="isSaving || !!pendingTransaction">Clear import /
+          rows</button>
+        <div class="mt-3"><mat-checkbox [(ngModel)]="Reviewed"
+            [disabled]="dataLoading || isSaving || !!pendingTransaction">I have verified the members, heads, amounts,
+            date and bank/cash.</mat-checkbox></div>
+      </fieldset>
+      <div class="text-center mt-3"><button mat-raised-button color="primary" (click)="submit()"
+          [disabled]="isSaving || dataLoading || storageError || !CanCreate">{{pendingTransaction ? 'Retry saved
+          transaction' : 'Submit'}}</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Posted Schedule entries</h5>
+      <p>Latest 100 entries in the financial year through the selected date. Posted entries remain in the ledger;
+        corrections require a separate entry.</p>
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Transaction no.</th>
+              <th>Date</th>
+              <th>Narration</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let voucher of VoucherList">
+              <td>{{voucher.VoucherNumber}}</td>
+              <td>{{voucher.VoucherDate | date:'dd-MM-yyyy'}}</td>
+              <td>{{voucher.Narration}}</td>
+              <td>{{voucher.Amount | number:'1.2-2'}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p *ngIf="!VoucherList.length">No posted entries for this period.</p>
+    </div>
+  </div>
+</main>

@@ -66,11 +66,10 @@
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
-                                <mat-form-field appearance="outline" class="col-sm-4">
-                                    <mat-label>Head Balance</mat-label>
-                                    <input matInput #HeadBalance="ngModel" name="HeadBalance"
-                                        [(ngModel)]="Receipt.HeadBalance" readonly="true">
-                                </mat-form-field>
+                                <app-accounting-balance class="col-12" [headId]="Receipt.HeadId"
+                                    [date]="Receipt.ReceiptDate" [(societyId)]="Receipt.SocietyId" sourceType="RECEIPT"
+                                    [memberId]="Receipt.MemberId" [bankId]="Receipt.BankId" [bankCashType]="Receipt.BankCashType" (balanceChange)="onAccountingBalance($event)"
+                                    [refresh]="balanceRefresh" [disabled]="isSaving || !!pendingReceipt"></app-accounting-balance>
 
                                 <!-- mat auto complete -->
                                 <mat-form-field appearance="outline" class="col-sm-12">
@@ -140,7 +139,7 @@
                                     </mat-select>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
-                                    <mat-label>Bank Opening Balance</mat-label>
+                                    <mat-label>Bank / cash balance at selected date</mat-label>
                                     <input matInput #OpeningBalance="ngModel" name="OpeningBalance"
                                         [(ngModel)]="Receipt.OpeningBalance" readonly="true">
                                 </mat-form-field>
@@ -234,12 +233,12 @@
                                         <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
                                          <td *ngIf="action.CanEdit">
                                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
-                                                data-bs-target="#staticBackdrop" [disabled]="isSaving || !!pendingReceipt" (click)="editReceipt(item)">
+                                                data-bs-target="#staticBackdrop" [disabled]="isSaving || !!pendingReceipt || item.AccountingPosted" title="Posted receipts are corrected through journals" (click)="editReceipt(item)">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
                                         </td>
                                         <td *ngIf="action.CanDelete">
-                                            <button class="btn btn-sm btn-danger" [disabled]="isSaving || !!pendingReceipt" (click)="deleteReceipt(item)">
+                                            <button class="btn btn-sm btn-danger" [disabled]="isSaving || !!pendingReceipt || item.AccountingPosted" title="Posted receipts are corrected through journals" (click)="deleteReceipt(item)">
                                                 <i class="bi bi-trash-fill"></i>
                                             </button>
                                         </td>

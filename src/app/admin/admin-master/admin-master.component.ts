@@ -14,6 +14,7 @@ import { DOCUMENT } from '@angular/common';
   templateUrl: './admin-master.component.html'
 })
 export class AdminMasterComponent implements OnInit {
+  isAccessReview = ConstantData.AccessReview;
   IsMenuShow = true;
   dataLoading: boolean = false;
   staffLogin: StaffLoginModel = {} as StaffLoginModel;

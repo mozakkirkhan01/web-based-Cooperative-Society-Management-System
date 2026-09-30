@@ -8,6 +8,7 @@ import { Status, MemberType, Gender, NomineeRelation, PsuUnit } from '../../util
 import { ActionModel, RequestModel, StaffLoginModel } from '../../utils/interface';
 import { LocalService } from '../../utils/local.service';
 import { Router } from '@angular/router';
+import { DateAdapter } from '@angular/material/core';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 declare var $: any;
@@ -50,7 +51,8 @@ filterPsuUnit: number = 0;       // 0 = All
     private toastr: ToastrService,
     private loadData: LoadDataService,
     private localService: LocalService,
-    private router: Router
+    private router: Router,
+    private dateAdapter: DateAdapter<any>
   ) { }
 
   ngOnInit(): void {
@@ -234,12 +236,31 @@ filterPsuUnit: number = 0;       // 0 = All
   }
 
   formatDateofBirth() {
+    if (!this.Member.DateofBirth) {
+      this.Member.RetirementDate = null;
+      return;
+    }
 
-    if (!this.Member.DateofBirth) return;
+    const dateOfBirth = this.parseMemberDate(this.Member.DateofBirth);
+    if (!dateOfBirth) return;
 
-    const [day, month, year] = this.Member.DateofBirth.split('-');
+    this.Member.DateofBirth = dateOfBirth;
+    const isFirstOfJanuary = this.dateAdapter.getMonth(dateOfBirth) == 0 &&
+      this.dateAdapter.getDate(dateOfBirth) == 1;
+    this.Member.RetirementDate = isFirstOfJanuary
+      ? this.dateAdapter.createDate(this.dateAdapter.getYear(dateOfBirth) + 59, 11, 31)
+      : this.dateAdapter.addCalendarYears(dateOfBirth, 60);
+  }
 
-    this.Member.DateofBirth = `${year}-${month}-${day}`;
+  private parseMemberDate(value: any): any | null {
+    let date = this.dateAdapter.isDateInstance(value) ? value : null;
+    if (!date && typeof value == 'string') {
+      date = this.dateAdapter.parse(value, ['DD/MM/YYYY', 'DD-MM-YYYY']) ||
+        this.dateAdapter.deserialize(value);
+    } else if (!date) {
+      date = this.dateAdapter.deserialize(value);
+    }
+    return date && this.dateAdapter.isValid(date) ? date : null;
   }
 
 

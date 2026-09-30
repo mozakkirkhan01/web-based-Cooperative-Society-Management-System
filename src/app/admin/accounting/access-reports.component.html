@@ -1,0 +1,321 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main">
+  <div class="pagetitle dashboard">
+    <h1>{{Title}}</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+        <li class="breadcrumb-item">{{AccessReview ? 'Historical Reports' : 'Reports'}}</li>
+        <li class="breadcrumb-item active">{{Title}}</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="alert alert-warning" *ngIf="AccessReview">Test data · Annual Access records, 2018–19 to 2025–26. Each year
+    uses its own source opening balances. These reports are for review and are not posted or audited accounts.</div>
+  <div class="alert alert-info" *ngIf="!AccessReview">Select a financial year to view its records. From 2026–27, opening
+    balances carry forward from the imported closing balances and new posted entries appear here automatically.</div>
+  <div class="card" *ngIf="Notice">
+    <div class="card-body">
+      <h5 class="card-title">{{Title}}</h5>
+      <p>{{Notice}}</p><button mat-raised-button color="primary" (click)="setup()"
+        [disabled]="dataLoading">Refresh</button>
+    </div>
+  </div>
+  <div class="alert alert-danger" *ngIf="Error">{{Error}}</div>
+  <div class="card" *ngIf="Allowed">
+    <div class="card-body">
+      <h5 class="card-title">{{Title}} filters</h5>
+      <div class="row align-items-start">
+        <div class="col-md-3"><mat-form-field appearance="outline" class="w-100"><mat-label>Financial
+              year</mat-label><mat-select [(ngModel)]="YearId" (selectionChange)="yearChanged()"
+              [disabled]="dataLoading"><mat-option *ngFor="let year of Years"
+                [value]="year.YearId">{{year.YearName}}</mat-option></mat-select></mat-form-field></div>
+        <ng-container *ngIf="Report != 'Checks' && Report != 'LoanApplications'">
+          
+            <div class="col-md-3" *ngIf="Report == 'DayBook'"><mat-form-field appearance="outline"
+                class="w-100"><mat-label>Date</mat-label><input matInput [ngModel]="FromDate"
+                  [matDatepicker]="DayBookDatePicker" (dateInput)="dayBookDateChanged($event.value)"
+                  required><mat-datepicker-toggle matIconSuffix
+                  [for]="DayBookDatePicker"></mat-datepicker-toggle><mat-datepicker
+                  #DayBookDatePicker></mat-datepicker><mat-error>A valid date is required</mat-error></mat-form-field>
+            </div>
+            <div class="col-md-3" *ngIf="Report != 'DayBook'"><mat-form-field appearance="outline"
+                class="w-100"><mat-label>From date</mat-label><input matInput type="date" [(ngModel)]="FromDate"
+                  (ngModelChange)="filtersChanged()"></mat-form-field></div>
+            <div class="col-md-3" *ngIf="Report != 'DayBook'"><mat-form-field appearance="outline"
+                class="w-100"><mat-label>To date</mat-label><input matInput type="date" [(ngModel)]="ToDate"
+                  (ngModelChange)="filtersChanged()"></mat-form-field></div>
+            <div class="col-md-3"><mat-form-field appearance="outline"
+                class="w-100"><mat-label>Head</mat-label><mat-select [(ngModel)]="HeadCode"
+                  (selectionChange)="filtersChanged()"><mat-option value="">All {{Report == 'CashBank' ? 'cash / bank
+                    heads' : 'heads'}}</mat-option><mat-option *ngFor="let head of Heads"
+                    [value]="head.HeadCode">{{head.HeadCode}} —
+                    {{head.HeadName}}</mat-option></mat-select></mat-form-field></div>
+          <div class="col-md-8" *ngIf="Report == 'MemberLedger'"><mat-form-field appearance="outline"
+              class="w-100"><mat-label>Search member by name, member no. or staff no.</mat-label><input matInput
+                [(ngModel)]="MemberSearch" (input)="findMembers()" [matAutocomplete]="memberAuto"><mat-autocomplete
+                #memberAuto="matAutocomplete"><mat-option *ngFor="let member of Members"
+                  [value]="member.MemberName + ' — ' + member.MemberNo + ' / ' + member.StaffNo"
+                  (onSelectionChange)="$event.isUserInput && selectMember(member)">{{member.MemberName}} —
+                  {{member.MemberNo}} / {{member.StaffNo}}{{member.IsDeleted ? ' (inactive in source)' :
+                  ''}}</mat-option></mat-autocomplete></mat-form-field>
+            <p *ngIf="SelectedMember">Member: {{SelectedMember.MemberNo}} · Staff: {{SelectedMember.StaffNo}} ·
+              {{SelectedMember.MemberName}}</p>
+          </div>
+          <div class="col-md-6" *ngIf="isBalance"><mat-form-field appearance="outline" class="w-100"><mat-label>{{Report
+                == 'MemberBalances' ? 'Search member, staff no. or head name' : 'Search head name'}}</mat-label><input
+                matInput [(ngModel)]="Search" (ngModelChange)="filtersChanged()"
+                (keyup.enter)="show()"></mat-form-field></div>
+        </ng-container>
+        <div class="col-md-6" *ngIf="Report == 'LoanApplications'"><mat-form-field appearance="outline"
+            class="w-100"><mat-label>Search member, staff no. or application no.</mat-label><input matInput
+              [(ngModel)]="Search" (ngModelChange)="filtersChanged()"
+              (keyup.enter)="show()"></mat-form-field><mat-checkbox [(ngModel)]="IncludeDeleted"
+            (change)="filtersChanged()">Include deleted applications</mat-checkbox></div>
+        <div class="col-md-4 d-flex gap-2 mb-3"><button mat-raised-button color="primary" (click)="show()"
+            [disabled]="dataLoading || (Report == 'MemberLedger' && !MemberKey)">Show</button><button mat-stroked-button
+            (click)="load(true)" *ngIf="Report != 'Checks'"
+            [disabled]="dataLoading || !Loaded || !Total">Export CSV</button></div>
+      </div>
+      <p *ngIf="Report == 'MemberLedger' && !MemberKey">Choose a member to see each head’s opening balance, dated entries, period
+        totals and running balance.</p>
+      <p *ngIf="Report == 'CashBank'">Debit increases the society’s cash/bank balance; credit reduces it. Transfers
+        between these accounts appear on both sides.</p>
+      <p *ngIf="Report == 'MemberBalances'">Balances are grouped by member and head. Select LOAN TO MEMBER or LOAN TO
+        STAFF for outstanding loan principal by member; this is not an individual-loan schedule.</p>
+      <p *ngIf="Report == 'LoanApplications'">Applications as recorded in the selected year’s Access file, including
+        application dates outside that financial year. The same application may appear in several yearly files.
+        Sanctioned/payable amounts do not prove disbursement; use the member ledger for actual movements.</p>
+    </div>
+  </div>
+  <div class="card" *ngIf="Loaded && Report != 'Checks' && Report != 'LoanApplications'">
+    <div class="card-body">
+      <h5 class="card-title">{{Title}} · {{FromDate | date:'dd-MM-yyyy'}}<ng-container *ngIf="Report != 'DayBook'"> to
+          {{ToDate | date:'dd-MM-yyyy'}}</ng-container></h5>
+      <div class="row mb-3">
+        <div class="col-md-3" *ngIf="Report != 'DayBook'">Opening: <strong>{{balance(Totals.Opening)}}</strong></div>
+        <div class="col-md-3">Debit: <strong>{{Totals.Debit | number:'1.2-2'}}</strong></div>
+        <div class="col-md-3">Credit: <strong>{{Totals.Credit | number:'1.2-2'}}</strong></div>
+        <div class="col-md-3" *ngIf="Report != 'DayBook'">Closing (net): <strong>{{balance(Totals.Closing)}}</strong>
+        </div>
+      </div>
+      <p *ngIf="Report == 'TrialBalance'">Closing debit: <strong>{{Totals.ClosingDebit | number:'1.2-2'}}</strong> ·
+        Closing credit: <strong>{{Totals.ClosingCredit | number:'1.2-2'}}</strong>. Totals reflect the selected filters.
+      </p>
+      <div class="d-flex justify-content-between align-items-center mb-3"><label>Entries per page <select
+            [(ngModel)]="PageSize" (change)="show()" [disabled]="dataLoading">
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="50">50</option>
+            <option [ngValue]="100">100</option>
+          </select></label><span>{{Total}} report rows</span></div>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+          <thead>
+            <tr>
+              <th>Head</th>
+              <th *ngIf="!isBalance">Date</th>
+              <th *ngIf="!isBalance">Voucher / source row</th>
+              <th *ngIf="showMember">Member / staff</th>
+              <th *ngIf="!isBalance">Narration</th>
+              <th *ngIf="isBalance" class="text-end">Opening</th>
+              <th class="text-end">Debit</th>
+              <th class="text-end">Credit</th>
+              <th *ngIf="Report != 'DayBook'" class="text-end">{{Report == 'TrialBalance' ? 'Closing debit' :
+                'Closing'}}</th>
+              <th *ngIf="Report == 'TrialBalance'" class="text-end">Closing credit</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of Rows" [class.table-warning]="row.Kind == 'Opening'"
+              [class.table-info]="row.Kind == 'Total'">
+              <td>{{row.HeadCode}} — {{row.HeadName}}</td>
+              <td *ngIf="!isBalance" class="text-nowrap">{{row.EntryDate | date:'dd-MM-yyyy'}}</td>
+              <td *ngIf="!isBalance">{{row.VoucherNumber}}<small *ngIf="row.ReferenceNumber" class="d-block">Ref:
+                  {{row.ReferenceNumber}}</small><small *ngIf="row.ChequeNumber" class="d-block">Cheque:
+                  {{row.ChequeNumber}}</small><small *ngIf="row.SourceRowId" class="d-block text-muted">DailyTrans
+                  #{{row.SourceRowId}}</small></td>
+              <td *ngIf="showMember">{{row.MemberName}}<small class="d-block">{{row.MemberNo}} / {{row.StaffNo}}</small>
+              </td>
+              <td *ngIf="!isBalance">{{row.Narration}}</td>
+              <td *ngIf="isBalance" class="text-end text-nowrap">{{balance(row.Opening)}}</td>
+              <td class="text-end">{{row.Kind == 'Opening' ? '' : (row.Debit | number:'1.2-2')}}</td>
+              <td class="text-end">{{row.Kind == 'Opening' ? '' : (row.Credit | number:'1.2-2')}}</td>
+              <td *ngIf="Report != 'DayBook'" class="text-end text-nowrap">{{Report == 'TrialBalance' ? ((row.Closing >
+                0 ? row.Closing : 0) | number:'1.2-2') : balance(row.Closing)}}</td>
+              <td *ngIf="Report == 'TrialBalance'" class="text-end">{{(row.Closing < 0 ? -row.Closing : 0) |
+                  number:'1.2-2'}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p *ngIf="!Rows.length">No records match these filters.</p>
+      <div class="d-flex justify-content-between align-items-center"><span>Page {{PageNumber}} of {{pageCount}}</span>
+        <div><button mat-button (click)="page(-1)" [disabled]="dataLoading || PageNumber == 1">Previous</button><button
+            mat-button (click)="page(1)" [disabled]="dataLoading || PageNumber >= pageCount">Next</button></div>
+      </div>
+      <p class="text-muted mt-3">Totals cover the entire selected period, including all pages. Dr/Cr is shown
+        explicitly. Source opening balances are included once within the selected year.</p>
+    </div>
+  </div>
+  <div class="card" *ngIf="Loaded && Report == 'LoanApplications'">
+    <div class="card-body">
+      <h5 class="card-title">Loan Applications · {{YearId}}–{{YearId + 1}} source file</h5>
+      <div class="table-responsive">
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Application</th>
+              <th>Member / staff</th>
+              <th>Type</th>
+              <th>Checked</th>
+              <th>Requested</th>
+              <th>Sanctioned</th>
+              <th>Payable</th>
+              <th>Instalment</th>
+              <th>Passed</th>
+              <th>Deleted</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of Rows">
+              <td>{{row.ApplicationNumber}}<small class="d-block">LoanApps #{{row.SourceRowId}}</small></td>
+              <td>{{row.MemberName}}<small class="d-block">{{row.MemberNo}} / {{row.StaffNo}}</small></td>
+              <td>{{row.LoanType}}</td>
+              <td>{{row.CheckedDate | date:'dd-MM-yyyy'}}</td>
+              <td>{{row.Requested | number:'1.2-2'}}</td>
+              <td>{{row.Sanctioned | number:'1.2-2'}}</td>
+              <td>{{row.Payable | number:'1.2-2'}}</td>
+              <td>{{row.Instalment | number:'1.2-2'}}</td>
+              <td>{{row.Passed == null ? 'Unknown' : row.Passed ? 'Yes' : 'No'}}</td>
+              <td>{{row.Deleted == null ? 'Unknown' : row.Deleted ? 'Yes' : 'No'}}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p *ngIf="!Rows.length">No matching applications.</p>
+      <div class="d-flex justify-content-between align-items-center"><span>{{Total}} applications · Page {{PageNumber}}
+          of {{pageCount}}</span>
+        <div><button mat-button (click)="page(-1)" [disabled]="dataLoading || PageNumber == 1">Previous</button><button
+            mat-button (click)="page(1)" [disabled]="dataLoading || PageNumber >= pageCount">Next</button></div>
+      </div>
+    </div>
+  </div>
+  <ng-container *ngIf="Loaded && Report == 'Checks'">
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">All imported years</h5>
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Active transaction rows</th>
+                <th>Opening rows</th>
+                <th>Debit</th>
+                <th>Credit</th>
+                <th>Source / SQL</th>
+                <th>Unbalanced vouchers</th>
+                <th>Unmatched identities</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of Checks.Years">
+                <td>{{row.YearName}}</td>
+                <td>{{row.ImportedRows}}</td>
+                <td>{{row.ImportedOpenings}}</td>
+                <td>{{row.ImportedDebit | number:'1.2-2'}}</td>
+                <td>{{row.ImportedCredit | number:'1.2-2'}}</td>
+                <td><span [class]="matches(row) ? 'badge bg-success' : 'badge bg-danger'">{{matches(row) ? 'Matched' :
+                    'Review required'}}</span></td>
+                <td>{{row.UnbalancedVouchers}}</td>
+                <td>{{row.UnmatchedMembers}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Prior closing vs selected year opening</h5>
+        <p>{{Checks.Differences?.length || 0}} head differences. These can include year-end income/expense transfers,
+          adjustments or source differences. No balancing entries or classifications have been invented. Review them
+          before creating a continuous posted ledger.</p>
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Head</th>
+                <th>Previous closing</th>
+                <th>Selected year opening</th>
+                <th>Difference (debit-positive)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of Checks.Differences">
+                <td>{{row.HeadCode}} — {{row.HeadName}}</td>
+                <td>{{balance(row.PreviousClosing)}}</td>
+                <td>{{balance(row.NextOpening)}}</td>
+                <td>{{balance(row.Difference)}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p *ngIf="YearId == 2018">2018–19 is the earliest supplied year; no prior-year file is available for this
+          comparison.</p>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Unmatched member identities · selected year</h5>
+        <p>Amounts remain in the reports under their original member/staff identity. They have not been assigned to
+          another member.</p>
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Member no.</th>
+                <th>Staff no.</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of Checks.Unmatched">
+                <td>{{row.MemberNo}}</td>
+                <td>{{row.StaffNo}}</td>
+                <td>{{row.MemberName}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <h5 class="card-title">Preserved source tables · selected year</h5>
+        <p>Deleted entries, archived transactions, loan applications, sureties and report caches are preserved. Only
+          active DailyTrans entries and the selected year’s Openings feed these reports.</p>
+        <div class="table-responsive">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Table</th>
+                <th>Access rows</th>
+                <th>SQL rows</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of Checks.Tables">
+                <td>{{row.TableName}}</td>
+                <td>{{row.SourceRows}}</td>
+                <td>{{row.ImportedRows}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</main>
+

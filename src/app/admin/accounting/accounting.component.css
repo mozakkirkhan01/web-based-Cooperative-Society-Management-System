@@ -1,0 +1,8 @@
+summary { cursor: pointer; font-weight: 600; padding: .65rem 0; }
+label { width: 100%; }
+.d-flex > label { width: auto; }
+.journal-table { min-width: 1150px; }
+.journal-table td:first-child { min-width: 240px; }
+.journal-table input { min-width: 95px; }
+.table td, .table th { vertical-align: middle; }
+fieldset:disabled { opacity: .7; }

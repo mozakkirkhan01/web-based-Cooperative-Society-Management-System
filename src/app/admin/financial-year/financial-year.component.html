@@ -13,7 +13,7 @@
             </nav>
         </div>
         <div class="col-sm-4 mb-3">
-            <button mat-raised-button color="primary" *ngIf="action.CanCreate" class="float-right"
+            <button mat-raised-button color="primary" *ngIf="action.CanCreate && !isAccessReview" class="float-right"
                 data-bs-toggle="modal" data-bs-target="#staticBackdrop" (click)="resetForm()">New Financial
                 Year</button>
         </div>
@@ -44,8 +44,7 @@
                                 <th style="cursor:pointer;" (click)="sort('StartDate')">Start Date</th>
                                 <th style="cursor:pointer;" (click)="sort('EndDate')">End Date</th>
                                 <th style="cursor:pointer;" (click)="sort('Status')">Status</th>
-                                <th *ngIf="action.CanEdit">Edit</th>
-                                <th *ngIf="action.CanDelete">Delete</th>
+                                <th *ngIf="action.CanEdit && !isAccessReview">Edit</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -61,15 +60,10 @@
                                         {{AllStatusList[item.Status]}}
                                     </span>
                                 </td>
-                                <td *ngIf="action.CanEdit">
+                                <td *ngIf="action.CanEdit && !isAccessReview">
                                     <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
                                         data-bs-target="#staticBackdrop" (click)="editFinancialYear(item)">
                                         <i class="bi bi-pencil-square"></i>
-                                    </button>
-                                </td>
-                                <td *ngIf="action.CanDelete">
-                                    <button class="btn btn-sm btn-danger" (click)="deleteFinancialYear(item)">
-                                        <i class="bi bi-trash-fill"></i>
                                     </button>
                                 </td>
                             </tr>
@@ -86,7 +80,7 @@
 
     </section>
 
-    <div class="modal fade" *ngIf="action.CanEdit || action.CanCreate" id="staticBackdrop" data-bs-backdrop="static"
+    <div class="modal fade" *ngIf="(action.CanEdit || action.CanCreate) && !isAccessReview" id="staticBackdrop" data-bs-backdrop="static"
         data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -114,7 +108,7 @@
                                 <mat-form-field appearance="outline" class="col-sm-6 form-group">
                                     <mat-label>Start Date</mat-label>
                                     <input matInput #StartDate="ngModel" name="StartDate"
-                                        [(ngModel)]="FinancialYear.StartDate" [matDatepicker]="StartDatePicker">
+                                        [(ngModel)]="FinancialYear.StartDate" [matDatepicker]="StartDatePicker" required>
                                     <mat-datepicker-toggle matIconSuffix
                                         [for]="StartDatePicker"></mat-datepicker-toggle>
                                     <mat-datepicker #StartDatePicker></mat-datepicker>
@@ -122,7 +116,7 @@
                                   <mat-form-field appearance="outline" class="col-sm-6 form-group">
                                     <mat-label>End Date</mat-label>
                                     <input matInput #EndDate="ngModel" name="EndDate"
-                                        [(ngModel)]="FinancialYear.EndDate" [matDatepicker]="EndDatePicker">
+                                        [(ngModel)]="FinancialYear.EndDate" [matDatepicker]="EndDatePicker" required>
                                     <mat-datepicker-toggle matIconSuffix
                                         [for]="EndDatePicker"></mat-datepicker-toggle>
                                     <mat-datepicker #EndDatePicker></mat-datepicker>
