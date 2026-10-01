@@ -2,3 +2,25 @@
 .table td { vertical-align: middle; }
 .table-responsive { max-width: 100%; }
 .table-warning td, .table-info td { font-weight: 600; }
+.table .month-total td { background-color: #ffff67; color: #000; font-weight: 600; box-shadow: none; }
+.day-book-heading { display: flex; align-items: center; justify-content: space-between; }
+.day-book-table { font-size: 13px; color: #172c51; }
+.day-book-table thead th { text-align: center; background: #f5f6f8; }
+.day-book-table th:first-child, .day-book-table td:first-child { min-width: 190px; }
+.day-book-table td:not(:first-child) { min-width: 110px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.day-book-balance th { text-align: right; font-weight: 500; background: #f5f6f8; }
+.day-book-balance td { background: #fffde7; font-weight: 600; }
+.day-book-section th { letter-spacing: 2px; text-transform: uppercase; background: #f5f6f8; }
+.day-book-section.receipts th { color: #198754; }
+.day-book-section.payments th { color: #dc3545; }
+.day-book-empty td { height: 140px; text-align: center; vertical-align: top; padding-top: 16px; }
+@media print {
+  :host ::ng-deep .main { margin: 0 !important; padding: 0 !important; }
+  :host .main > :not(.day-book) { display: none !important; }
+  .day-book-print { display: none; }
+  .day-book { border: 0; box-shadow: none; }
+  .day-book .card-body { padding: 0; }
+  .day-book .table-responsive { overflow: visible; }
+  .day-book-table { font-size: 10px; }
+  .day-book-table td:not(:first-child), .day-book-table th:first-child, .day-book-table td:first-child { min-width: 0; }
+}

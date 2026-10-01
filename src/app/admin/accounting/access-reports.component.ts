@@ -16,6 +16,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   Report = ''; Title = ''; YearId = 0; Years: any[] = []; Heads: any[] = [];
   HeadCode = ''; FromDate = ''; ToDate = ''; MemberKey = ''; MemberSearch = '';
   Members: any[] = []; SelectedMember: any = null; Search = '';
+  CashBankDate: any = null;
   Rows: any[] = []; Totals: any = {}; Checks: any = {}; Total = 0;
   PageNumber = 1; PageSize = 20; dataLoading = false; Loaded = false;
   Allowed = false; Error = ''; requestNumber = 0; memberRequest = 0;
@@ -54,6 +55,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
       if (r.Available === false) { this.Notice = r.Notice; return; }
       this.Allowed = true; this.Years = r.Years; this.YearId = r.Year.YearId; this.Heads = r.Heads;
       this.FromDate = r.Year.StartDate.substring(0, 10); this.ToDate = r.Year.EndDate.substring(0, 10);
+      if (this.Report == 'CashBank') this.CashBankDate = new Date(this.ToDate);
       if (this.Report == 'DayBook') {
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -71,6 +73,10 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   dayBookDateChanged(date: any) {
     this.FromDate = date ? this.loadData.loadDateYMD(date) || '' : '';
     this.ToDate = this.FromDate;
+    this.filtersChanged();
+  }
+  cashBankDateChanged(date: any) {
+    this.ToDate = date ? this.loadData.loadDateYMD(date) || '' : '';
     this.filtersChanged();
   }
   filtersChanged() { this.requestNumber++; this.Rows = []; this.Totals = {}; this.Loaded = false; this.dataLoading = false; }
@@ -108,6 +114,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     this.Error = message || 'Unable to load this report'; this.toastr.error(this.Error);
   }
   page(change: number) { this.PageNumber += change; this.load(); }
+  printDayBook() { window.print(); }
   balance(value: number) {
     return `${Math.abs(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''}`;
   }

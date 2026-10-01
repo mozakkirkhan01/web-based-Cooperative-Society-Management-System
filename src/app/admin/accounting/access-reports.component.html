@@ -39,10 +39,17 @@
                   [for]="DayBookDatePicker"></mat-datepicker-toggle><mat-datepicker
                   #DayBookDatePicker></mat-datepicker><mat-error>A valid date is required</mat-error></mat-form-field>
             </div>
-            <div class="col-md-3" *ngIf="Report != 'DayBook'"><mat-form-field appearance="outline"
+            <div class="col-md-3" *ngIf="Report == 'CashBank'"><mat-form-field appearance="outline"
+                class="w-100"><mat-label>Up to date</mat-label><input matInput [(ngModel)]="CashBankDate"
+                  [matDatepicker]="CashBankDatePicker" (dateInput)="cashBankDateChanged($event.value)"
+                  required><mat-datepicker-toggle matIconSuffix
+                  [for]="CashBankDatePicker"></mat-datepicker-toggle><mat-datepicker
+                  #CashBankDatePicker></mat-datepicker><mat-error>A valid date is required</mat-error></mat-form-field>
+            </div>
+            <div class="col-md-3" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>From date</mat-label><input matInput type="date" [(ngModel)]="FromDate"
                   (ngModelChange)="filtersChanged()"></mat-form-field></div>
-            <div class="col-md-3" *ngIf="Report != 'DayBook'"><mat-form-field appearance="outline"
+            <div class="col-md-3" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>To date</mat-label><input matInput type="date" [(ngModel)]="ToDate"
                   (ngModelChange)="filtersChanged()"></mat-form-field></div>
             <div class="col-md-3"><mat-form-field appearance="outline"
@@ -88,7 +95,32 @@
         Sanctioned/payable amounts do not prove disbursement; use the member ledger for actual movements.</p>
     </div>
   </div>
-  <div class="card" *ngIf="Loaded && Report != 'Checks' && Report != 'LoanApplications'">
+  <div class="card day-book" *ngIf="Loaded && Report == 'DayBook' && Checks.DayBook">
+    <div class="card-body">
+      <div class="day-book-heading"><h5 class="card-title">Day Book · {{FromDate | date:'dd-MMM-yyyy'}}</h5>
+        <button mat-stroked-button class="day-book-print" (click)="printDayBook()">Print</button></div>
+      <div class="table-responsive">
+        <table class="table table-bordered day-book-table">
+          <thead><tr><th>Head</th><th *ngFor="let account of Checks.DayBook.Accounts">{{account.HeadName}}</th></tr></thead>
+          <tbody>
+            <tr class="day-book-balance"><th>Openings:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Opening | number:'1.2-2'}}</td></tr>
+            <tr class="day-book-section receipts"><th [attr.colspan]="Checks.DayBook.Accounts.length + 1">Receipts</th></tr>
+            <tr *ngFor="let row of Checks.DayBook.Receipts"><td><strong>{{row.HeadName}}</strong><small *ngIf="row.Head" class="d-block">{{row.Head}}</small><small *ngIf="row.VoucherNumber" class="d-block text-muted">{{row.VoucherNumber}}</small></td><td *ngFor="let amount of row.Amounts">{{amount | number:'1.2-2'}}</td></tr>
+            <tr *ngIf="!Checks.DayBook.Receipts.length" class="day-book-empty"><td [attr.colspan]="Checks.DayBook.Accounts.length + 1">&gt;&gt;&gt;&gt; No Receipts &lt;&lt;&lt;&lt;</td></tr>
+            <tr class="day-book-balance"><th>Receipts:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Receipts | number:'1.2-2'}}</td></tr>
+            <tr class="day-book-balance"><th>Total:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.ReceiptTotal | number:'1.2-2'}}</td></tr>
+            <tr class="day-book-section payments"><th [attr.colspan]="Checks.DayBook.Accounts.length + 1">Payments</th></tr>
+            <tr *ngFor="let row of Checks.DayBook.Payments"><td><strong>{{row.HeadName}}</strong><small *ngIf="row.Head" class="d-block">{{row.Head}}</small><small *ngIf="row.VoucherNumber" class="d-block text-muted">{{row.VoucherNumber}}</small></td><td *ngFor="let amount of row.Amounts">{{amount | number:'1.2-2'}}</td></tr>
+            <tr *ngIf="!Checks.DayBook.Payments.length" class="day-book-empty"><td [attr.colspan]="Checks.DayBook.Accounts.length + 1">&gt;&gt;&gt;&gt; No Payments &lt;&lt;&lt;&lt;</td></tr>
+            <tr class="day-book-balance"><th>Payments:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Payments | number:'1.2-2'}}</td></tr>
+            <tr class="day-book-balance"><th>Closings:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Closing | number:'1.2-2'}}</td></tr>
+            <tr class="day-book-balance"><th>Total:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Payments + account.Closing | number:'1.2-2'}}</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="card" *ngIf="Loaded && Report != 'DayBook' && Report != 'Checks' && Report != 'LoanApplications'">
     <div class="card-body">
       <h5 class="card-title">{{Title}} · {{FromDate | date:'dd-MM-yyyy'}}<ng-container *ngIf="Report != 'DayBook'"> to
           {{ToDate | date:'dd-MM-yyyy'}}</ng-container></h5>
@@ -128,14 +160,14 @@
           </thead>
           <tbody>
             <tr *ngFor="let row of Rows" [class.table-warning]="row.Kind == 'Opening'"
-              [class.table-info]="row.Kind == 'Total'">
+              [class.table-info]="row.Kind == 'Total'" [class.month-total]="row.Kind == 'MonthTotal'">
               <td>{{row.HeadCode}} — {{row.HeadName}}</td>
-              <td *ngIf="!isBalance" class="text-nowrap">{{row.EntryDate | date:'dd-MM-yyyy'}}</td>
+              <td *ngIf="!isBalance" class="text-nowrap">{{row.EntryDate | date:(row.Kind == 'MonthTotal' ? 'MMM-yyyy' : 'dd-MM-yyyy')}}</td>
               <td *ngIf="!isBalance">{{row.VoucherNumber}}<small *ngIf="row.ReferenceNumber" class="d-block">Ref:
                   {{row.ReferenceNumber}}</small><small *ngIf="row.ChequeNumber" class="d-block">Cheque:
                   {{row.ChequeNumber}}</small><small *ngIf="row.SourceRowId" class="d-block text-muted">DailyTrans
                   #{{row.SourceRowId}}</small></td>
-              <td *ngIf="showMember">{{row.MemberName}}<small class="d-block">{{row.MemberNo}} / {{row.StaffNo}}</small>
+              <td *ngIf="showMember">{{row.MemberName}}<small *ngIf="row.MemberNo || row.StaffNo" class="d-block">{{row.MemberNo}} / {{row.StaffNo}}</small>
               </td>
               <td *ngIf="!isBalance">{{row.Narration}}</td>
               <td *ngIf="isBalance" class="text-end text-nowrap">{{balance(row.Opening)}}</td>
