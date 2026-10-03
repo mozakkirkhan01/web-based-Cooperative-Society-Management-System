@@ -42,7 +42,7 @@
                                 <mat-form-field appearance="outline" class="col-sm-4">
                                     <mat-label>Receipt No.</mat-label>
                                     <input matInput #ReceiptNo="ngModel" name="ReceiptNo"
-                                        [(ngModel)]="Receipt.ReceiptNo" maxlength="10" required autofocus>
+                                        [(ngModel)]="Receipt.ReceiptNo" (change)="onReceiptNoChange()" (blur)="onReceiptNoChange()" maxlength="10" required autofocus>
                                     <mat-error>
                                         Receipt No. is <strong>required</strong>
                                     </mat-error>

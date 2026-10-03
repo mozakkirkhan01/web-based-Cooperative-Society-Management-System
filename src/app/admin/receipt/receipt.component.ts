@@ -270,6 +270,28 @@ onBankCashTypeChange() {
       this.Receipt.MemberName = member.SearchMember;
     }
   }
+
+  onReceiptNoChange() {
+    if (this.Receipt.ReceiptId > 0) return;
+    const receiptNo = String(this.Receipt.ReceiptNo || '').trim();
+    if (!receiptNo) return;
+    var obj: RequestModel = {
+      request: this.localService.encrypt(JSON.stringify({ ReceiptNo: receiptNo })).toString()
+    };
+    this.service.getMemberByReceiptNo(obj).subscribe((r1: any) => {
+      let response = r1 as any;
+      if (response.Message == ConstantData.SuccessMessage && response.MemberId > 0) {
+        const pool = this.AllMemberList.length ? this.AllMemberList : this.MemberList;
+        const member = pool.find((x: any) => x.MemberId == response.MemberId);
+        if (member) {
+          this.Receipt.MemberId = member.MemberId;
+          this.Receipt.MemberName = member.SearchMember;
+          this.balanceRefresh++;
+          this.toastr.info("Member auto-filled from Receipt No. " + receiptNo);
+        }
+      }
+    });
+  }
   saveReceipt() {
     if (this.isSaving) return;
     if (!this.action.ResponseReceived || !(this.Receipt.ReceiptId > 0 ? this.action.CanEdit : this.action.CanCreate)) {
