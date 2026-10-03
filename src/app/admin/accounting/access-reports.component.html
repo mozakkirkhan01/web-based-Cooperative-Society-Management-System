@@ -120,7 +120,7 @@
       </div>
     </div>
   </div>
-  <div class="card" *ngIf="Loaded && Report != 'DayBook' && Report != 'Checks' && Report != 'LoanApplications'">
+  <div class="card" *ngIf="Loaded && Report != 'Checks' && Report != 'LoanApplications' && (Report != 'DayBook' || !Checks.DayBook)">
     <div class="card-body">
       <h5 class="card-title">{{Title}} · {{FromDate | date:'dd-MM-yyyy'}}<ng-container *ngIf="Report != 'DayBook'"> to
           {{ToDate | date:'dd-MM-yyyy'}}</ng-container></h5>
