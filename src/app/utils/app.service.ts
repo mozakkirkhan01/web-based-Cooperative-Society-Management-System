@@ -35,6 +35,9 @@ export class AppService {
   deleteReceipt(obj: any) {
     return this.http.post(this.apiUrl + "Receipt/deleteReceipt", obj, { headers: this.headers })
   }
+  getMemberByReceiptNo(obj: any) {
+    return this.http.post(this.apiUrl + "Receipt/getMemberByReceiptNo", obj, { headers: this.headers })
+  }
 
   //MemberDoc
   getMemberImageList(obj: any) {
