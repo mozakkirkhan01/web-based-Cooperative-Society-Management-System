@@ -35,10 +35,14 @@
     <div class="card-body">
       <div class="text-end mt-3 passbook-actions"><button mat-raised-button color="primary"
           (click)="printPassbook()">Print</button></div>
-      <div class="text-center">
-        <h5 class="card-title pb-1">{{Passbook.Company?.CompanyName}}</h5>
-        <p>{{Passbook.Company?.CompanyAddress}}</p>
-        <h5>Member Passbook</h5>
+      <div class="text-center my-3 passbook-header">
+        <h3 class="passbook-company-name">{{Passbook.Company?.CompanyName}}</h3>
+        <p class="passbook-hindi-name" *ngIf="Passbook.Company?.CompanyNameHindi">{{Passbook.Company?.CompanyNameHindi}}</p>
+        <p class="passbook-address-line">
+          <span *ngIf="Passbook.Company?.RegistrationNo" class="me-4">(Regd. No.- {{Passbook.Company?.RegistrationNo}})</span>
+          <span>{{Passbook.Company?.CompanyAddress}}</span>
+        </p>
+        <h4 class="passbook-title">Member PassBook</h4>
       </div>
       <div class="row mb-3">
         <div class="col-sm-6">Staff No.: <strong>{{Passbook.Member?.StaffNo}}</strong><br>Member No.:

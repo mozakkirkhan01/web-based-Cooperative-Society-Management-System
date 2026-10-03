@@ -1,4 +1,51 @@
+/* Member Passbook Styles */
 .table th { white-space: nowrap; }
 .table td { vertical-align: middle; }
 .table-responsive { max-width: 100%; }
 .table-warning td, .table-info td { font-weight: 600; }
+.passbook-heading { font-weight: 700; text-decoration: underline; }
+
+.passbook-company-name {
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: 1.55rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.passbook-hindi-name {
+  font-size: 1.15rem;
+  font-weight: 500;
+  margin-bottom: 3px;
+  color: #111;
+}
+
+.passbook-address-line {
+  font-size: 0.95rem;
+  color: #222;
+  margin-bottom: 14px;
+}
+
+.passbook-title {
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  font-size: 1.35rem;
+  margin-top: 10px;
+  margin-bottom: 18px;
+}
+
+@media print {
+  .passbook-company-name {
+    text-decoration: underline !important;
+    font-size: 18pt !important;
+  }
+  .passbook-hindi-name {
+    font-size: 13pt !important;
+  }
+  .passbook-title {
+    text-decoration: underline !important;
+    font-size: 15pt !important;
+  }
+}

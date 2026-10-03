@@ -38,6 +38,16 @@
                                             required !!
                                         </mat-error>
                                     </mat-form-field>
+                                    <mat-form-field appearance="outline" class="col-sm-8">
+                                        <mat-label>Company Name (Hindi)</mat-label>
+                                        <input matInput #CompanyNameHindi="ngModel" name="CompanyNameHindi"
+                                            [(ngModel)]="Company.CompanyNameHindi" placeholder="बोकारो इस्पात कर्मचारी...">
+                                    </mat-form-field>
+                                    <mat-form-field appearance="outline" class="col-sm-4">
+                                        <mat-label>Registration No.</mat-label>
+                                        <input matInput #RegistrationNo="ngModel" name="RegistrationNo"
+                                            [(ngModel)]="Company.RegistrationNo" placeholder="BAGH-6/78">
+                                    </mat-form-field>
                                     <mat-form-field appearance="outline" class="col-sm-4">
                                         <mat-label>Email</mat-label>
                                         <input type="email" matInput #Email="ngModel" name="Email"
