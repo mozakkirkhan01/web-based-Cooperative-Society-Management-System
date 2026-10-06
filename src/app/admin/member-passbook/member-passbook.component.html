@@ -31,82 +31,233 @@
     </div>
     <p *ngIf="!MemberKey">Select a member to open their passbook for the selected financial year.</p>
   </div></div>
+
   <div class="card member-passbook" *ngIf="Loaded">
     <div class="card-body">
-      <div class="text-end mt-3 passbook-actions"><button mat-raised-button color="primary"
-          (click)="printPassbook()">Print</button></div>
-      <div class="text-center my-3 passbook-header">
-        <h3 class="passbook-company-name">{{Passbook.Company?.CompanyName}}</h3>
-        <p class="passbook-hindi-name" *ngIf="Passbook.Company?.CompanyNameHindi">{{Passbook.Company?.CompanyNameHindi}}</p>
-        <p class="passbook-address-line">
-          <span *ngIf="Passbook.Company?.RegistrationNo" class="me-4">(Regd. No.- {{Passbook.Company?.RegistrationNo}})</span>
-          <span>{{Passbook.Company?.CompanyAddress}}</span>
-        </p>
-        <h4 class="passbook-title">Member PassBook</h4>
+
+      <!-- ================================================================= -->
+      <!-- 1. SCREEN VIEW (Visible on web page, hidden when printing)       -->
+      <!-- ================================================================= -->
+      <div class="passbook-screen-view">
+        <div class="text-end mt-3 passbook-actions">
+          <button mat-raised-button color="primary" (click)="printPassbook()">
+            <i class="bi bi-printer me-1"></i> Print
+          </button>
+        </div>
+
+        <div class="text-center my-3 passbook-header">
+          <h3 class="passbook-company-name">{{Passbook.Company?.CompanyName}}</h3>
+          <p class="passbook-hindi-name" *ngIf="Passbook.Company?.CompanyNameHindi">{{Passbook.Company?.CompanyNameHindi}}</p>
+          <p class="passbook-address-line">
+            <span *ngIf="Passbook.Company?.RegistrationNo" class="me-4">(Regd. No.- {{Passbook.Company?.RegistrationNo}})</span>
+            <span>{{Passbook.Company?.CompanyAddress}}</span>
+          </p>
+          <h4 class="passbook-title">Member PassBook</h4>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-sm-6">
+            Staff No.: <strong>{{Passbook.Member?.StaffNo}}</strong><br>
+            Member No.: <strong>{{Passbook.Member?.MemberNo}}</strong><br>
+            Name: <strong>{{Passbook.Member?.MemberName}}</strong>
+          </div>
+          <div class="col-sm-6 text-sm-end">
+            Financial year: <strong>{{Passbook.Year}}</strong><br>
+            Period: {{Passbook.FromDate | date:'dd-MM-yyyy'}} to {{Passbook.ToDate | date:'dd-MM-yyyy'}}
+          </div>
+        </div>
+
+        <div class="table-responsive" *ngFor="let section of Rows">
+          <table class="table table-bordered passbook-months">
+            <thead>
+              <tr>
+                <th colspan="14">{{section.HeadName}}</th>
+              </tr>
+              <tr>
+                <th></th>
+                <th *ngFor="let month of Passbook.Months" class="text-end">{{month | date:'MMM'}}</th>
+                <th class="text-end">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Debit</td>
+                <td *ngFor="let month of section.Months" class="text-end">{{month.Debit | number:'1.2-2'}}</td>
+                <td class="text-end">{{section.Debit | number:'1.2-2'}}</td>
+              </tr>
+              <tr>
+                <td>Credit</td>
+                <td *ngFor="let month of section.Months" class="text-end">{{month.Credit | number:'1.2-2'}}</td>
+                <td class="text-end">{{section.Credit | number:'1.2-2'}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="table-responsive mt-3">
+          <table class="table table-bordered">
+            <thead>
+              <tr>
+                <th>Deposit head</th>
+                <th class="text-end">Opening balance</th>
+                <th class="text-end">Debits</th>
+                <th class="text-end">Credits</th>
+                <th class="text-end">Closing balance</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let section of Rows">
+                <td>{{section.HeadName}}</td>
+                <td class="text-end">{{balance(section.Opening)}}</td>
+                <td class="text-end">{{section.Debit | number:'1.2-2'}}</td>
+                <td class="text-end">{{section.Credit | number:'1.2-2'}}</td>
+                <td class="text-end">{{balance(section.Closing)}}</td>
+              </tr>
+              <tr class="table-info">
+                <td>Total deposits</td>
+                <td class="text-end">{{balance(Totals.Opening)}}</td>
+                <td class="text-end">{{Totals.Debit | number:'1.2-2'}}</td>
+                <td class="text-end">{{Totals.Credit | number:'1.2-2'}}</td>
+                <td class="text-end">{{balance(Totals.Closing)}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="small text-muted">Interest shown is recorded interest. This passbook does not calculate or post new interest.</p>
       </div>
-      <div class="row mb-3">
-        <div class="col-sm-6">Staff No.: <strong>{{Passbook.Member?.StaffNo}}</strong><br>Member No.:
-          <strong>{{Passbook.Member?.MemberNo}}</strong><br>Name: <strong>{{Passbook.Member?.MemberName}}</strong></div>
-        <div class="col-sm-6 text-sm-end">Financial year: <strong>{{Passbook.Year}}</strong><br>Period: {{Passbook.FromDate
-          | date:'dd-MM-yyyy'}} to {{Passbook.ToDate | date:'dd-MM-yyyy'}}</div>
-      </div>
-      <div class="table-responsive" *ngFor="let section of Rows">
-        <table class="table table-bordered passbook-months">
+
+      <!-- ================================================================= -->
+      <!-- 2. PRINT VIEW (Hidden on screen, exact single-page PDF on print)   -->
+      <!-- ================================================================= -->
+      <div class="passbook-print-container">
+        <!-- 1. Company & Document Header -->
+        <div class="passbook-header text-center">
+          <h2 class="company-name-en">{{Passbook.Company?.CompanyName}}</h2>
+          <div class="company-name-hi" *ngIf="Passbook.Company?.CompanyNameHindi">{{Passbook.Company?.CompanyNameHindi}}</div>
+          <div class="company-address">
+            <span class="regd-no" *ngIf="Passbook.Company?.RegistrationNo">(Regd. No.- {{Passbook.Company?.RegistrationNo}})</span>
+            <span class="address-text">{{Passbook.Company?.CompanyAddress}}</span>
+          </div>
+          <h3 class="passbook-heading-title">Member PassBook</h3>
+        </div>
+
+        <!-- 2. Member & Period Metadata -->
+        <div class="passbook-meta-bar">
+          <div class="meta-row">
+            <div class="meta-left">Staff No.: <strong>{{Passbook.Member?.StaffNo}}</strong></div>
+            <div class="meta-right"><strong>Period: {{Passbook.FromDate | date:'dd-MM-yyyy'}} to {{Passbook.ToDate | date:'dd-MM-yyyy'}}</strong></div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-left">
+              Mem. No.: <strong>{{Passbook.Member?.MemberNo}}</strong>
+              <span class="meta-divider">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+              Name: <strong>{{Passbook.Member?.MemberName}}</strong>
+            </div>
+            <div class="meta-right">Printed on: {{Today | date:'dd-MMM-yyyy'}}</div>
+          </div>
+        </div>
+
+        <!-- 3. Unified Monthly Grid Table -->
+        <table class="passbook-monthly-table">
           <thead>
-            <tr>
-              <th colspan="14">{{section.HeadName}}</th>
-            </tr>
-            <tr>
-              <th></th>
-              <th *ngFor="let month of Passbook.Months" class="text-end">{{month | date:'MMM'}}</th>
-              <th class="text-end">Total</th>
+            <tr class="months-header-row">
+              <th class="col-head-blank"></th>
+              <th *ngFor="let month of Passbook.Months" class="col-month text-end">{{month | date:'MMM'}}</th>
+              <th class="col-total text-end">Total</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td>Debit</td>
-              <td *ngFor="let month of section.Months" class="text-end">{{month.Debit | number:'1.2-2'}}</td>
-              <td class="text-end">{{section.Debit | number:'1.2-2'}}</td>
-            </tr>
-            <tr>
-              <td>Credit</td>
-              <td *ngFor="let month of section.Months" class="text-end">{{month.Credit | number:'1.2-2'}}</td>
-              <td class="text-end">{{section.Credit | number:'1.2-2'}}</td>
-            </tr>
+            <ng-container *ngFor="let section of Rows">
+              <!-- Section Title Row -->
+              <tr class="section-title-row">
+                <td colspan="7" class="section-title-text text-start">
+                  <strong>{{formatHeadTitle(section.HeadCode, section.HeadName)}}</strong>
+                </td>
+                <td colspan="7" class="section-subtitle-text text-end">
+                  <span *ngIf="section.HeadCode === '065' || section.HeadCode === '066'">(Interest Calculated @ 6.0%)</span>
+                </td>
+              </tr>
+              <!-- Debit Row -->
+              <tr class="entry-row debit-row">
+                <td class="type-col text-start">Debit</td>
+                <td *ngFor="let month of section.Months" class="text-end num-col">
+                  {{month.Debit ? (month.Debit | number:'1.0-2') : '0'}}
+                </td>
+                <td class="text-end num-col total-col">
+                  <strong>{{section.Debit ? (section.Debit | number:'1.0-2') : '0'}}</strong>
+                </td>
+              </tr>
+              <!-- Credit Row -->
+              <tr class="entry-row credit-row">
+                <td class="type-col text-start">Credit</td>
+                <td *ngFor="let month of section.Months" class="text-end num-col">
+                  {{month.Credit ? (month.Credit | number:'1.0-2') : '0'}}
+                </td>
+                <td class="text-end num-col total-col">
+                  <strong>{{section.Credit ? (section.Credit | number:'1.0-2') : '0'}}</strong>
+                </td>
+              </tr>
+            </ng-container>
           </tbody>
         </table>
+
+        <!-- 4. Summary Table -->
+        <div class="passbook-summary-box">
+          <table class="passbook-summary-table">
+            <thead>
+              <tr>
+                <th class="sum-head-col"></th>
+                <th class="text-end sum-data-col">
+                  <div>Opening Balance</div>
+                  <div class="date-sub">(as on {{Passbook.FromDate | date:'dd-MM-yyyy'}})</div>
+                </th>
+                <th class="text-end sum-data-col">
+                  <div>Debits</div>
+                  <div class="date-sub">(During the Yr.)</div>
+                </th>
+                <th class="text-end sum-data-col">
+                  <div>Credits</div>
+                  <div class="date-sub">(During the Yr.)</div>
+                </th>
+                <th class="text-end sum-data-col">
+                  <div>Closing Balance</div>
+                  <div class="date-sub">(as on {{Passbook.ToDate | date:'dd-MM-yyyy'}})</div>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let section of Rows">
+                <td class="text-start sum-title-col">
+                  <strong>{{formatSummaryTitle(section.HeadCode, section.HeadName)}}</strong>
+                </td>
+                <td class="text-end sum-val-col">{{abs(section.Opening) | number:'1.2-2'}}</td>
+                <td class="text-end sum-val-col">{{abs(section.Debit) | number:'1.2-2'}}</td>
+                <td class="text-end sum-val-col">{{abs(section.Credit) | number:'1.2-2'}}</td>
+                <td class="text-end sum-val-col">{{abs(section.Closing) | number:'1.2-2'}}</td>
+              </tr>
+              <tr class="summary-total-row">
+                <td class="text-start sum-title-col">
+                  <strong>Total Deposits</strong>
+                </td>
+                <td class="text-end sum-val-col"><strong>{{abs(Totals.Opening) | number:'1.2-2'}}</strong></td>
+                <td class="text-end sum-val-col"><strong>{{abs(Totals.Debit) | number:'1.2-2'}}</strong></td>
+                <td class="text-end sum-val-col"><strong>{{abs(Totals.Credit) | number:'1.2-2'}}</strong></td>
+                <td class="text-end sum-val-col"><strong>{{abs(Totals.Closing) | number:'1.2-2'}}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 5. Footer Disclaimer -->
+        <div class="passbook-footer-section">
+          <div class="footer-rule"></div>
+          <p class="disclaimer-note">
+            This is a Computer generated statement, hence does not require signature. If any discrepancy found in this statement, please report within a month.
+          </p>
+          <div class="footer-rule"></div>
+        </div>
       </div>
-      <div class="table-responsive mt-3">
-        <table class="table table-bordered">
-          <thead>
-            <tr>
-              <th>Deposit head</th>
-              <th class="text-end">Opening balance</th>
-              <th class="text-end">Debits</th>
-              <th class="text-end">Credits</th>
-              <th class="text-end">Closing balance</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr *ngFor="let section of Rows">
-              <td>{{section.HeadName}}</td>
-              <td class="text-end">{{balance(section.Opening)}}</td>
-              <td class="text-end">{{section.Debit | number:'1.2-2'}}</td>
-              <td class="text-end">{{section.Credit | number:'1.2-2'}}</td>
-              <td class="text-end">{{balance(section.Closing)}}</td>
-            </tr>
-            <tr class="table-info">
-              <td>Total deposits</td>
-              <td class="text-end">{{balance(Totals.Opening)}}</td>
-              <td class="text-end">{{Totals.Debit | number:'1.2-2'}}</td>
-              <td class="text-end">{{Totals.Credit | number:'1.2-2'}}</td>
-              <td class="text-end">{{balance(Totals.Closing)}}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="small text-muted">Interest shown is recorded interest. This passbook does not calculate or post new
-        interest.</p>
+
     </div>
   </div>
 </main>

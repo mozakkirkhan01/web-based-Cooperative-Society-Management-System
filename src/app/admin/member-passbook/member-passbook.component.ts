@@ -128,6 +128,34 @@ export class MemberPassbookComponent implements OnInit, OnDestroy {
     return `${Math.abs(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''}`;
   }
 
+  Today: Date = new Date();
+
+  abs(value: number): number {
+    return Math.abs(value || 0);
+  }
+
+  formatHeadTitle(code: string, originalName: string): string {
+    switch (code) {
+      case '018': return 'Mem. Compulsory Deposit';
+      case '065': return 'Interest on MCD';
+      case '083': return 'Share Capital';
+      case '076': return 'Recurring Deposit';
+      case '066': return 'Interest on Recurring Deposit';
+      default: return originalName;
+    }
+  }
+
+  formatSummaryTitle(code: string, originalName: string): string {
+    switch (code) {
+      case '018': return 'Mem. Compulsory Deposit';
+      case '065': return 'Interest on MCD';
+      case '083': return 'Share Capital';
+      case '076': return 'Recurring Deposit';
+      case '066': return 'Interest on Rec. Deposit';
+      default: return originalName;
+    }
+  }
+
   printPassbook() {
     window.print();
   }
