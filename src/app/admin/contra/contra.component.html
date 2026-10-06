@@ -1,38 +1,252 @@
 <app-progress *ngIf="dataLoading || isSaving"></app-progress>
 <main id="main" class="main">
-  <div class="pagetitle dashboard"><h1>Contra</h1><nav><ol class="breadcrumb"><li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li><li class="breadcrumb-item">Transaction</li><li class="breadcrumb-item active">Contra</li></ol></nav></div>
-  <div class="card"><div class="card-body">
-    <h5 class="card-title">New Contra</h5>
-    <p>Move money between society bank/cash accounts. Debit the receiving account and credit the paying account.</p>
-    <div class="alert alert-warning" *ngIf="pendingTransaction">A submitted transaction is awaiting confirmation. Retry the same saved transaction below. Date: {{pendingTransaction.VoucherDate | date:'dd-MM-yyyy'}} · {{pendingTransaction.Lines?.length}} rows · {{pendingTransaction.Narration}}</div>
-    <fieldset [disabled]="isSaving || !!pendingTransaction || storageError || !CanCreate">
-      <div class="row">
-        <mat-form-field appearance="outline" class="col-md-4"><mat-label>Society</mat-label><mat-select [(ngModel)]="SocietyId" (selectionChange)="getContext()" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option *ngFor="let society of SocietyList" [value]="society.SocietyId">{{society.SocietyName}}</mat-option></mat-select></mat-form-field>
-        <mat-form-field appearance="outline" class="col-md-4"><mat-label>Date</mat-label><input matInput [(ngModel)]="VoucherDate" [matDatepicker]="datePicker" (dateChange)="getContext()" required><mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle><mat-datepicker #datePicker></mat-datepicker></mat-form-field>
-        <mat-form-field appearance="outline" class="col-md-4"><mat-label>Financial year</mat-label><input matInput readonly [value]="FinancialYearName"></mat-form-field>
-        <mat-form-field appearance="outline" class="col-md-4"><mat-label>Transaction no.</mat-label><input matInput readonly value="Assigned on submit"></mat-form-field>
-        <mat-form-field appearance="outline" class="col-md-4"><mat-label>Unique reference (optional)</mat-label><input matInput [(ngModel)]="ExternalReference" maxlength="100"></mat-form-field>
-        <mat-form-field appearance="outline" class="col-md-4"><mat-label>Cheque no.</mat-label><input matInput [(ngModel)]="ChequeNo" maxlength="50"></mat-form-field>
+  <div class="pagetitle dashboard">
+    <h1>Contra</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+        <li class="breadcrumb-item">Transaction</li>
+        <li class="breadcrumb-item active">Contra</li>
+      </ol>
+    </nav>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">New Contra</h5>
+      <p>Move money between society bank/cash accounts. Debit the receiving account and credit the paying account.</p>
+      <div class="alert alert-warning" *ngIf="pendingTransaction">A submitted transaction is awaiting confirmation.
+        Retry the same saved transaction below. Date: {{pendingTransaction.VoucherDate | date:'dd-MM-yyyy'}} ·
+        {{pendingTransaction.Lines?.length}} rows · {{pendingTransaction.Narration}}</div>
+      <fieldset [disabled]="isSaving || !!pendingTransaction || storageError || !CanCreate">
+        <div class="row">
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Society</mat-label><mat-select
+              [(ngModel)]="SocietyId" (selectionChange)="getContext()"
+              [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
+                *ngFor="let society of SocietyList"
+                [value]="society.SocietyId">{{society.SocietyName}}</mat-option></mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Date</mat-label><input matInput
+              [(ngModel)]="VoucherDate" [matDatepicker]="datePicker" (dateChange)="getContext()"
+              required><mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle><mat-datepicker
+              #datePicker></mat-datepicker></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Financial year</mat-label><input matInput
+              readonly [value]="FinancialYearName"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Transaction no.</mat-label><input matInput
+              readonly value="Assigned on submit"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Voucher no.</mat-label><input matInput
+              [(ngModel)]="VoucherNo" maxlength="50" placeholder="e.g. 118"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Cheque no.</mat-label><input matInput
+              [(ngModel)]="ChequeNo" maxlength="50"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Unique reference (optional)</mat-label><input
+              matInput [(ngModel)]="ExternalReference" maxlength="100"></mat-form-field>
 
-        <mat-form-field appearance="outline" class="col-12"><mat-label>Narration</mat-label><textarea matInput [(ngModel)]="Narration" maxlength="800" required></textarea></mat-form-field>
+          <mat-form-field appearance="outline" class="col-12"><mat-label>Narration (optional)</mat-label><textarea
+              matInput [(ngModel)]="Narration" maxlength="800"></textarea></mat-form-field>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="autoIncContra" [(ngModel)]="autoIncrement">
+          <label class="form-check-label" for="autoIncContra">Auto increment voucher no. and cheque no. on next
+            entry</label>
+        </div>
+        <h5 class="card-title">Add entry</h5>
+        <div class="row">
+          <mat-form-field appearance="outline" class="col-md-8"><mat-label>Head</mat-label><mat-select
+              [(ngModel)]="Line.HeadId" (selectionChange)="getContext()"
+              [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option *ngFor="let head of HeadList"
+                [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Head balance at selected
+              date</mat-label><input matInput readonly [value]="formatBalance(balance(Line.HeadId))"></mat-form-field>
+
+          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Debit / Credit</mat-label><mat-select
+              [(ngModel)]="Line.DebitCredit" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
+                value="Debit">Debit</mat-option><mat-option
+                value="Credit">Credit</mat-option></mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Amount</mat-label><input matInput
+              type="number" min="0.01" step="0.01" [(ngModel)]="Line.Amount"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-6"><mat-label>Entry narration (optional)</mat-label><input
+              matInput [(ngModel)]="Line.Narration" maxlength="500"></mat-form-field>
+        </div>
+        <button mat-raised-button color="primary" (click)="addLine()"
+          [disabled]="isSaving || !!pendingTransaction || !CanCreate">Add entry</button>
+
+        <div class="table-responsive mt-3">
+          <table class="table table-bordered table-hover">
+            <thead>
+              <tr>
+                <th>Head</th>
+                <th class="text-end">Debit</th>
+                <th class="text-end">Credit</th>
+                <th>Narration</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let row of Lines; let i=index">
+                <td>{{row.HeadName}}</td>
+                <td class="text-end">{{row.Debit | number:'1.2-2'}}</td>
+                <td class="text-end">{{row.Credit | number:'1.2-2'}}</td>
+                <td>{{row.Narration}}</td>
+                <td><button mat-button (click)="editLine(i)"
+                    [disabled]="isSaving || !!pendingTransaction">Edit</button><button mat-button color="warn"
+                    (click)="removeLine(i)" [disabled]="isSaving || !!pendingTransaction">Remove</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="text-end mb-3">Total debits: <strong>{{total('Debit') | number:'1.2-2'}}</strong> · Total credits:
+          <strong>{{total('Credit') | number:'1.2-2'}}</strong>
+        </div>
+        <button mat-stroked-button (click)="Lines=[]" [disabled]="isSaving || !!pendingTransaction">Clear rows</button>
+      </fieldset>
+      <div class="text-center mt-3"><button mat-raised-button color="primary" (click)="submit()"
+          [disabled]="isSaving || dataLoading || storageError || !CanCreate">{{pendingTransaction ? 'Retry saved
+          transaction' : 'Submit'}}</button></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-body">
+      <h5 class="card-title">Posted Contra entries</h5>
+      <p>Latest 100 entries in the financial year through the selected date. Posted entries remain in the ledger;
+        corrections require a separate entry.</p>
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Transaction no.</th>
+              <th>Voucher no.</th>
+              <th>Date</th>
+              <th>Narration</th>
+              <th class="text-end">Amount</th>
+              <th class="text-center" style="width: 70px;">View</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let voucher of VoucherList">
+              <td>{{voucher.VoucherNumber}}</td>
+              <td><strong>{{voucher.VoucherNo || '—'}}</strong></td>
+              <td>{{voucher.VoucherDate | date:'dd-MM-yyyy'}}</td>
+              <td>{{displayNarration(voucher.Narration)}}</td>
+              <td class="text-end">{{voucher.Amount | number:'1.2-2'}}</td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-info text-white shadow-sm" (click)="viewVoucher(voucher)"
+                  title="View Details">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <h5 class="card-title">Add entry</h5>
-      <div class="row">
-        <mat-form-field appearance="outline" class="col-md-8"><mat-label>Head</mat-label><mat-select [(ngModel)]="Line.HeadId" (selectionChange)="getContext()" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option *ngFor="let head of HeadList" [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field>
-        <mat-form-field appearance="outline" class="col-md-4"><mat-label>Head balance at selected date</mat-label><input matInput readonly [value]="formatBalance(balance(Line.HeadId))"></mat-form-field>
-
-        <mat-form-field appearance="outline" class="col-md-3"><mat-label>Debit / Credit</mat-label><mat-select [(ngModel)]="Line.DebitCredit" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option value="Debit">Debit</mat-option><mat-option value="Credit">Credit</mat-option></mat-select></mat-form-field>
-        <mat-form-field appearance="outline" class="col-md-3"><mat-label>Amount</mat-label><input matInput type="number" min="0.01" step="0.01" [(ngModel)]="Line.Amount"></mat-form-field>
-        <mat-form-field appearance="outline" class="col-md-6"><mat-label>Entry narration (optional)</mat-label><input matInput [(ngModel)]="Line.Narration" maxlength="500"></mat-form-field>
-      </div>
-      <button mat-raised-button color="primary" (click)="addLine()" [disabled]="isSaving || !!pendingTransaction || !CanCreate">Add entry</button>
-
-      <div class="table-responsive mt-3"><table class="table table-bordered table-hover"><thead><tr><th>Head</th><th class="text-end">Debit</th><th class="text-end">Credit</th><th>Narration</th><th>Action</th></tr></thead><tbody><tr *ngFor="let row of Lines; let i=index"><td>{{row.HeadName}}</td><td class="text-end">{{row.Debit | number:'1.2-2'}}</td><td class="text-end">{{row.Credit | number:'1.2-2'}}</td><td>{{row.Narration}}</td><td><button mat-button (click)="editLine(i)" [disabled]="isSaving || !!pendingTransaction">Edit</button><button mat-button color="warn" (click)="removeLine(i)" [disabled]="isSaving || !!pendingTransaction">Remove</button></td></tr></tbody></table></div>
-      <div class="text-end mb-3">Total debits: <strong>{{total('Debit') | number:'1.2-2'}}</strong> · Total credits: <strong>{{total('Credit') | number:'1.2-2'}}</strong></div>
-      <button mat-stroked-button (click)="Lines=[]" [disabled]="isSaving || !!pendingTransaction">Clear rows</button>
-    </fieldset>
-    <div class="text-center mt-3"><button mat-raised-button color="primary" (click)="submit()" [disabled]="isSaving || dataLoading || storageError || !CanCreate">{{pendingTransaction ? 'Retry saved transaction' : 'Submit'}}</button></div>
-  </div></div>
-  <div class="card"><div class="card-body"><h5 class="card-title">Posted Contra entries</h5><p>Latest 100 entries in the financial year through the selected date. Posted entries remain in the ledger; corrections require a separate entry.</p><div class="table-responsive"><table class="table table-bordered"><thead><tr><th>Transaction no.</th><th>Date</th><th>Narration</th><th>Amount</th></tr></thead><tbody><tr *ngFor="let voucher of VoucherList"><td>{{voucher.VoucherNumber}}</td><td>{{voucher.VoucherDate | date:'dd-MM-yyyy'}}</td><td>{{voucher.Narration}}</td><td>{{voucher.Amount | number:'1.2-2'}}</td></tr></tbody></table></div><p *ngIf="!VoucherList.length">No posted entries for this period.</p></div></div>
+      <p *ngIf="!VoucherList.length">No posted entries for this period.</p>
+    </div>
+  </div>
 </main>
 
+<!-- VIEW CONTRA DETAILS MODAL -->
+<div class="modal fade" [class.show]="showViewModal" [style.display]="showViewModal ? 'block' : 'none'" tabindex="-1"
+  role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <!-- Modal Header -->
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">
+          <i class="bi bi-file-earmark-text me-2"></i>
+          Contra Entry Details — {{selectedVoucher?.VoucherNumber}}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeViewModal()" aria-label="Close"></button>
+      </div>
+
+      <!-- Modal Body (Loading) -->
+      <div class="modal-body p-4 text-center" *ngIf="viewLoading">
+        <div class="spinner-border text-primary my-3" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-muted">Loading transaction details...</p>
+      </div>
+
+      <!-- Modal Body (Content) -->
+      <div class="modal-body p-4" *ngIf="!viewLoading && selectedVoucher">
+        <!-- Metadata Overview Card -->
+        <div class="row g-3 mb-4 p-3 bg-light rounded border">
+          <div class="col-sm-6 col-md-3">
+            <div class="text-muted small">Transaction No.</div>
+            <div class="fw-bold text-primary fs-6">{{selectedVoucher.VoucherNumber}}</div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="text-muted small">Voucher No.</div>
+            <div class="fw-bold fs-6">{{selectedVoucher.VoucherNo || '—'}}</div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="text-muted small">Date</div>
+            <div class="fw-semibold">{{selectedVoucher.VoucherDate | date:'dd-MM-yyyy'}}</div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="text-muted small">Status</div>
+            <span class="badge bg-success">{{selectedVoucher.Status}}</span>
+          </div>
+          <div class="col-sm-6 col-md-4" *ngIf="selectedVoucher.SocietyName">
+            <div class="text-muted small">Society</div>
+            <div class="fw-semibold">{{selectedVoucher.SocietyName}}</div>
+          </div>
+          <div class="col-sm-6 col-md-4" *ngIf="selectedVoucher.ChequeNo">
+            <div class="text-muted small">Cheque No.</div>
+            <div class="fw-bold">{{selectedVoucher.ChequeNo}}</div>
+          </div>
+          <div class="col-sm-6 col-md-4" *ngIf="selectedVoucher.ExternalReference">
+            <div class="text-muted small">Reference</div>
+            <div class="text-truncate">{{selectedVoucher.ExternalReference}}</div>
+          </div>
+          <div class="col-12" *ngIf="selectedVoucher.Narration">
+            <div class="text-muted small">Narration</div>
+            <div class="p-2 bg-white rounded border fst-italic">{{displayNarration(selectedVoucher.Narration)}}</div>
+          </div>
+        </div>
+
+        <!-- Account Lines Breakdown Table -->
+        <h6 class="fw-bold mb-2 text-dark">
+          <i class="bi bi-list-columns me-1"></i> Account Entries Breakdown
+        </h6>
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 45px;" class="text-center">#</th>
+                <th>Head Name</th>
+                <th class="text-end" style="width: 140px;">Debit (₹)</th>
+                <th class="text-end" style="width: 140px;">Credit (₹)</th>
+                <th>Narration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of selectedVoucher.Lines">
+                <td class="text-center text-muted">{{line.LineNumber}}</td>
+                <td>
+                  <strong>{{line.HeadName}}</strong>
+                  <span class="badge bg-secondary ms-1" *ngIf="line.ShortName">{{line.ShortName}}</span>
+                </td>
+                <td class="text-end fw-semibold">{{line.Debit ? (line.Debit | number:'1.2-2') : '—'}}</td>
+                <td class="text-end fw-semibold">{{line.Credit ? (line.Credit | number:'1.2-2') : '—'}}</td>
+                <td class="text-muted small">{{line.Narration || '—'}}</td>
+              </tr>
+            </tbody>
+            <tfoot class="table-light fw-bold">
+              <tr>
+                <td colspan="2" class="text-end">Total:</td>
+                <td class="text-end text-success">{{selectedVoucher.TotalDebit | number:'1.2-2'}}</td>
+                <td class="text-end text-success">{{selectedVoucher.TotalCredit | number:'1.2-2'}}</td>
+                <td></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeViewModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Backdrop -->
+<div class="modal-backdrop fade show" *ngIf="showViewModal" (click)="closeViewModal()"></div>

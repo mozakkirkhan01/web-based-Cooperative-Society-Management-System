@@ -20,9 +20,11 @@ export class ContraComponent implements OnInit, OnDestroy {
   SocietyId: any = null;
   VoucherDate: any = new Date();
   FinancialYearName = '';
+  VoucherNo = '';
   Narration = '';
   ExternalReference = '';
   ChequeNo = '';
+  autoIncrement = true;
   Line: any = {};
   Lines: any[] = [];
   MemberSearch = '';
@@ -35,6 +37,9 @@ export class ContraComponent implements OnInit, OnDestroy {
   contextRequest = 0;
   memberRequest = 0;
   storageError = false;
+  showViewModal = false;
+  viewLoading = false;
+  selectedVoucher: any = null;
 
   constructor(private service: AppService, private localService: LocalService,
     private loadData: LoadDataService, private toastr: ToastrService) { }
@@ -74,6 +79,7 @@ export class ContraComponent implements OnInit, OnDestroy {
       if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
       this.BalanceList = response.BalanceList; this.MemberBalance = response.MemberBalance;
       this.FinancialYearName = response.FinancialYearName; this.VoucherList = response.VoucherList;
+      if (!this.VoucherNo && response.NextVoucherNo) { this.VoucherNo = String(response.NextVoucherNo); }
     }, error => { if (current == this.contextRequest) this.toastr.error(error.error?.Message || 'Unable to load balances'); });
   }
   findMembers() {
@@ -103,7 +109,7 @@ export class ContraComponent implements OnInit, OnDestroy {
   }
   headName(id: any) { return this.HeadList.find(x => x.HeadId == id)?.HeadName || id; }
   balance(id: any) { return this.BalanceList.find(x => x.HeadId == id)?.ClosingBalance; }
-  formatBalance(value: any) { return value == null ? 'Not available' : Math.abs(value).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + (value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''); }
+  formatBalance(value: any) { return value == null ? 'Not available' : Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''); }
   total(field: string) { return this.Lines.reduce((sum, x) => sum + Math.round(Number(x[field] || 0) * 100), 0) / 100; }
   addLine() {
     if (this.dataLoading || this.isSaving || this.pendingTransaction || !this.CanCreate) return;
@@ -112,23 +118,36 @@ export class ContraComponent implements OnInit, OnDestroy {
     const rule = this.RuleList.find(x => x.HeadId == this.Line.HeadId);
     if ((false || rule?.RequiresMember || this.HeadList.find(x => x.HeadId == this.Line.HeadId)?.HeadType == 3) && !this.Line.MemberId) { this.toastr.error('Select a member from the suggestions'); return; }
     if (rule?.RequiresLoan && !this.Line.LoanId || rule?.RequiresDepositAccount && !this.Line.DepositAccountId) { this.toastr.error('This head requires its loan/deposit account details'); return; }
-    this.Lines.push({ ...this.Line, HeadName: this.headName(this.Line.HeadId), MemberName: this.SelectedMember?.MemberName,
+    this.Lines.push({
+      ...this.Line, HeadName: this.headName(this.Line.HeadId), MemberName: this.SelectedMember?.MemberName,
       MemberNo: this.SelectedMember?.MemberNo, StaffNo: this.SelectedMember?.StaffNo,
-      Debit: this.Line.DebitCredit == 'Debit' ? amount : 0, Credit: this.Line.DebitCredit == 'Credit' ? amount : 0 });
+      Debit: this.Line.DebitCredit == 'Debit' ? amount : 0, Credit: this.Line.DebitCredit == 'Credit' ? amount : 0
+    });
     this.resetLine();
   }
   buildPayload() {
     if (this.Lines.length < 2 || this.total('Debit') != this.total('Credit')) { this.toastr.error('Add at least two lines with equal total debit and credit'); return null; }
-    return { Lines: this.Lines.map(x => ({ HeadId: x.HeadId, MemberId: x.MemberId || null, LoanId: x.LoanId || null,
-      DepositAccountId: x.DepositAccountId || null, Component: x.Component || null, Debit: x.Debit, Credit: x.Credit, Narration: x.Narration || '' })) };
+    return {
+      Lines: this.Lines.map(x => ({
+        HeadId: x.HeadId, MemberId: x.MemberId || null, LoanId: x.LoanId || null,
+        DepositAccountId: x.DepositAccountId || null, Component: x.Component || null, Debit: x.Debit, Credit: x.Credit, Narration: x.Narration || ''
+      }))
+    };
   }
   submit() {
     if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate) return;
     if (!this.pendingTransaction) {
-      if (!this.SocietyId || !this.VoucherDate || !this.Narration.trim()) { this.toastr.error('Select society, date and enter narration'); return; }
+      if (!this.SocietyId || !this.VoucherDate) { this.toastr.error('Select society and date'); return; }
       const payload = this.buildPayload();
       if (!payload) return;
-      this.pendingTransaction = { ...payload, SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), Narration: this.Narration, ChequeNo: this.ChequeNo, ExternalReference: this.ExternalReference, RequestKey: crypto.randomUUID() };
+      this.pendingTransaction = {
+        ...payload, SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate),
+        VoucherNo: this.VoucherNo ? this.VoucherNo.trim() : null,
+        Narration: this.Narration ? this.Narration.trim() : '',
+        ChequeNo: this.ChequeNo ? this.ChequeNo.trim() : null,
+        ExternalReference: this.ExternalReference ? this.ExternalReference.trim() : null,
+        RequestKey: crypto.randomUUID()
+      };
       try { sessionStorage.setItem(this.pendingKey(), this.localService.encrypt(JSON.stringify(this.pendingTransaction)).toString()); }
       catch { this.pendingTransaction = null; this.toastr.error('Enable session storage to retain a safe retry'); return; }
     }
@@ -137,13 +156,62 @@ export class ContraComponent implements OnInit, OnDestroy {
       this.isSaving = false;
       if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
       sessionStorage.removeItem(this.pendingKey()); this.pendingTransaction = null; this.Lines = [];
-      this.Narration = ''; this.ExternalReference = ''; this.ChequeNo = ''; this.resetLine(); this.getContext();
+      if (this.autoIncrement && this.VoucherNo && !isNaN(Number(this.VoucherNo))) {
+        this.VoucherNo = String(Number(this.VoucherNo) + 1);
+      } else if (!this.autoIncrement) {
+        this.VoucherNo = '';
+      }
+      if (this.autoIncrement && this.ChequeNo && !isNaN(Number(this.ChequeNo))) {
+        this.ChequeNo = String(Number(this.ChequeNo) + 1);
+      } else if (!this.autoIncrement) {
+        this.ChequeNo = '';
+      }
+      this.Narration = ''; this.ExternalReference = ''; this.resetLine(); this.getContext();
       this.toastr.success('Contra posted: ' + response.VoucherNumber);
     }, error => {
       this.isSaving = false;
       if ([400, 401, 403, 404, 409].includes(error.status)) { sessionStorage.removeItem(this.pendingKey()); this.pendingTransaction = null; }
       this.toastr.error(error.error?.Message || 'Confirmation unavailable. Retry this same transaction.');
     });
+  }
+
+  displayNarration(narration: string): string {
+    if (!narration) return '—';
+    if (narration.startsWith('CONTRA | ')) {
+      const rest = narration.substring(9).trim();
+      return rest || 'CONTRA';
+    }
+    return narration;
+  }
+
+  viewVoucher(voucher: any) {
+    this.showViewModal = true;
+    this.viewLoading = true;
+    this.selectedVoucher = null;
+    this.service.accounting('TransactionDetail', this.request({
+      SourceId: voucher.VoucherId,
+      VoucherId: voucher.VoucherId,
+      SourceType: 'CONTRA',
+      SocietyId: this.SocietyId
+    })).subscribe((response: any) => {
+      this.viewLoading = false;
+      if (response.Message != ConstantData.SuccessMessage) {
+        this.toastr.error(response.Message || 'Failed to load voucher details');
+        this.closeViewModal();
+        return;
+      }
+      this.selectedVoucher = response.Voucher;
+    }, error => {
+      this.viewLoading = false;
+      this.toastr.error(error.error?.Message || 'Unable to load voucher details');
+      this.closeViewModal();
+    });
+  }
+
+  closeViewModal() {
+    this.showViewModal = false;
+    this.selectedVoucher = null;
+    this.viewLoading = false;
   }
 }
 
