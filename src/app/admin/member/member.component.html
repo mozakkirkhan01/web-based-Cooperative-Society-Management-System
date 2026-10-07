@@ -188,7 +188,8 @@
                                             <mat-label>Membership Date</mat-label>
                                             <input matInput #MembershipDate="ngModel" name="MembershipDate"
                                                 [(ngModel)]="Member.MembershipDate" placeholder="DD/MM/YYYY"
-                                                (blur)="formatMembershipDate()" [matDatepicker]="MembershipDatePicker">
+                                                (blur)="formatMembershipDate()" (dateChange)="formatMembershipDate()"
+                                                [matDatepicker]="MembershipDatePicker">
                                             <mat-datepicker-toggle matIconSuffix
                                                 [for]="MembershipDatePicker"></mat-datepicker-toggle>
                                             <mat-datepicker #MembershipDatePicker></mat-datepicker>
@@ -197,6 +198,7 @@
                                             <mat-label>Joining Date (SAIL)</mat-label>
                                             <input matInput #JoiningDate="ngModel" name="JoiningDate"
                                                 placeholder="DD/MM/YYYY" (blur)="formatJoiningDate()"
+                                                (dateChange)="formatJoiningDate()"
                                                 [(ngModel)]="Member.JoiningDate" [matDatepicker]="JoiningDatePicker">
                                             <mat-datepicker-toggle matIconSuffix
                                                 [for]="JoiningDatePicker"></mat-datepicker-toggle>
@@ -206,6 +208,7 @@
                                             <mat-label>Retirement Date</mat-label>
                                             <input matInput #RetirementDate="ngModel" name="RetirementDate"
                                                 placeholder="DD/MM/YYYY" (blur)="formatRetirementDate()"
+                                                (dateChange)="formatRetirementDate()"
                                                 [(ngModel)]="Member.RetirementDate"
                                                 [matDatepicker]="RetirementDatePicker">
                                             <mat-datepicker-toggle matIconSuffix

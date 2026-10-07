@@ -211,28 +211,25 @@ filterPsuUnit: number = 0;       // 0 = All
   }
 
   formatRetirementDate() {
-
     if (!this.Member.RetirementDate) return;
-
-    const [day, month, year] = this.Member.RetirementDate.split('-');
-
-    this.Member.RetirementDate = `${year}-${month}-${day}`;
+    const date = this.parseMemberDate(this.Member.RetirementDate);
+    if (date) {
+      this.Member.RetirementDate = date;
+    }
   }
   formatMembershipDate() {
-
     if (!this.Member.MembershipDate) return;
-
-    const [day, month, year] = this.Member.MembershipDate.split('-');
-
-    this.Member.MembershipDate = `${year}-${month}-${day}`;
+    const date = this.parseMemberDate(this.Member.MembershipDate);
+    if (date) {
+      this.Member.MembershipDate = date;
+    }
   }
   formatJoiningDate() {
-
     if (!this.Member.JoiningDate) return;
-
-    const [day, month, year] = this.Member.JoiningDate.split('-');
-
-    this.Member.JoiningDate = `${year}-${month}-${day}`;
+    const date = this.parseMemberDate(this.Member.JoiningDate);
+    if (date) {
+      this.Member.JoiningDate = date;
+    }
   }
 
   formatDateofBirth() {
@@ -245,17 +242,28 @@ filterPsuUnit: number = 0;       // 0 = All
     if (!dateOfBirth) return;
 
     this.Member.DateofBirth = dateOfBirth;
-    const isFirstOfJanuary = this.dateAdapter.getMonth(dateOfBirth) == 0 &&
-      this.dateAdapter.getDate(dateOfBirth) == 1;
-    this.Member.RetirementDate = isFirstOfJanuary
-      ? this.dateAdapter.createDate(this.dateAdapter.getYear(dateOfBirth) + 59, 11, 31)
-      : this.dateAdapter.addCalendarYears(dateOfBirth, 60);
+
+    const birthYear = this.dateAdapter.getYear(dateOfBirth);
+    const birthMonth = this.dateAdapter.getMonth(dateOfBirth);
+    const birthDay = this.dateAdapter.getDate(dateOfBirth);
+    const retirementYear = birthYear + 60;
+
+    if (birthDay === 1) {
+      // Employees born on the 1st of any month retire on the last day of the preceding month
+      const firstDayOfBirthMonth = this.dateAdapter.createDate(retirementYear, birthMonth, 1);
+      this.Member.RetirementDate = this.dateAdapter.addCalendarDays(firstDayOfBirthMonth, -1);
+    } else {
+      // Employees born on any other day retire on the last day of the birth month
+      const firstDayOfBirthMonth = this.dateAdapter.createDate(retirementYear, birthMonth, 1);
+      const daysInMonth = this.dateAdapter.getNumDaysInMonth(firstDayOfBirthMonth);
+      this.Member.RetirementDate = this.dateAdapter.createDate(retirementYear, birthMonth, daysInMonth);
+    }
   }
 
   private parseMemberDate(value: any): any | null {
     let date = this.dateAdapter.isDateInstance(value) ? value : null;
     if (!date && typeof value == 'string') {
-      date = this.dateAdapter.parse(value, ['DD/MM/YYYY', 'DD-MM-YYYY']) ||
+      date = this.dateAdapter.parse(value, ['DD/MM/YYYY', 'DD-MM-YYYY', 'YYYY-MM-DD']) ||
         this.dateAdapter.deserialize(value);
     } else if (!date) {
       date = this.dateAdapter.deserialize(value);
