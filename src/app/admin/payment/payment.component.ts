@@ -112,7 +112,7 @@ export class PaymentComponent {
       Balance: null,
       PaymentDate: new Date(),
       Status: 1,
-      DebitCreditType: 2,
+      DebitCreditType: 1,
       BankCashType: null
     };
 
@@ -120,7 +120,7 @@ export class PaymentComponent {
       this.formPayment.resetForm({
         PaymentDate: new Date(),
         Status: 1,
-        DebitCreditType: 2,
+        DebitCreditType: 1,
         HeadId: null,
         BankId: null
       });
@@ -367,7 +367,7 @@ export class PaymentComponent {
     }
     const payment = {
       ...this.Payment,
-      DebitCreditType: 2,
+      DebitCreditType: 1,
       RequestKey: this.createRequestKey(),
       PaymentDate: this.loadData.loadDateTime(this.Payment.PaymentDate),
       UpdatedBy: this.staffLogin.StaffLoginId,
