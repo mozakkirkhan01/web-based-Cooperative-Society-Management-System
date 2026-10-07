@@ -107,7 +107,11 @@
     <div class="card-body">
       <div class="day-book-heading mb-3">
         <h5 class="card-title mb-0 fw-bold">Daybook · {{FromDate | date:'dd-MMM-yyyy'}}</h5>
-        <button mat-stroked-button class="day-book-print" (click)="printDayBook()">Print</button>
+        <div>
+          <button mat-stroked-button class="me-2 day-book-print" (click)="expandAllGroups(true)">Expand All (+)</button>
+          <button mat-stroked-button class="me-2 day-book-print" (click)="expandAllGroups(false)">Collapse All (−)</button>
+          <button mat-stroked-button class="day-book-print" (click)="printDayBook()">Print</button>
+        </div>
       </div>
 
       <!-- Main Daybook Table -->
@@ -137,21 +141,41 @@
                     </div>
                   </td>
                   <td [attr.colspan]="Checks.DayBook.Accounts.length + 5" class="head-banner">
-                    {{g.HeadName}}
+                    <div class="head-banner-wrapper">
+                      <button *ngIf="g.Rows && g.Rows.length" 
+                              type="button" 
+                              class="daybook-toggle-btn"
+                              (click)="toggleGroup(g)" 
+                              [title]="g.collapsed ? 'Expand details' : 'Collapse details'">
+                        <svg *ngIf="g.collapsed" class="toggle-svg" viewBox="0 0 20 20" width="18" height="18">
+                          <circle cx="10" cy="10" r="8.5" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+                          <line x1="10" y1="5.5" x2="10" y2="14.5" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"/>
+                          <line x1="5.5" y1="10" x2="14.5" y2="10" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                        <svg *ngIf="!g.collapsed" class="toggle-svg" viewBox="0 0 20 20" width="18" height="18">
+                          <circle cx="10" cy="10" r="8.5" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+                          <line x1="5.5" y1="10" x2="14.5" y2="10" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                      <span class="head-title-text">{{g.HeadName}}</span>
+                      <span *ngIf="g.collapsed" class="collapsed-badge">({{g.Rows.length}} items hidden)</span>
+                    </div>
                   </td>
                 </tr>
 
                 <!-- Transaction Rows -->
-                <tr *ngFor="let row of g.Rows" class="daybook-data-row">
-                  <td class="text-center font-monospace">{{row.RVNo}}</td>
-                  <td class="text-center font-monospace">{{row.TrnNo}}</td>
-                  <td class="text-center font-monospace">{{row.StfNo}}</td>
-                  <td class="text-center font-monospace">{{row.Mem}}</td>
-                  <td *ngFor="let amt of row.Amounts" class="text-end font-monospace">
-                    {{amt ? (amt | number:'1.2-2') : ''}}
-                  </td>
-                  <td class="text-end font-monospace">{{row.JETotal | number:'1.2-2'}}</td>
-                </tr>
+                <ng-container *ngIf="!g.collapsed">
+                  <tr *ngFor="let row of g.Rows" class="daybook-data-row">
+                    <td class="text-center font-monospace">{{row.RVNo}}</td>
+                    <td class="text-center font-monospace">{{row.TrnNo}}</td>
+                    <td class="text-center font-monospace">{{row.StfNo}}</td>
+                    <td class="text-center font-monospace">{{row.Mem}}</td>
+                    <td *ngFor="let amt of row.Amounts" class="text-end font-monospace">
+                      {{amt ? (amt | number:'1.2-2') : ''}}
+                    </td>
+                    <td class="text-end font-monospace">{{row.JETotal | number:'1.2-2'}}</td>
+                  </tr>
+                </ng-container>
 
                 <!-- Head Subtotal Row -->
                 <tr class="head-subtotal-row">
@@ -204,21 +228,41 @@
                     </div>
                   </td>
                   <td [attr.colspan]="Checks.DayBook.Accounts.length + 5" class="head-banner">
-                    {{g.HeadName}}
+                    <div class="head-banner-wrapper">
+                      <button *ngIf="g.Rows && g.Rows.length" 
+                              type="button" 
+                              class="daybook-toggle-btn"
+                              (click)="toggleGroup(g)" 
+                              [title]="g.collapsed ? 'Expand details' : 'Collapse details'">
+                        <svg *ngIf="g.collapsed" class="toggle-svg" viewBox="0 0 20 20" width="18" height="18">
+                          <circle cx="10" cy="10" r="8.5" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+                          <line x1="10" y1="5.5" x2="10" y2="14.5" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"/>
+                          <line x1="5.5" y1="10" x2="14.5" y2="10" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                        <svg *ngIf="!g.collapsed" class="toggle-svg" viewBox="0 0 20 20" width="18" height="18">
+                          <circle cx="10" cy="10" r="8.5" fill="#ffffff" stroke="#1f2937" stroke-width="1.5"/>
+                          <line x1="5.5" y1="10" x2="14.5" y2="10" stroke="#dc2626" stroke-width="2.5" stroke-linecap="round"/>
+                        </svg>
+                      </button>
+                      <span class="head-title-text">{{g.HeadName}}</span>
+                      <span *ngIf="g.collapsed" class="collapsed-badge">({{g.Rows.length}} items hidden)</span>
+                    </div>
                   </td>
                 </tr>
 
                 <!-- Transaction Rows -->
-                <tr *ngFor="let row of g.Rows" class="daybook-data-row">
-                  <td class="text-center font-monospace">{{row.RVNo}}</td>
-                  <td class="text-center font-monospace">{{row.TrnNo}}</td>
-                  <td class="text-center font-monospace">{{row.StfNo}}</td>
-                  <td class="text-center font-monospace">{{row.Mem}}</td>
-                  <td *ngFor="let amt of row.Amounts" class="text-end font-monospace">
-                    {{amt ? (amt | number:'1.2-2') : ''}}
-                  </td>
-                  <td class="text-end font-monospace">{{row.JETotal | number:'1.2-2'}}</td>
-                </tr>
+                <ng-container *ngIf="!g.collapsed">
+                  <tr *ngFor="let row of g.Rows" class="daybook-data-row">
+                    <td class="text-center font-monospace">{{row.RVNo}}</td>
+                    <td class="text-center font-monospace">{{row.TrnNo}}</td>
+                    <td class="text-center font-monospace">{{row.StfNo}}</td>
+                    <td class="text-center font-monospace">{{row.Mem}}</td>
+                    <td *ngFor="let amt of row.Amounts" class="text-end font-monospace">
+                      {{amt ? (amt | number:'1.2-2') : ''}}
+                    </td>
+                    <td class="text-end font-monospace">{{row.JETotal | number:'1.2-2'}}</td>
+                  </tr>
+                </ng-container>
 
                 <!-- Head Subtotal Row -->
                 <tr class="head-subtotal-row">
