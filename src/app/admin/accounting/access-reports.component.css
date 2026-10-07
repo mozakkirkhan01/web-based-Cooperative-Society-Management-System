@@ -3,24 +3,144 @@
 .table-responsive { max-width: 100%; }
 .table-warning td, .table-info td { font-weight: 600; }
 .table .month-total td { background-color: #ffff67; color: #000; font-weight: 600; box-shadow: none; }
+
+/* Day Book Layout */
 .day-book-heading { display: flex; align-items: center; justify-content: space-between; }
-.day-book-table { font-size: 13px; color: #172c51; }
-.day-book-table thead th { text-align: center; background: #f5f6f8; }
-.day-book-table th:first-child, .day-book-table td:first-child { min-width: 190px; }
-.day-book-table td:not(:first-child) { min-width: 110px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.day-book-balance th { text-align: right; font-weight: 500; background: #f5f6f8; }
-.day-book-balance td { background: #fffde7; font-weight: 600; }
-.day-book-section th { letter-spacing: 2px; text-transform: uppercase; background: #f5f6f8; }
-.day-book-section.receipts th { color: #198754; }
-.day-book-section.payments th { color: #dc3545; }
-.day-book-empty td { height: 140px; text-align: center; vertical-align: top; padding-top: 16px; }
+.day-book-scroll { overflow-x: auto; }
+.day-book-table {
+  width: 100%;
+  font-size: 13px;
+  border-collapse: collapse;
+  color: #172c51;
+  background-color: #fff;
+}
+.day-book-table thead th {
+  background: #e9ecef;
+  font-weight: 700;
+  border: 1px solid #ced4da;
+  padding: 6px 8px;
+  white-space: nowrap;
+}
+.day-book-table .col-ribbon {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  padding: 0 !important;
+  border: none;
+  background: transparent;
+}
+.day-book-table .col-code { min-width: 58px; }
+.day-book-table .col-account { min-width: 88px; }
+.day-book-table .col-total { min-width: 95px; }
+
+/* Left Vertical Ribbon */
+.vertical-ribbon {
+  width: 32px;
+  min-width: 32px;
+  max-width: 32px;
+  vertical-align: middle;
+  text-align: center;
+  padding: 8px 0 !important;
+  border: 1px solid #ced4da;
+}
+.receipts-ribbon {
+  background-color: #f1f8e9;
+  border-right: 2px solid #4caf50 !important;
+}
+.payments-ribbon {
+  background-color: #ffebee;
+  border-right: 2px solid #f44336 !important;
+}
+.letter-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1.1;
+}
+.receipts-ribbon .letter-stack span { color: #1b5e20; }
+.payments-ribbon .letter-stack span { color: #c62828; }
+
+/* Head Banner */
+.head-banner {
+  background-color: #0d6efd;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  padding: 5px 10px !important;
+  border: 1px solid #0b5ed7 !important;
+  border-bottom: 1px dashed #6c757d !important;
+}
+
+/* Data Rows */
+.daybook-data-row td {
+  padding: 4px 8px;
+  border-left: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+  border-top: none;
+  border-bottom: none;
+  font-size: 13px;
+}
+.daybook-data-row:hover td { background-color: #f8f9fa; }
+
+/* Head Subtotal Row */
+.head-subtotal-row td {
+  padding: 4px 8px;
+  border-top: 1px dashed #6c757d !important;
+  border-bottom: 1px dashed #6c757d !important;
+  border-left: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+  font-weight: 600;
+  background-color: #fff;
+}
+
+/* Yellow Section Total Rows */
+.receipts-total-row td,
+.payments-total-row td {
+  background-color: #ffffcc !important;
+  border-top: 2px solid #adb5bd !important;
+  border-bottom: 2px solid #adb5bd !important;
+  padding: 6px 4px !important;
+}
+.section-title-receipts {
+  color: #1b5e20;
+  font-weight: 800;
+  font-size: 14px;
+}
+.section-title-payments {
+  color: #b71c1c;
+  font-weight: 800;
+  font-size: 14px;
+}
+.amount-box {
+  display: inline-block;
+  min-width: 80px;
+  background: #ffffee;
+  border: 1px solid #7f9db9;
+  padding: 2px 6px;
+  text-align: right;
+  font-family: Consolas, 'Courier New', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 2px;
+}
+
+/* Reconciliation Table */
+.day-book-reconciliation-table { font-size: 13px; }
+.day-book-reconciliation-table th { background: #f1f3f6; font-weight: 700; }
+.day-book-reconciliation-table td { padding: 5px 8px; }
+
+/* Print Styles */
 @media print {
   :host ::ng-deep .main { margin: 0 !important; padding: 0 !important; }
   :host .main > :not(.day-book) { display: none !important; }
   .day-book-print { display: none; }
   .day-book { border: 0; box-shadow: none; }
   .day-book .card-body { padding: 0; }
-  .day-book .table-responsive { overflow: visible; }
+  .day-book-scroll { overflow: visible; }
   .day-book-table { font-size: 10px; }
-  .day-book-table td:not(:first-child), .day-book-table th:first-child, .day-book-table td:first-child { min-width: 0; }
 }

@@ -21,6 +21,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   PageNumber = 1; PageSize = 20; dataLoading = false; Loaded = false;
   Allowed = false; Error = ''; requestNumber = 0; memberRequest = 0;
   IncludeDeleted = false;
+  IncludeScheduleDetails = false;
   AccessReview = ConstantData.AccessReview; Notice = '';
   private routeSubscription?: Subscription;
   constructor(private service: AppService, private localService: LocalService, private toastr: ToastrService,
@@ -41,7 +42,8 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
         StaffLoginId: this.localService.getEmployeeDetail().StaffLoginId, Report: this.Report, Mode: mode,
         YearId: this.YearId, FromDate: this.FromDate || null, ToDate: (this.Report == 'DayBook' ? this.FromDate : this.ToDate) || null,
         HeadCode: this.HeadCode, MemberKey: this.MemberKey, Search: this.Search,
-        PageNumber: this.PageNumber, PageSize: this.PageSize, IncludeDeleted: this.IncludeDeleted, ...extra
+        PageNumber: this.PageNumber, PageSize: this.PageSize, IncludeDeleted: this.IncludeDeleted,
+        IncludeScheduleDetails: this.IncludeScheduleDetails, ...extra
       })).toString()
     };
   }
@@ -116,7 +118,23 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   page(change: number) { this.PageNumber += change; this.load(); }
   printDayBook() { window.print(); }
   balance(value: number) {
+    if (this.Report == 'CashBank') {
+      return `${Math.abs(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${value >= 0 ? ' Cr' : ' Dr'}`;
+    }
     return `${Math.abs(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''}`;
+  }
+  sum(arr: number[], count?: number): number {
+    if (!arr || !arr.length) return 0;
+    const items = count !== undefined ? arr.slice(0, count) : arr;
+    return items.reduce((a, b) => a + (b || 0), 0);
+  }
+  getReceiptsRowCount(): number {
+    if (!this.Checks?.DayBook?.Receipts || !this.Checks.DayBook.Receipts.length) return 2;
+    return this.Checks.DayBook.Receipts.reduce((sum: number, g: any) => sum + 2 + (g.Rows?.length || 0), 0) + 1;
+  }
+  getPaymentsRowCount(): number {
+    if (!this.Checks?.DayBook?.Payments || !this.Checks.DayBook.Payments.length) return 2;
+    return this.Checks.DayBook.Payments.reduce((sum: number, g: any) => sum + 2 + (g.Rows?.length || 0), 0) + 1;
   }
   get isBalance() { return this.Report == 'TrialBalance' || this.Report == 'MemberBalances'; }
   get showMember() { return this.Report == 'DayBook' || this.Report == 'HeadLedger' || this.Report == 'CashBank' || this.Report == 'MemberBalances'; }

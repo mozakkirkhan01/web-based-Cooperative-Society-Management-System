@@ -52,12 +52,17 @@
             <div class="col-md-3" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>To date</mat-label><input matInput type="date" [(ngModel)]="ToDate"
                   (ngModelChange)="filtersChanged()"></mat-form-field></div>
-            <div class="col-md-3"><mat-form-field appearance="outline"
+            <div class="col-md-3" *ngIf="Report != 'DayBook'"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>Head</mat-label><mat-select [(ngModel)]="HeadCode"
                   (selectionChange)="filtersChanged()"><mat-option value="">All {{Report == 'CashBank' ? 'cash / bank
                     heads' : 'heads'}}</mat-option><mat-option *ngFor="let head of Heads"
                     [value]="head.HeadCode">{{head.HeadCode}} —
                     {{head.HeadName}}</mat-option></mat-select></mat-form-field></div>
+            <div class="col-md-3 d-flex align-items-center mb-3" *ngIf="Report == 'DayBook'">
+              <mat-checkbox [(ngModel)]="IncludeScheduleDetails" (change)="filtersChanged()">
+                Include details of Schedule Entry
+              </mat-checkbox>
+            </div>
           <div class="col-md-8" *ngIf="Report == 'MemberLedger'"><mat-form-field appearance="outline"
               class="w-100"><mat-label>Search member by name, member no. or staff no.</mat-label><input matInput
                 [(ngModel)]="MemberSearch" (input)="findMembers()" [matAutocomplete]="memberAuto"><mat-autocomplete
@@ -79,15 +84,18 @@
               [(ngModel)]="Search" (ngModelChange)="filtersChanged()"
               (keyup.enter)="show()"></mat-form-field><mat-checkbox [(ngModel)]="IncludeDeleted"
             (change)="filtersChanged()">Include deleted applications</mat-checkbox></div>
-        <div class="col-md-4 d-flex gap-2 mb-3"><button mat-raised-button color="primary" (click)="show()"
-            [disabled]="dataLoading || (Report == 'MemberLedger' && !MemberKey)">Show</button><button mat-stroked-button
-            (click)="load(true)" *ngIf="Report != 'Checks'"
-            [disabled]="dataLoading || !Loaded || !Total">Export CSV</button></div>
+        <div class="col-md-4 d-flex align-items-center gap-2 mb-3">
+          <button mat-raised-button color="primary" (click)="show()"
+            [disabled]="dataLoading || (Report == 'MemberLedger' && !MemberKey)">Show</button>
+          <button mat-stroked-button (click)="printDayBook()" *ngIf="Report == 'DayBook' && Loaded">Print</button>
+          <button mat-stroked-button (click)="load(true)" *ngIf="Report != 'Checks' && Report != 'DayBook'"
+            [disabled]="dataLoading || !Loaded || !Total">Export CSV</button>
+        </div>
       </div>
       <p *ngIf="Report == 'MemberLedger' && !MemberKey">Choose a member to see each head’s opening balance, dated entries, period
         totals and running balance.</p>
-      <p *ngIf="Report == 'CashBank'">Debit increases the society’s cash/bank balance; credit reduces it. Transfers
-        between these accounts appear on both sides.</p>
+      <p *ngIf="Report == 'CashBank'">Credit represents receipts/deposits into the bank; debit represents payments/withdrawals. Transfers between these accounts appear on both sides.</p>
+      <p *ngIf="Report == 'DayBook'">Daily journal of receipts and payments across Cash and Bank accounts, matching the cooperative society Daybook.</p>
       <p *ngIf="Report == 'MemberBalances'">Balances are grouped by member and head. Select LOAN TO MEMBER or LOAN TO
         STAFF for outstanding loan principal by member; this is not an individual-loan schedule.</p>
       <p *ngIf="Report == 'LoanApplications'">Applications as recorded in the selected year’s Access file, including
@@ -97,26 +105,208 @@
   </div>
   <div class="card day-book" *ngIf="Loaded && Report == 'DayBook' && Checks.DayBook">
     <div class="card-body">
-      <div class="day-book-heading"><h5 class="card-title">Day Book · {{FromDate | date:'dd-MMM-yyyy'}}</h5>
-        <button mat-stroked-button class="day-book-print" (click)="printDayBook()">Print</button></div>
-      <div class="table-responsive">
-        <table class="table table-bordered day-book-table">
-          <thead><tr><th>Head</th><th *ngFor="let account of Checks.DayBook.Accounts">{{account.HeadName}}</th></tr></thead>
-          <tbody>
-            <tr class="day-book-balance"><th>Openings:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Opening | number:'1.2-2'}}</td></tr>
-            <tr class="day-book-section receipts"><th [attr.colspan]="Checks.DayBook.Accounts.length + 1">Receipts</th></tr>
-            <tr *ngFor="let row of Checks.DayBook.Receipts"><td><strong>{{row.HeadName}}</strong><small *ngIf="row.Head" class="d-block">{{row.Head}}</small><small *ngIf="row.VoucherNumber" class="d-block text-muted">{{row.VoucherNumber}}</small></td><td *ngFor="let amount of row.Amounts">{{amount | number:'1.2-2'}}</td></tr>
-            <tr *ngIf="!Checks.DayBook.Receipts.length" class="day-book-empty"><td [attr.colspan]="Checks.DayBook.Accounts.length + 1">&gt;&gt;&gt;&gt; No Receipts &lt;&lt;&lt;&lt;</td></tr>
-            <tr class="day-book-balance"><th>Receipts:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Receipts | number:'1.2-2'}}</td></tr>
-            <tr class="day-book-balance"><th>Total:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.ReceiptTotal | number:'1.2-2'}}</td></tr>
-            <tr class="day-book-section payments"><th [attr.colspan]="Checks.DayBook.Accounts.length + 1">Payments</th></tr>
-            <tr *ngFor="let row of Checks.DayBook.Payments"><td><strong>{{row.HeadName}}</strong><small *ngIf="row.Head" class="d-block">{{row.Head}}</small><small *ngIf="row.VoucherNumber" class="d-block text-muted">{{row.VoucherNumber}}</small></td><td *ngFor="let amount of row.Amounts">{{amount | number:'1.2-2'}}</td></tr>
-            <tr *ngIf="!Checks.DayBook.Payments.length" class="day-book-empty"><td [attr.colspan]="Checks.DayBook.Accounts.length + 1">&gt;&gt;&gt;&gt; No Payments &lt;&lt;&lt;&lt;</td></tr>
-            <tr class="day-book-balance"><th>Payments:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Payments | number:'1.2-2'}}</td></tr>
-            <tr class="day-book-balance"><th>Closings:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Closing | number:'1.2-2'}}</td></tr>
-            <tr class="day-book-balance"><th>Total:</th><td *ngFor="let account of Checks.DayBook.Accounts">{{account.Payments + account.Closing | number:'1.2-2'}}</td></tr>
+      <div class="day-book-heading mb-3">
+        <h5 class="card-title mb-0 fw-bold">Daybook · {{FromDate | date:'dd-MMM-yyyy'}}</h5>
+        <button mat-stroked-button class="day-book-print" (click)="printDayBook()">Print</button>
+      </div>
+
+      <!-- Main Daybook Table -->
+      <div class="table-responsive day-book-scroll mb-4">
+        <table class="table day-book-table">
+          <thead>
+            <tr class="header-row">
+              <th class="col-ribbon"></th>
+              <th class="text-center col-code">RVNo</th>
+              <th class="text-center col-code">TrnNo</th>
+              <th class="text-center col-code">StfNo</th>
+              <th class="text-center col-code">Mem</th>
+              <th *ngFor="let account of Checks.DayBook.Accounts" class="text-end col-account">{{account.ShortName}}</th>
+              <th class="text-end col-total">JETotal</th>
+            </tr>
+          </thead>
+
+          <!-- RECEIPTS SECTION -->
+          <tbody class="receipts-tbody">
+            <ng-container *ngIf="Checks.DayBook.Receipts && Checks.DayBook.Receipts.length; else noReceipts">
+              <ng-container *ngFor="let g of Checks.DayBook.Receipts; let gIdx = index">
+                <!-- Head Banner Row -->
+                <tr class="head-banner-row">
+                  <td *ngIf="gIdx === 0" [attr.rowspan]="getReceiptsRowCount()" class="vertical-ribbon receipts-ribbon">
+                    <div class="letter-stack">
+                      <span>R</span><span>E</span><span>C</span><span>E</span><span>I</span><span>P</span><span>T</span><span>S</span>
+                    </div>
+                  </td>
+                  <td [attr.colspan]="Checks.DayBook.Accounts.length + 5" class="head-banner">
+                    {{g.HeadName}}
+                  </td>
+                </tr>
+
+                <!-- Transaction Rows -->
+                <tr *ngFor="let row of g.Rows" class="daybook-data-row">
+                  <td class="text-center font-monospace">{{row.RVNo}}</td>
+                  <td class="text-center font-monospace">{{row.TrnNo}}</td>
+                  <td class="text-center font-monospace">{{row.StfNo}}</td>
+                  <td class="text-center font-monospace">{{row.Mem}}</td>
+                  <td *ngFor="let amt of row.Amounts" class="text-end font-monospace">
+                    {{amt ? (amt | number:'1.2-2') : ''}}
+                  </td>
+                  <td class="text-end font-monospace">{{row.JETotal | number:'1.2-2'}}</td>
+                </tr>
+
+                <!-- Head Subtotal Row -->
+                <tr class="head-subtotal-row">
+                  <td colspan="4" class="text-end fw-bold">Total:</td>
+                  <td *ngFor="let account of Checks.DayBook.Accounts; let i = index" class="text-end font-monospace">
+                    {{(g.Totals && g.Totals[i] !== undefined ? g.Totals[i] : 0) | number:'1.2-2'}}
+                  </td>
+                  <td class="text-end font-monospace fw-bold">
+                    {{g.Totals[Checks.DayBook.Accounts.length] | number:'1.2-2'}}
+                  </td>
+                </tr>
+              </ng-container>
+            </ng-container>
+
+            <!-- Fallback if No Receipts -->
+            <ng-template #noReceipts>
+              <tr class="no-data-row">
+                <td [attr.rowspan]="2" class="vertical-ribbon receipts-ribbon">
+                  <div class="letter-stack">
+                    <span>R</span><span>E</span><span>C</span><span>E</span><span>I</span><span>P</span><span>T</span><span>S</span>
+                  </div>
+                </td>
+                <td [attr.colspan]="Checks.DayBook.Accounts.length + 5" class="text-center text-muted fst-italic py-3">
+                  &gt;&gt;&gt;&gt; No Receipts &lt;&lt;&lt;&lt;
+                </td>
+              </tr>
+            </ng-template>
+
+            <!-- Receipts Section Total Row -->
+            <tr class="receipts-total-row">
+              <td colspan="4" class="text-end section-title-receipts">Receipts:</td>
+              <td *ngFor="let account of Checks.DayBook.Accounts; let i = index" class="text-end">
+                <span class="amount-box">{{(Checks.DayBook.ReceiptTotals && Checks.DayBook.ReceiptTotals[i] !== undefined ? Checks.DayBook.ReceiptTotals[i] : 0) | number:'1.2-2'}}</span>
+              </td>
+              <td class="text-end">
+                <span class="amount-box fw-bold">{{Checks.DayBook.ReceiptTotals[Checks.DayBook.Accounts.length] | number:'1.2-2'}}</span>
+              </td>
+            </tr>
+          </tbody>
+
+          <!-- PAYMENTS SECTION -->
+          <tbody class="payments-tbody">
+            <ng-container *ngIf="Checks.DayBook.Payments && Checks.DayBook.Payments.length; else noPayments">
+              <ng-container *ngFor="let g of Checks.DayBook.Payments; let gIdx = index">
+                <!-- Head Banner Row -->
+                <tr class="head-banner-row">
+                  <td *ngIf="gIdx === 0" [attr.rowspan]="getPaymentsRowCount()" class="vertical-ribbon payments-ribbon">
+                    <div class="letter-stack">
+                      <span>P</span><span>A</span><span>Y</span><span>M</span><span>E</span><span>N</span><span>T</span><span>S</span>
+                    </div>
+                  </td>
+                  <td [attr.colspan]="Checks.DayBook.Accounts.length + 5" class="head-banner">
+                    {{g.HeadName}}
+                  </td>
+                </tr>
+
+                <!-- Transaction Rows -->
+                <tr *ngFor="let row of g.Rows" class="daybook-data-row">
+                  <td class="text-center font-monospace">{{row.RVNo}}</td>
+                  <td class="text-center font-monospace">{{row.TrnNo}}</td>
+                  <td class="text-center font-monospace">{{row.StfNo}}</td>
+                  <td class="text-center font-monospace">{{row.Mem}}</td>
+                  <td *ngFor="let amt of row.Amounts" class="text-end font-monospace">
+                    {{amt ? (amt | number:'1.2-2') : ''}}
+                  </td>
+                  <td class="text-end font-monospace">{{row.JETotal | number:'1.2-2'}}</td>
+                </tr>
+
+                <!-- Head Subtotal Row -->
+                <tr class="head-subtotal-row">
+                  <td colspan="4" class="text-end fw-bold">Total:</td>
+                  <td *ngFor="let account of Checks.DayBook.Accounts; let i = index" class="text-end font-monospace">
+                    {{(g.Totals && g.Totals[i] !== undefined ? g.Totals[i] : 0) | number:'1.2-2'}}
+                  </td>
+                  <td class="text-end font-monospace fw-bold">
+                    {{g.Totals[Checks.DayBook.Accounts.length] | number:'1.2-2'}}
+                  </td>
+                </tr>
+              </ng-container>
+            </ng-container>
+
+            <!-- Fallback if No Payments -->
+            <ng-template #noPayments>
+              <tr class="no-data-row">
+                <td [attr.rowspan]="2" class="vertical-ribbon payments-ribbon">
+                  <div class="letter-stack">
+                    <span>P</span><span>A</span><span>Y</span><span>M</span><span>E</span><span>N</span><span>T</span><span>S</span>
+                  </div>
+                </td>
+                <td [attr.colspan]="Checks.DayBook.Accounts.length + 5" class="text-center text-muted fst-italic py-3">
+                  &gt;&gt;&gt;&gt; No Payments &lt;&lt;&lt;&lt;
+                </td>
+              </tr>
+            </ng-template>
+
+            <!-- Payments Section Total Row -->
+            <tr class="payments-total-row">
+              <td colspan="4" class="text-end section-title-payments">Payments:</td>
+              <td *ngFor="let account of Checks.DayBook.Accounts; let i = index" class="text-end">
+                <span class="amount-box">{{(Checks.DayBook.PaymentTotals && Checks.DayBook.PaymentTotals[i] !== undefined ? Checks.DayBook.PaymentTotals[i] : 0) | number:'1.2-2'}}</span>
+              </td>
+              <td class="text-end">
+                <span class="amount-box fw-bold">{{Checks.DayBook.PaymentTotals[Checks.DayBook.Accounts.length] | number:'1.2-2'}}</span>
+              </td>
+            </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Cash / Bank Reconciliation Table -->
+      <div class="reconciliation-section mt-4 pt-2">
+        <h6 class="fw-bold text-secondary mb-2">Reconciliation (Cash &amp; Bank Summary)</h6>
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm day-book-reconciliation-table">
+            <thead>
+              <tr class="table-light">
+                <th style="min-width: 150px;">Account / Flow</th>
+                <th *ngFor="let account of Checks.DayBook.Accounts" class="text-end font-monospace">{{account.ShortName}}</th>
+                <th class="text-end font-monospace">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="fw-semibold">Openings:</td>
+                <td *ngFor="let account of Checks.DayBook.Accounts" class="text-end font-monospace">{{account.Opening | number:'1.2-2'}}</td>
+                <td class="text-end font-monospace fw-bold">{{Checks.DayBook.OpeningTotal | number:'1.2-2'}}</td>
+              </tr>
+              <tr class="text-success">
+                <td class="fw-semibold">Receipts:</td>
+                <td *ngFor="let account of Checks.DayBook.Accounts" class="text-end font-monospace">{{account.Receipts | number:'1.2-2'}}</td>
+                <td class="text-end font-monospace fw-bold">{{Checks.DayBook.ReceiptsSum | number:'1.2-2'}}</td>
+              </tr>
+              <tr class="table-success fw-bold border-top border-bottom border-success">
+                <td>Total (Opening + Receipts):</td>
+                <td *ngFor="let account of Checks.DayBook.Accounts" class="text-end font-monospace">{{account.ReceiptTotal | number:'1.2-2'}}</td>
+                <td class="text-end font-monospace">{{(Checks.DayBook.OpeningTotal + Checks.DayBook.ReceiptsSum) | number:'1.2-2'}}</td>
+              </tr>
+              <tr class="text-danger">
+                <td class="fw-semibold">Payments:</td>
+                <td *ngFor="let account of Checks.DayBook.Accounts" class="text-end font-monospace">{{account.Payments | number:'1.2-2'}}</td>
+                <td class="text-end font-monospace fw-bold">{{Checks.DayBook.PaymentsSum | number:'1.2-2'}}</td>
+              </tr>
+              <tr>
+                <td class="fw-semibold">Closings:</td>
+                <td *ngFor="let account of Checks.DayBook.Accounts" class="text-end font-monospace">{{account.Closing | number:'1.2-2'}}</td>
+                <td class="text-end font-monospace fw-bold">{{Checks.DayBook.ClosingTotal | number:'1.2-2'}}</td>
+              </tr>
+              <tr class="table-danger fw-bold border-top border-bottom border-danger">
+                <td>Total (Payments + Closing):</td>
+                <td *ngFor="let account of Checks.DayBook.Accounts" class="text-end font-monospace">{{account.PaymentTotal | number:'1.2-2'}}</td>
+                <td class="text-end font-monospace">{{(Checks.DayBook.PaymentsSum + Checks.DayBook.ClosingTotal) | number:'1.2-2'}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -126,8 +316,8 @@
           {{ToDate | date:'dd-MM-yyyy'}}</ng-container></h5>
       <div class="row mb-3">
         <div class="col-md-3" *ngIf="Report != 'DayBook'">Opening: <strong>{{balance(Totals.Opening)}}</strong></div>
-        <div class="col-md-3">Debit: <strong>{{Totals.Debit | number:'1.2-2'}}</strong></div>
-        <div class="col-md-3">Credit: <strong>{{Totals.Credit | number:'1.2-2'}}</strong></div>
+        <div class="col-md-3">{{Report == 'CashBank' ? 'Payments / Debit' : 'Debit'}}: <strong>{{Totals.Debit | number:'1.2-2'}}</strong></div>
+        <div class="col-md-3">{{Report == 'CashBank' ? 'Receipts / Credit' : 'Credit'}}: <strong>{{Totals.Credit | number:'1.2-2'}}</strong></div>
         <div class="col-md-3" *ngIf="Report != 'DayBook'">Closing (net): <strong>{{balance(Totals.Closing)}}</strong>
         </div>
       </div>
@@ -151,8 +341,8 @@
               <th *ngIf="showMember">Member / staff</th>
               <th *ngIf="!isBalance">Narration</th>
               <th *ngIf="isBalance" class="text-end">Opening</th>
-              <th class="text-end">Debit</th>
-              <th class="text-end">Credit</th>
+              <th class="text-end">{{Report == 'CashBank' ? 'Payments / Debit' : 'Debit'}}</th>
+              <th class="text-end">{{Report == 'CashBank' ? 'Receipts / Credit' : 'Credit'}}</th>
               <th *ngIf="Report != 'DayBook'" class="text-end">{{Report == 'TrialBalance' ? 'Closing debit' :
                 'Closing'}}</th>
               <th *ngIf="Report == 'TrialBalance'" class="text-end">Closing credit</th>
