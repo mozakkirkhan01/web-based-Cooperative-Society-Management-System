@@ -36,11 +36,17 @@
               (required)</mat-label><input matInput [(ngModel)]="ExternalReference" [readonly]="!!SourceMonth"
               maxlength="100"></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-8" id="sourceHeadField"><mat-label>Source head (cut from) e.g. RECOVERY FROM BSP</mat-label><mat-select
-              [(ngModel)]="SettlementHeadId" (selectionChange)="getContext()" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
+              [(ngModel)]="SettlementHeadId" (selectionChange)="getContext()" [disabled]="isSaving || !!pendingTransaction || !CanCreate" placeholder="Select source head manually"><mat-option [value]="null">-- Select head manually --</mat-option><mat-option
                 *ngFor="let head of SourceHeadList"
                 [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Source head balance</mat-label><input
               matInput readonly [value]="formatBalance(balance(SettlementHeadId))"></mat-form-field>
+          <div class="col-12 mb-3" *ngIf="isBalanceInsufficient">
+            <div class="alert alert-danger py-2 mb-0 d-flex align-items-center">
+              <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+              <div><strong>Zero / Insufficient Balance Warning:</strong> {{balanceWarningMessage}}</div>
+            </div>
+          </div>
           <mat-form-field appearance="outline" class="col-12"><mat-label>Narration (optional)</mat-label><textarea matInput
               [(ngModel)]="Narration" maxlength="800"></textarea></mat-form-field>
         </div>
@@ -126,7 +132,7 @@
                 <td>{{mapping.Amount | number:'1.2-2'}}</td>
                 <td><mat-form-field appearance="outline"><mat-label>Select head</mat-label><mat-select
                       [(ngModel)]="mapping.HeadId" (selectionChange)="Lines=[]; Reviewed=false"
-                      [disabled]="dataLoading || isSaving || !!pendingTransaction"><mat-option
+                      [disabled]="dataLoading || isSaving || !!pendingTransaction" placeholder="Select credit head manually"><mat-option [value]="null">-- Select head manually --</mat-option><mat-option
                         *ngFor="let head of HeadList"
                         [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field></td>
               </tr>
@@ -196,8 +202,12 @@
             [disabled]="dataLoading || isSaving || !!pendingTransaction">I have verified the members, heads, amounts,
             date and source head.</mat-checkbox></div>
       </fieldset>
+      <div class="alert alert-danger mt-3" *ngIf="isBalanceInsufficient">
+        <i class="bi bi-shield-slash-fill me-2 fs-5"></i>
+        <strong>Submission Blocked:</strong> {{balanceWarningMessage}}
+      </div>
       <div class="text-center mt-3"><button mat-raised-button color="primary" (click)="submit()"
-          [disabled]="isSaving || dataLoading || storageError || !CanCreate">{{pendingTransaction ? 'Retry saved
+          [disabled]="isSaving || dataLoading || storageError || !CanCreate || isBalanceInsufficient">{{pendingTransaction ? 'Retry saved
           transaction' : 'Submit'}}</button></div>
     </div>
   </div>

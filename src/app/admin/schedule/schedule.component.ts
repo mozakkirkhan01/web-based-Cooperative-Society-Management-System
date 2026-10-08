@@ -92,14 +92,6 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       this.SourceHeadList = response.HeadList.filter((x: any) => !this.RuleList.some(r => r.HeadId == x.HeadId && (!r.IsPostingAllowed || r.RequiresMember)));
       this.CanCreate = response.CanCreate;
       if (this.SocietyList.length == 1) this.SocietyId = this.SocietyList[0].SocietyId;
-      if (!this.SettlementHeadId) {
-        const bspHead = this.SourceHeadList.find((x: any) => x.HeadName.toUpperCase().includes('RECOVERY FROM BSP'));
-        if (bspHead) {
-          this.SettlementHeadId = bspHead.HeadId;
-        } else if (this.SourceHeadList.length > 0) {
-          this.SettlementHeadId = this.SourceHeadList[0].HeadId;
-        }
-      }
       this.getContext();
     }, error => { this.dataLoading = false; this.toastr.error(error.error?.Message || 'Unable to load schedule'); });
   }
@@ -144,6 +136,47 @@ export class ScheduleComponent implements OnInit, OnDestroy {
   balance(id: any) { return this.BalanceList.find(x => x.HeadId == id)?.ClosingBalance; }
   formatBalance(value: any) { return value == null ? 'Not available' : Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''); }
   total(field: string) { return this.Lines.reduce((sum, x) => sum + Math.round(Number(x[field] || 0) * 100), 0) / 100; }
+  get cutAmount(): number {
+    return Math.max(0, Math.round((this.total('Credit') - this.total('Debit')) * 100) / 100);
+  }
+  get availableSourceBalance(): number {
+    if (!this.SettlementHeadId) return 0;
+    const rawBal = Number(this.balance(this.SettlementHeadId) || 0);
+    const head = this.SourceHeadList.find(x => x.HeadId == this.SettlementHeadId);
+    if (!head || rawBal === 0) return 0;
+    // Bank / Cash head (HeadType 1 or 2): positive balance (Debit) represents available funds.
+    if (head.HeadType == 1 || head.HeadType == 2) {
+      return rawBal > 0 ? rawBal : 0;
+    }
+    // Clearing / Employer recovery / Liability heads (e.g. RECOVERY FROM BSP):
+    // Credit balance (rawBal < 0) represents recovery funds received from employer.
+    if (rawBal < 0) {
+      return Math.abs(rawBal);
+    }
+    return 0;
+  }
+  get isBalanceInsufficient(): boolean {
+    if (!this.SettlementHeadId) return false;
+    const cut = this.cutAmount;
+    if (cut <= 0) return false;
+    return this.availableSourceBalance < cut;
+  }
+  get balanceWarningMessage(): string {
+    if (!this.SettlementHeadId) return '';
+    const cut = this.cutAmount;
+    if (cut <= 0) return '';
+    const name = this.headName(this.SettlementHeadId);
+    const available = this.availableSourceBalance;
+    const rawBal = Number(this.balance(this.SettlementHeadId) || 0);
+    if (rawBal === 0 || available === 0) {
+      return `Selected source head "${name}" has 0.00 available balance. Cannot debit ₹${cut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}. Please enter the receipt for this head first or select a head with sufficient balance.`;
+    }
+    if (available < cut) {
+      const shortfall = cut - available;
+      return `Insufficient balance in "${name}". Available: ₹${available.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}, Required to debit: ₹${cut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (Shortfall: ₹${shortfall.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}).`;
+    }
+    return '';
+  }
   addLine() {
     if (this.dataLoading || this.isSaving || this.pendingTransaction || !this.CanCreate) return;
     const amount = Number(this.Line.Amount);
@@ -168,7 +201,13 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       return null;
     }
     if (!this.SettlementHeadId) {
-      this.toastr.error('Please select the Source Head (cut from).');
+      this.toastr.error('Please select the Source Head (debit from).');
+      const headElem = document.getElementById('sourceHeadField');
+      if (headElem) { headElem.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      return null;
+    }
+    if (this.isBalanceInsufficient) {
+      this.toastr.error(this.balanceWarningMessage);
       const headElem = document.getElementById('sourceHeadField');
       if (headElem) { headElem.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
       return null;
@@ -243,30 +282,10 @@ export class ScheduleComponent implements OnInit, OnDestroy {
     const rows = this.RecoveryRows.filter(x => String(x.COOP_SOCNO) == this.RecoverySociety);
     this.SourceMonth = this.getSelectedMonth();
     if (!this.SourceMonth) { this.toastr.warning('Please select a transaction date above for the recovery month'); }
-    const findMatchingHead = (code: string) => {
-      const c = code.trim().toUpperCase();
-      if (c === 'COM' || c === 'CD' || c.includes('COMP')) {
-        return this.HeadList.find(h => h.HeadName.toUpperCase().includes('COMPULS'))?.HeadId || null;
-      }
-      if (c === 'CPL' || c.includes('LOAN')) {
-        return this.HeadList.find(h => h.HeadName.toUpperCase().includes('LOAN TO MEMBER'))?.HeadId || null;
-      }
-      if (c === 'CPI' || c.includes('INT')) {
-        return this.HeadList.find(h => h.HeadName.toUpperCase().includes('INT.ON LOAN TO MEMBER') || h.HeadName.toUpperCase().includes('INT-LOAN TO MEM'))?.HeadId || null;
-      }
-      return null;
-    };
     this.RecoveryMappings = Array.from(new Set(rows.map(x => String(x.REC_CODE).trim()))).map(code => ({
-      Code: code, HeadId: findMatchingHead(code), Count: rows.filter(x => String(x.REC_CODE).trim() == code).length,
+      Code: code, HeadId: null, Count: rows.filter(x => String(x.REC_CODE).trim() == code).length,
       Amount: rows.filter(x => String(x.REC_CODE).trim() == code).reduce((sum, x) => sum + Number(x.AMOUNT), 0)
     }));
-    // If only 1 mapping or has COM/CD, pre-select it
-    if (this.RecoveryMappings.length === 1) {
-      this.SelectedRecoveryCode = this.RecoveryMappings[0].Code;
-    } else {
-      const comMapping = this.RecoveryMappings.find(m => m.Code.toUpperCase() === 'COM' || m.Code.toUpperCase() === 'CD');
-      if (comMapping) this.SelectedRecoveryCode = comMapping.Code;
-    }
     this.updateScheduleReferenceAndNarration();
   }
   previewRecovery() {
@@ -277,9 +296,6 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       if (!this.SelectedRecoveryCode) throw new Error('Select the society and choose a recovery code row to load');
       const selectedMapping = this.RecoveryMappings.find(m => m.Code === this.SelectedRecoveryCode);
       if (!selectedMapping?.HeadId) throw new Error('Select the credit head for the chosen recovery code');
-      // Preset "Add entry" form with this selected head and Credit
-      this.Line.HeadId = selectedMapping.HeadId;
-      this.Line.DebitCredit = 'Credit';
       this.updateScheduleReferenceAndNarration();
       const source = this.RecoveryRows.filter(x => String(x.COOP_SOCNO) == this.RecoverySociety && String(x.REC_CODE).trim() === this.SelectedRecoveryCode);
       const rows = source.map(x => {
@@ -346,6 +362,12 @@ export class ScheduleComponent implements OnInit, OnDestroy {
   }
   submit() {
     if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate) return;
+    if (this.isBalanceInsufficient) {
+      this.toastr.error(this.balanceWarningMessage);
+      const headElem = document.getElementById('sourceHeadField');
+      if (headElem) { headElem.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      return;
+    }
     if (!this.pendingTransaction) {
       if (!this.SocietyId || !this.VoucherDate) { this.toastr.error('Select society and date'); return; }
       const payload = this.buildPayload();
