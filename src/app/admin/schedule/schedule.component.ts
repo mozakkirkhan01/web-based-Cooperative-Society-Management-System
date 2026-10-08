@@ -38,6 +38,7 @@ export class ScheduleComponent implements OnInit, OnDestroy {
   storageError = false;
   SettlementHeadId: any = null;
   BankHeadList: any[] = [];
+  SourceHeadList: any[] = [];
   RecoveryRows: any[] = [];
   RecoverySocieties: string[] = [];
   RecoverySociety = '';
@@ -88,8 +89,17 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       this.RuleList = response.RuleList;
       this.HeadList = response.HeadList.filter((x: any) => (x.HeadType != 1 && x.HeadType != 2) && !this.RuleList.some(r => r.HeadId == x.HeadId && !r.IsPostingAllowed));
       this.BankHeadList = response.HeadList.filter((x: any) => (x.HeadType == 1 || x.HeadType == 2) && !this.RuleList.some(r => r.HeadId == x.HeadId && !r.IsPostingAllowed));
+      this.SourceHeadList = response.HeadList.filter((x: any) => !this.RuleList.some(r => r.HeadId == x.HeadId && (!r.IsPostingAllowed || r.RequiresMember)));
       this.CanCreate = response.CanCreate;
       if (this.SocietyList.length == 1) this.SocietyId = this.SocietyList[0].SocietyId;
+      if (!this.SettlementHeadId) {
+        const bspHead = this.SourceHeadList.find((x: any) => x.HeadName.toUpperCase().includes('RECOVERY FROM BSP'));
+        if (bspHead) {
+          this.SettlementHeadId = bspHead.HeadId;
+        } else if (this.SourceHeadList.length > 0) {
+          this.SettlementHeadId = this.SourceHeadList[0].HeadId;
+        }
+      }
       this.getContext();
     }, error => { this.dataLoading = false; this.toastr.error(error.error?.Message || 'Unable to load schedule'); });
   }
@@ -119,7 +129,7 @@ export class ScheduleComponent implements OnInit, OnDestroy {
     this.MemberSearch = member.MemberName + ' — ' + member.MemberNo + ' / ' + member.StaffNo;
     this.getContext();
   }
-  resetLine() { this.Line = { HeadId: null, MemberId: null, DebitCredit: 'Debit', Amount: null, Narration: '' }; this.SelectedMember = null; this.MemberSearch = ''; this.MemberList = []; this.MemberBalance = null; this.memberRequest++; }
+  resetLine() { this.Line = { HeadId: this.Line?.HeadId || null, MemberId: null, DebitCredit: 'Credit', Amount: null, Narration: '' }; this.SelectedMember = null; this.MemberSearch = ''; this.MemberList = []; this.MemberBalance = null; this.memberRequest++; }
   removeLine(index: number) { if (this.dataLoading || this.isSaving || this.pendingTransaction) return; this.Lines.splice(index, 1); this.Reviewed = false; }
   editLine(index: number) {
     if (this.dataLoading || this.isSaving || this.pendingTransaction) return;
@@ -130,7 +140,7 @@ export class ScheduleComponent implements OnInit, OnDestroy {
     this.MemberSearch = this.SelectedMember ? row.MemberName + ' — ' + row.MemberNo + ' / ' + row.StaffNo : '';
     this.Lines.splice(index, 1); this.getContext();
   }
-  headName(id: any) { return this.HeadList.find(x => x.HeadId == id)?.HeadName || id; }
+  headName(id: any) { return this.HeadList.find(x => x.HeadId == id)?.HeadName || this.SourceHeadList.find(x => x.HeadId == id)?.HeadName || id; }
   balance(id: any) { return this.BalanceList.find(x => x.HeadId == id)?.ClosingBalance; }
   formatBalance(value: any) { return value == null ? 'Not available' : Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''); }
   total(field: string) { return this.Lines.reduce((sum, x) => sum + Math.round(Number(x[field] || 0) * 100), 0) / 100; }
@@ -151,8 +161,22 @@ export class ScheduleComponent implements OnInit, OnDestroy {
   }
   buildPayload() {
     if (!this.Reviewed || this.Lines.some(x => x.Issue || !x.HeadId || !x.MemberId)) { this.toastr.error('Resolve every row and confirm that you reviewed the entries'); return null; }
-    if (this.SourceMonth && (this.loadData.loadDateYMD(this.VoucherDate) || '').replace(/-/g, '').slice(0, 6) != this.SourceMonth) { this.toastr.error('The date must belong to the imported recovery month'); return null; }
-    if (!this.Lines.length || !this.SettlementHeadId || !this.ExternalReference.trim()) { this.toastr.error('Add member/head rows, select bank/cash and enter a unique schedule reference'); return null; }
+    this.SourceMonth = this.getSelectedMonth();
+    if (this.RecoveryRows.length && !this.SourceMonth) { this.toastr.error('Select a valid transaction date for the recovery month'); return null; }
+    if (!this.Lines.length) {
+      this.toastr.error('No member rows found. Please load member preview or add entries first.');
+      return null;
+    }
+    if (!this.SettlementHeadId) {
+      this.toastr.error('Please select the Source Head (cut from).');
+      const headElem = document.getElementById('sourceHeadField');
+      if (headElem) { headElem.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      return null;
+    }
+    if (!this.ExternalReference || !this.ExternalReference.trim()) {
+      this.toastr.error('Please enter a unique schedule reference at the top of the form.');
+      return null;
+    }
     if (!this.Lines.some(x => x.Debit > 0 || x.Credit > 0)) { this.toastr.error('There are no positive recoveries to post'); return null; }
     return {
       Lines: this.Lines.filter(x => x.Debit > 0 || x.Credit > 0).map(x => ({
@@ -190,25 +214,73 @@ export class ScheduleComponent implements OnInit, OnDestroy {
     if (!rows.length || !footer || Number(footer[1]) != rows.length || Math.round(rows.reduce((sum, row) => sum + row.AMOUNT, 0) * 100) != Math.round(Number(footer[2]) * 100)) throw new Error('The loan statement row count or payroll recovery total does not match its footer');
     return rows;
   }
+  getSelectedMonth(): string {
+    if (!this.VoucherDate) return '';
+    const ymd = this.loadData.loadDateYMD(this.VoucherDate);
+    return (ymd || '').replace(/-/g, '').slice(0, 6);
+  }
+
+  updateScheduleReferenceAndNarration() {
+    if (this.RecoverySociety && this.SourceMonth) {
+      const codeSuffix = this.SelectedRecoveryCode ? '-' + this.SelectedRecoveryCode : '';
+      const narrSuffix = this.SelectedRecoveryCode ? ' / ' + this.SelectedRecoveryCode : '';
+      this.ExternalReference = this.ImportKind + '-' + this.RecoverySociety + '-' + this.SourceMonth + codeSuffix;
+      this.Narration = 'Payroll recovery ' + this.SourceMonth + ' / society ' + this.RecoverySociety + narrSuffix;
+    }
+  }
+
+  onDateChange() {
+    this.getContext();
+    const newMonth = this.getSelectedMonth();
+    if (this.SourceMonth !== newMonth) {
+      this.SourceMonth = newMonth;
+      this.updateScheduleReferenceAndNarration();
+    }
+  }
+
   selectRecoverySociety() {
-    this.Lines = []; this.Reviewed = false; this.SourceMonth = ''; this.SelectedRecoveryCode = '';
+    this.Lines = []; this.Reviewed = false; this.SelectedRecoveryCode = '';
     const rows = this.RecoveryRows.filter(x => String(x.COOP_SOCNO) == this.RecoverySociety);
-    const months = Array.from(new Set(rows.map(x => String(x.YYYYMM))));
-    if (months.length != 1 || !/^\d{4}(0[1-9]|1[0-2])$/.test(months[0])) { this.toastr.error('Select a file with one valid recovery month'); return; }
-    this.SourceMonth = months[0];
+    this.SourceMonth = this.getSelectedMonth();
+    if (!this.SourceMonth) { this.toastr.warning('Please select a transaction date above for the recovery month'); }
+    const findMatchingHead = (code: string) => {
+      const c = code.trim().toUpperCase();
+      if (c === 'COM' || c === 'CD' || c.includes('COMP')) {
+        return this.HeadList.find(h => h.HeadName.toUpperCase().includes('COMPULS'))?.HeadId || null;
+      }
+      if (c === 'CPL' || c.includes('LOAN')) {
+        return this.HeadList.find(h => h.HeadName.toUpperCase().includes('LOAN TO MEMBER'))?.HeadId || null;
+      }
+      if (c === 'CPI' || c.includes('INT')) {
+        return this.HeadList.find(h => h.HeadName.toUpperCase().includes('INT.ON LOAN TO MEMBER') || h.HeadName.toUpperCase().includes('INT-LOAN TO MEM'))?.HeadId || null;
+      }
+      return null;
+    };
     this.RecoveryMappings = Array.from(new Set(rows.map(x => String(x.REC_CODE).trim()))).map(code => ({
-      Code: code, HeadId: null, Count: rows.filter(x => String(x.REC_CODE).trim() == code).length,
+      Code: code, HeadId: findMatchingHead(code), Count: rows.filter(x => String(x.REC_CODE).trim() == code).length,
       Amount: rows.filter(x => String(x.REC_CODE).trim() == code).reduce((sum, x) => sum + Number(x.AMOUNT), 0)
     }));
-    this.ExternalReference = this.ImportKind + '-' + this.RecoverySociety + '-' + this.SourceMonth;
-    this.Narration = 'Payroll recovery ' + this.SourceMonth + ' / society ' + this.RecoverySociety;
+    // If only 1 mapping or has COM/CD, pre-select it
+    if (this.RecoveryMappings.length === 1) {
+      this.SelectedRecoveryCode = this.RecoveryMappings[0].Code;
+    } else {
+      const comMapping = this.RecoveryMappings.find(m => m.Code.toUpperCase() === 'COM' || m.Code.toUpperCase() === 'CD');
+      if (comMapping) this.SelectedRecoveryCode = comMapping.Code;
+    }
+    this.updateScheduleReferenceAndNarration();
   }
   previewRecovery() {
     if (this.dataLoading || this.isSaving || this.pendingTransaction) return;
     try {
-      if (!this.SourceMonth || !this.SelectedRecoveryCode) throw new Error('Select the society and choose a recovery code row to load');
+      this.SourceMonth = this.getSelectedMonth();
+      if (!this.SourceMonth) throw new Error('Select a transaction date above for the recovery month');
+      if (!this.SelectedRecoveryCode) throw new Error('Select the society and choose a recovery code row to load');
       const selectedMapping = this.RecoveryMappings.find(m => m.Code === this.SelectedRecoveryCode);
       if (!selectedMapping?.HeadId) throw new Error('Select the credit head for the chosen recovery code');
+      // Preset "Add entry" form with this selected head and Credit
+      this.Line.HeadId = selectedMapping.HeadId;
+      this.Line.DebitCredit = 'Credit';
+      this.updateScheduleReferenceAndNarration();
       const source = this.RecoveryRows.filter(x => String(x.COOP_SOCNO) == this.RecoverySociety && String(x.REC_CODE).trim() === this.SelectedRecoveryCode);
       const rows = source.map(x => {
         if (!/^\d+$/.test(String(x.STAFF).trim()) || !Number.isFinite(Number(x.AMOUNT)) || Number(x.AMOUNT) < 0) throw new Error('Invalid staff number or recovery amount for ' + x.STAFF);
@@ -262,6 +334,7 @@ export class ScheduleComponent implements OnInit, OnDestroy {
         if (!['HeadName', 'StaffNo', 'MemberNo', 'Debit', 'Credit'].every(key => Object.prototype.hasOwnProperty.call(row, key))) throw new Error('Use the template columns: HeadName, StaffNo, MemberNo, Debit, Credit, Narration');
         if (!String(row.StaffNo).trim() || !String(row.MemberNo).trim() || !Number.isInteger(Number(row.StaffNo)) || !Number.isInteger(Number(row.MemberNo)) || !Number.isFinite(Number(row.Debit)) || !Number.isFinite(Number(row.Credit))) throw new Error('Member/staff numbers and amounts must be numeric');
       }
+      this.SourceMonth = this.getSelectedMonth();
       this.loadImportPreview(rows.map(x => ({ HeadName: String(x.HeadName), StaffNo: Number(x.StaffNo), MemberNo: Number(x.MemberNo), Debit: Number(x.Debit), Credit: Number(x.Credit), Narration: String(x.Narration || '') })));
     } catch (error: any) { this.toastr.error(error.message); }
     finally { event.target.value = ''; }
@@ -274,10 +347,12 @@ export class ScheduleComponent implements OnInit, OnDestroy {
   submit() {
     if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate) return;
     if (!this.pendingTransaction) {
-      if (!this.SocietyId || !this.VoucherDate || !this.Narration.trim()) { this.toastr.error('Select society, date and enter narration'); return; }
+      if (!this.SocietyId || !this.VoucherDate) { this.toastr.error('Select society and date'); return; }
       const payload = this.buildPayload();
       if (!payload) return;
-      this.pendingTransaction = { ...payload, SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), Narration: this.Narration, ChequeNo: this.ChequeNo, ExternalReference: this.ExternalReference, RequestKey: crypto.randomUUID() };
+      const defaultNarr = this.SourceMonth ? 'Payroll recovery ' + this.SourceMonth : 'Schedule entry';
+      const narration = this.Narration && this.Narration.trim() ? this.Narration.trim() : defaultNarr;
+      this.pendingTransaction = { ...payload, SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), Narration: narration, ChequeNo: '', ExternalReference: this.ExternalReference, RequestKey: crypto.randomUUID() };
       try { sessionStorage.setItem(this.pendingKey(), this.localService.encrypt(JSON.stringify(this.pendingTransaction)).toString()); }
       catch { this.pendingTransaction = null; this.toastr.error('Enable session storage to retain a safe retry'); return; }
     }

@@ -13,8 +13,7 @@
   <div class="card">
     <div class="card-body">
       <h5 class="card-title">New Schedule</h5>
-      <p>Enter monthly member/head allocations manually or import Excel. The selected bank/cash receives the net
-        collection or pays the net debit.</p>
+      <p>Enter monthly member allocations manually or import Excel/recovery files. The total amount is cut from the selected Source Head (e.g. RECOVERY FROM BSP) and credited to each member's head.</p>
       <div class="alert alert-warning" *ngIf="pendingTransaction">A submitted transaction is awaiting confirmation.
         Retry the same saved transaction below. Date: {{pendingTransaction.VoucherDate | date:'dd-MM-yyyy'}} ·
         {{pendingTransaction.Lines?.length}} rows · {{pendingTransaction.Narration}}</div>
@@ -26,26 +25,24 @@
                 *ngFor="let society of SocietyList"
                 [value]="society.SocietyId">{{society.SocietyName}}</mat-option></mat-select></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Date</mat-label><input matInput
-              [(ngModel)]="VoucherDate" [matDatepicker]="datePicker" (dateChange)="getContext()"
+              [(ngModel)]="VoucherDate" [matDatepicker]="datePicker" (dateChange)="onDateChange()"
               required><mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle><mat-datepicker
               #datePicker></mat-datepicker></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Financial year</mat-label><input matInput
               readonly [value]="FinancialYearName"></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Transaction no.</mat-label><input matInput
               readonly value="Assigned on submit"></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Unique schedule reference
+          <mat-form-field appearance="outline" class="col-md-8"><mat-label>Unique schedule reference
               (required)</mat-label><input matInput [(ngModel)]="ExternalReference" [readonly]="!!SourceMonth"
               maxlength="100"></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Cheque no.</mat-label><input matInput
-              [(ngModel)]="ChequeNo" maxlength="50"></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-8"><mat-label>Society bank / cash</mat-label><mat-select
-              [(ngModel)]="SettlementHeadId" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
-                *ngFor="let head of BankHeadList"
+          <mat-form-field appearance="outline" class="col-md-8" id="sourceHeadField"><mat-label>Source head (cut from) e.g. RECOVERY FROM BSP</mat-label><mat-select
+              [(ngModel)]="SettlementHeadId" (selectionChange)="getContext()" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
+                *ngFor="let head of SourceHeadList"
                 [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Bank / cash balance</mat-label><input
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Source head balance</mat-label><input
               matInput readonly [value]="formatBalance(balance(SettlementHeadId))"></mat-form-field>
-          <mat-form-field appearance="outline" class="col-12"><mat-label>Narration</mat-label><textarea matInput
-              [(ngModel)]="Narration" maxlength="800" required></textarea></mat-form-field>
+          <mat-form-field appearance="outline" class="col-12"><mat-label>Narration (optional)</mat-label><textarea matInput
+              [(ngModel)]="Narration" maxlength="800"></textarea></mat-form-field>
         </div>
         <h5 class="card-title">Add entry</h5>
         <div class="row">
@@ -107,8 +104,7 @@
               </mat-select>
             </mat-form-field>
           </div>
-          <p>Source month: <strong>{{SourceMonth || 'Select society'}}</strong>. The transaction date must be in this
-            month. Previously imported years cannot be posted again through this form.</p>
+          <p>Recovery month: <strong>{{formatMonth(SourceMonth) || 'Select date above'}}</strong><span *ngIf="SourceMonth"> ({{SourceMonth}})</span>. The recovery month is determined by the selected transaction date above.</p>
           <table class="table table-bordered">
             <thead>
               <tr>
@@ -161,7 +157,7 @@
                 <th>Head</th>
                 <th>Member Name / No.</th>
                 <th>Staff No.</th>
-                <th>Month</th>
+                <th>Recovery Month</th>
                 <th class="text-end">Debit</th>
                 <th class="text-end">Credit</th>
                 <th>Narration</th>
@@ -191,14 +187,14 @@
         <pagination-controls id="schedule-preview" (pageChange)="PreviewPage=$event"
           class="my-pagination"></pagination-controls>
         <div class="text-end mb-3">Total debits: <strong>{{total('Debit') | number:'1.2-2'}}</strong> · Total credits:
-          <strong>{{total('Credit') | number:'1.2-2'}}</strong><br>Bank/cash net debit:
+          <strong>{{total('Credit') | number:'1.2-2'}}</strong><br>Amount to cut from {{headName(SettlementHeadId)}}:
           <strong>{{formatBalance(total('Credit') - total('Debit'))}}</strong>
         </div>
         <button mat-stroked-button (click)="clearImport()" [disabled]="isSaving || !!pendingTransaction">Clear import /
           rows</button>
         <div class="mt-3"><mat-checkbox [(ngModel)]="Reviewed"
             [disabled]="dataLoading || isSaving || !!pendingTransaction">I have verified the members, heads, amounts,
-            date and bank/cash.</mat-checkbox></div>
+            date and source head.</mat-checkbox></div>
       </fieldset>
       <div class="text-center mt-3"><button mat-raised-button color="primary" (click)="submit()"
           [disabled]="isSaving || dataLoading || storageError || !CanCreate">{{pendingTransaction ? 'Retry saved
