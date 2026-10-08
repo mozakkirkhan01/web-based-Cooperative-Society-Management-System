@@ -289,107 +289,86 @@ filterPsuUnit: number = 0;       // 0 = All
   downloadMemberPDF(item: any) {
     const pageWidth = 210;
     const pageHeight = 297;
+    const leftX = 10;
+    const rightX = 200;
+    const boxWidth = 190;
+    const centerX = 105;
 
-    const margin = 8;
-    const innerMargin = 10;
-
-    let y = 38;
+    let y = 37.5;
     const doc = new jsPDF('p', 'mm', 'a4');
 
-
-
     const formatDate = (date: any) => {
-
       if (!date) return '';
-
       const d = new Date(date);
-
       const day = String(d.getDate()).padStart(2, '0');
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const year = d.getFullYear();
-
       return `${day}/${month}/${year}`;
     };
-    const drawBorder = () => {
 
+    // Safe printable borders for A4 (6mm outer, 8mm inner margin)
+    const drawBorder = () => {
       doc.setDrawColor(0, 55, 150);
-      doc.setLineWidth(0.8);
-      doc.roundedRect(2, 2, 206, 293, 2, 2);
+      doc.setLineWidth(0.7);
+      doc.roundedRect(6, 6, 198, 285, 2, 2);
 
       doc.setLineWidth(0.3);
+      doc.roundedRect(8, 8, 194, 281, 2, 2);
+    };
 
-      doc.roundedRect(4, 4, 202, 289, 2, 2)
-
-    }
     const drawHeader = () => {
-
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 45, 120);
-
-      doc.setFontSize(16);
-
+      doc.setFontSize(15);
       doc.text(
         "Bokaro Steel Employees (TA/MED/MAT) Co-operative Society Ltd.",
-        105,
-        14,
+        centerX,
+        16,
         { align: "center" }
       );
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(13);
 
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11.5);
       doc.text(
         "Bokaro Steel City (Regd. No. : Bagh-06/78)",
-        105,
-        21,
+        centerX,
+        22,
         { align: "center" }
       );
+
       doc.setFillColor(36, 90, 190);
-      doc.roundedRect(62, 26, 86, 9, 2, 2, "F");
+      doc.roundedRect(62, 25.5, 86, 8, 2, 2, "F");
 
       doc.setFont("helvetica", "bold");
-      doc.setFontSize(13);
+      doc.setFontSize(11.5);
       doc.setTextColor(255);
-
       doc.text(
-        "MEMBERSHIP APPLICATION FORM  ",
-        105,
-        32,
+        "MEMBERSHIP APPLICATION FORM",
+        centerX,
+        31,
         { align: "center" }
       );
+    };
 
-      y = 42;
-
-    }
     const drawSection = (title: string, height: number) => {
       doc.setDrawColor(0, 70, 170);
-      doc.roundedRect(
-        8,
-        y,
-        194,
-        height,
-        2,
-        2
-      );
+      doc.roundedRect(leftX, y, boxWidth, height, 1.5, 1.5);
+
       doc.setFillColor(240, 244, 252);
-      doc.rect(
-        9,
-        y + 1,
-        192,
-        10,
-        'F'
-      );
-      doc.setFontSize(12);
+      doc.rect(leftX + 0.5, y + 0.5, boxWidth - 1, 8.5, 'F');
+
+      doc.setFontSize(11);
       doc.setTextColor(0, 45, 120);
       doc.setFont("helvetica", "bold");
-      doc.text(title, 14, y + 7);
-      doc.line(
-        10,
-        y + 11,
-        200,
-        y + 11
-      );
-      y += 14.5;
-    }
+      doc.text(title, leftX + 4, y + 6);
+
+      doc.setDrawColor(0, 70, 170);
+      doc.setLineWidth(0.3);
+      doc.line(leftX, y + 9, rightX, y + 9);
+
+      y += 12.5;
+    };
+
     const drawRow = (
       label1: string,
       value1: any,
@@ -398,256 +377,137 @@ filterPsuUnit: number = 0;       // 0 = All
       valX1: number = 44,
       valX2: number = 136
     ) => {
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0);
-      doc.text(label1, 12, y);
+      doc.text(label1, leftX + 2, y);
 
       doc.setFont("helvetica", "normal");
       const v1Str = value1 != null ? value1.toString() : "";
-      const maxW1 = 104 - valX1;
-      let fs1 = 10;
+      const maxW1 = centerX - 1 - valX1;
+      let fs1 = 9.5;
       doc.setFontSize(fs1);
       if (doc.getTextWidth(v1Str) > maxW1 && maxW1 > 0) {
-        fs1 = Math.max(7.5, Number(((10 * maxW1) / doc.getTextWidth(v1Str)).toFixed(1)));
+        fs1 = Math.max(7.5, Number(((9.5 * maxW1) / doc.getTextWidth(v1Str)).toFixed(1)));
         doc.setFontSize(fs1);
       }
       doc.text(v1Str, valX1, y, { maxWidth: maxW1 });
 
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setFont("helvetica", "bold");
-      doc.text(label2, 108, y);
+      doc.text(label2, centerX + 3, y);
 
       doc.setFont("helvetica", "normal");
       const v2Str = value2 != null ? value2.toString() : "";
-      const maxW2 = 198 - valX2;
-      let fs2 = 10;
+      const maxW2 = rightX - 2 - valX2;
+      let fs2 = 9.5;
       doc.setFontSize(fs2);
       if (doc.getTextWidth(v2Str) > maxW2 && maxW2 > 0) {
-        fs2 = Math.max(7.5, Number(((10 * maxW2) / doc.getTextWidth(v2Str)).toFixed(1)));
+        fs2 = Math.max(7.5, Number(((9.5 * maxW2) / doc.getTextWidth(v2Str)).toFixed(1)));
         doc.setFontSize(fs2);
       }
       doc.text(v2Str, valX2, y, { maxWidth: maxW2 });
 
       doc.setDrawColor(220);
-      doc.line(10, y + 3.5, 200, y + 3.5);
-      doc.line(105, y - 4, 105, y + 3.5);
-      y += 7.5;
-    }
+      doc.setLineWidth(0.2);
+      doc.line(leftX, y + 3, rightX, y + 3);
+      doc.line(centerX, y - 3.5, centerX, y + 3);
+      y += 6.8;
+    };
 
     const drawAddressRow = (label: string, value: any) => {
-      doc.setFontSize(10);
+      doc.setFontSize(9.5);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0);
-      doc.text(label, 12, y);
+      doc.text(label, leftX + 2, y);
 
       doc.setFont("helvetica", "normal");
       const valStr = value != null ? value.toString() : "";
-      const maxW = 198 - 48;
-      let fs = 10;
+      const maxW = rightX - 2 - 48;
+      let fs = 9.5;
       doc.setFontSize(fs);
       if (doc.getTextWidth(valStr) > maxW) {
-        fs = Math.max(7.5, Number(((10 * maxW) / doc.getTextWidth(valStr)).toFixed(1)));
+        fs = Math.max(7.5, Number(((9.5 * maxW) / doc.getTextWidth(valStr)).toFixed(1)));
         doc.setFontSize(fs);
       }
       doc.text(valStr, 48, y, { maxWidth: maxW });
 
       doc.setDrawColor(220);
-      doc.line(10, y + 3.5, 200, y + 3.5);
-      y += 7.5;
-    }
+      doc.setLineWidth(0.2);
+      doc.line(leftX, y + 3, rightX, y + 3);
+      y += 6.8;
+    };
 
-    drawSection("MEMBER INFORMATION", 41.5);
-    drawRow(
-      "SAIL Personal No",
-      item.SailPersonalNo,
-      "Staff No",
-      item.StaffNo,
-      45,
-      126
-    );
-    drawRow(
-      "Member No",
-      item.MemberNo,
-      "Name",
-      item.MemberName,
-      38,
-      122
-    );
-    drawRow(
-      "Father's Name",
-      item.FatherName,
-      "Member Type",
-      this.AllMemberTypeList[item.MemberType],
-      40,
-      136
-    );
-    drawRow(
-      "Gender",
-      this.AllGenderList[item.Gender],
-      "Date of Birth",
-      formatDate(item.DateofBirth),
-      32,
-      134
-    );
-    
-    drawSection("DEPARTMENT DETAILS", 41.5);
-
-    drawRow(
-      "Department",
-      item.DepartmentName,
-      "Designation",
-      item.Designation,
-      40,
-      134
-    );
-
-    drawRow(
-      "Dept Sec Code",
-      item.DeptSecCode,
-      "PS Unit",
-      this.AllPsuUnit[item.PsuUnit],
-      42,
-      126
-    );
-
-    drawRow(
-      "Joining Date",
-      formatDate(item.JoiningDate),
-      "Retirement Date",
-      formatDate(item.RetirementDate),
-      40,
-      138
-    );
-
-    drawRow(
-      "Membership Date",
-      formatDate(item.MembershipDate),
-      "",
-      "",
-      46,
-      136
-    );
-    drawSection("CONTACT DETAILS", 41.5);
-
-    drawRow(
-      "Mobile",
-      item.MobileNo,
-      "Whatsapp",
-      item.WhatsappNo,
-      30,
-      130
-    );
-
-    drawRow(
-      "Email",
-      item.Email,
-      "",
-      "",
-      30,
-      136
-    );
-    drawAddressRow("Present Address", item.PresentAddress);
-    drawAddressRow("Permanent Address", item.PermanentAddress);
-
-    drawSection("BANK DETAILS", 26.5);
-
-    drawRow(
-      "Bank Name",
-      item.BankName,
-      "Account No",
-      item.AccountNo,
-      38,
-      134
-    );
-
-    drawRow(
-      "IFSC",
-      item.IFSCCode,
-      "Branch",
-      item.BranchName,
-      26,
-      126
-    );
-    drawSection("NOMINEE DETAILS", 19);
-
-    drawRow(
-      "Nominee",
-      item.NomineeName,
-      "Relation",
-      this.AllNomineeRelationList[item.NomineeRelation],
-      32,
-      128
-    );
-    drawSection("DOCUMENT DETAILS", 19);
-
-    drawRow(
-      "Aadhar",
-      item.AadharNo,
-      "PAN",
-      item.PanNo,
-      30,
-      124
-    );
-    doc.roundedRect(8, 255, 194, 32, 2, 2);
-
-    doc.setFont("helvetica", "bold");
-
-    doc.setFontSize(16);
-
-    doc.setTextColor(0, 120, 0);
-
-    doc.text("Status :", 18, 266);
-
-    doc.text(
-      item.Status == 1 ? "ACTIVE" : "INACTIVE",
-      48,
-      266
-    );
-
-    doc.setTextColor(0, 45, 120);
-
-    doc.text(
-      "Print Date :",
-      120,
-      266
-    );
-
-    doc.setTextColor(220, 0, 0);
-
-    doc.text(
-      formatDate(new Date()),
-      155,
-      266
-    );
-
-    doc.line(20, 278, 75, 278);
-
-    doc.line(135, 278, 190, 278);
-
-    doc.setTextColor(0);
-
-    doc.setFontSize(11);
-
-    doc.text(
-      "Member Signature",
-      47,
-      283,
-      { align: "center" }
-    );
-
-    doc.text(
-      "Authorized Signature",
-      162,
-      283,
-      { align: "center" }
-    );
     drawBorder();
     drawHeader();
+
+    drawSection("MEMBER INFORMATION", 37);
+    drawRow("SAIL Personal No", item.SailPersonalNo, "Staff No", item.StaffNo, 45, 126);
+    drawRow("Member No", item.MemberNo, "Name", item.MemberName, 36, 122);
+    drawRow("Father's Name", item.FatherName, "Member Type", this.AllMemberTypeList[item.MemberType], 38, 134);
+    drawRow("Gender", this.AllGenderList[item.Gender], "Date of Birth", formatDate(item.DateofBirth), 30, 134);
+    y += 2.5;
+
+    drawSection("DEPARTMENT DETAILS", 37);
+    drawRow("Department", item.DepartmentName, "Designation", item.Designation, 38, 132);
+    drawRow("Dept Sec Code", item.DeptSecCode, "PS Unit", this.AllPsuUnit[item.PsuUnit], 40, 124);
+    drawRow("Joining Date", formatDate(item.JoiningDate), "Retirement Date", formatDate(item.RetirementDate), 38, 136);
+    drawRow("Membership Date", formatDate(item.MembershipDate), "", "", 44, 134);
+    y += 2.5;
+
+    drawSection("CONTACT DETAILS", 37);
+    drawRow("Mobile", item.MobileNo, "Whatsapp", item.WhatsappNo, 28, 128);
+    drawRow("Email", item.Email, "", "", 28, 134);
+    drawAddressRow("Present Address", item.PresentAddress);
+    drawAddressRow("Permanent Address", item.PermanentAddress);
+    y += 2.5;
+
+    drawSection("BANK DETAILS", 23.5);
+    drawRow("Bank Name", item.BankName, "Account No", item.AccountNo, 36, 132);
+    drawRow("IFSC", item.IFSCCode, "Branch", item.BranchName, 26, 124);
+    y += 2.5;
+
+    drawSection("NOMINEE DETAILS", 16.5);
+    drawRow("Nominee", item.NomineeName, "Relation", this.AllNomineeRelationList[item.NomineeRelation], 30, 126);
+    y += 2.5;
+
+    drawSection("DOCUMENT DETAILS", 16.5);
+    drawRow("Aadhar", item.AadharNo, "PAN", item.PanNo, 28, 122);
+    y += 3;
+
+    // Status and Signatures Footer Box
+    const footerY = y;
+    const footerHeight = 280 - footerY;
+    doc.setDrawColor(0, 70, 170);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(leftX, footerY, boxWidth, footerHeight, 1.5, 1.5);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(0, 120, 0);
+    doc.text("Status :", leftX + 8, footerY + 8.5);
+    doc.text(item.Status == 1 ? "ACTIVE" : "INACTIVE", leftX + 32, footerY + 8.5);
+
+    doc.setTextColor(0, 45, 120);
+    doc.text("Print Date :", 115, footerY + 8.5);
+    doc.setTextColor(220, 0, 0);
+    doc.text(formatDate(new Date()), 148, footerY + 8.5);
+
+    const sigLineY = footerY + 22;
+    doc.setDrawColor(120);
+    doc.setLineWidth(0.3);
+    doc.line(20, sigLineY, 80, sigLineY);
+    doc.line(130, sigLineY, 190, sigLineY);
+
+    doc.setTextColor(0);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Member Signature", 50, sigLineY + 5, { align: "center" });
+    doc.text("Authorized Signature", 160, sigLineY + 5, { align: "center" });
+
     const fileName = `${item.MemberName}_${item.StaffNo}.pdf`;
     doc.save(fileName);
     window.open(doc.output('bloburl'), '_blank');
-
   }
 
 
