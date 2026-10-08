@@ -361,9 +361,7 @@ filterPsuUnit: number = 0;       // 0 = All
 
     }
     const drawSection = (title: string, height: number) => {
-
       doc.setDrawColor(0, 70, 170);
-
       doc.roundedRect(
         8,
         y,
@@ -372,9 +370,7 @@ filterPsuUnit: number = 0;       // 0 = All
         2,
         2
       );
-
       doc.setFillColor(240, 244, 252);
-
       doc.rect(
         9,
         y + 1,
@@ -382,185 +378,216 @@ filterPsuUnit: number = 0;       // 0 = All
         10,
         'F'
       );
-
       doc.setFontSize(12);
-
       doc.setTextColor(0, 45, 120);
-
       doc.setFont("helvetica", "bold");
-
       doc.text(title, 14, y + 7);
-
       doc.line(
         10,
         y + 11,
         200,
         y + 11
       );
-
-      y += 15;
-
+      y += 14.5;
     }
     const drawRow = (
-
       label1: string,
       value1: any,
       label2: string,
-      value2: any
-
+      value2: any,
+      valX1: number = 44,
+      valX2: number = 136
     ) => {
-
       doc.setFontSize(10);
-
       doc.setFont("helvetica", "bold");
-
       doc.setTextColor(0);
-
       doc.text(label1, 12, y);
 
       doc.setFont("helvetica", "normal");
+      const v1Str = value1 != null ? value1.toString() : "";
+      const maxW1 = 104 - valX1;
+      let fs1 = 10;
+      doc.setFontSize(fs1);
+      if (doc.getTextWidth(v1Str) > maxW1 && maxW1 > 0) {
+        fs1 = Math.max(7.5, Number(((10 * maxW1) / doc.getTextWidth(v1Str)).toFixed(1)));
+        doc.setFontSize(fs1);
+      }
+      doc.text(v1Str, valX1, y, { maxWidth: maxW1 });
 
-      doc.text(value1 ? value1.toString() : "", 65, y);
-
+      doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-
-      doc.text(label2, 110, y);
+      doc.text(label2, 108, y);
 
       doc.setFont("helvetica", "normal");
-
-      doc.text(value2 ? value2.toString() : "", 165, y);
+      const v2Str = value2 != null ? value2.toString() : "";
+      const maxW2 = 198 - valX2;
+      let fs2 = 10;
+      doc.setFontSize(fs2);
+      if (doc.getTextWidth(v2Str) > maxW2 && maxW2 > 0) {
+        fs2 = Math.max(7.5, Number(((10 * maxW2) / doc.getTextWidth(v2Str)).toFixed(1)));
+        doc.setFontSize(fs2);
+      }
+      doc.text(v2Str, valX2, y, { maxWidth: maxW2 });
 
       doc.setDrawColor(220);
-
-      doc.line(10, y + 4, 200, y + 4);
-
-      doc.line(105, y - 4, 105, y + 4);
-
-      y += 8;
-
+      doc.line(10, y + 3.5, 200, y + 3.5);
+      doc.line(105, y - 4, 105, y + 3.5);
+      y += 7.5;
     }
-    drawSection("MEMBER INFORMATION", 45);
+
+    const drawAddressRow = (label: string, value: any) => {
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0);
+      doc.text(label, 12, y);
+
+      doc.setFont("helvetica", "normal");
+      const valStr = value != null ? value.toString() : "";
+      const maxW = 198 - 48;
+      let fs = 10;
+      doc.setFontSize(fs);
+      if (doc.getTextWidth(valStr) > maxW) {
+        fs = Math.max(7.5, Number(((10 * maxW) / doc.getTextWidth(valStr)).toFixed(1)));
+        doc.setFontSize(fs);
+      }
+      doc.text(valStr, 48, y, { maxWidth: maxW });
+
+      doc.setDrawColor(220);
+      doc.line(10, y + 3.5, 200, y + 3.5);
+      y += 7.5;
+    }
+
+    drawSection("MEMBER INFORMATION", 41.5);
     drawRow(
       "SAIL Personal No",
       item.SailPersonalNo,
       "Staff No",
-      item.StaffNo
+      item.StaffNo,
+      45,
+      126
     );
     drawRow(
       "Member No",
       item.MemberNo,
       "Name",
       item.MemberName,
+      38,
+      122
     );
-      drawRow(
+    drawRow(
       "Father's Name",
       item.FatherName,
       "Member Type",
       this.AllMemberTypeList[item.MemberType],
+      40,
+      136
     );
     drawRow(
       "Gender",
       this.AllGenderList[item.Gender],
       "Date of Birth",
-      formatDate(item.DateofBirth)
+      formatDate(item.DateofBirth),
+      32,
+      134
     );
     
-    drawSection("DEPARTMENT DETAILS", 43);
+    drawSection("DEPARTMENT DETAILS", 41.5);
 
     drawRow(
       "Department",
       item.DepartmentName,
       "Designation",
-      item.Designation
+      item.Designation,
+      40,
+      134
     );
 
     drawRow(
       "Dept Sec Code",
       item.DeptSecCode,
       "PS Unit",
-      this.AllPsuUnit[item.PsuUnit]
+      this.AllPsuUnit[item.PsuUnit],
+      42,
+      126
     );
 
     drawRow(
       "Joining Date",
       formatDate(item.JoiningDate),
       "Retirement Date",
-      formatDate(item.RetirementDate)
+      formatDate(item.RetirementDate),
+      40,
+      138
     );
 
     drawRow(
       "Membership Date",
       formatDate(item.MembershipDate),
       "",
-      ""
+      "",
+      46,
+      136
     );
-    drawSection("CONTACT DETAILS", 45);
+    drawSection("CONTACT DETAILS", 41.5);
 
     drawRow(
       "Mobile",
       item.MobileNo,
       "Whatsapp",
-      item.WhatsappNo
+      item.WhatsappNo,
+      30,
+      130
     );
 
     drawRow(
       "Email",
       item.Email,
       "",
-      ""
+      "",
+      30,
+      136
     );
-    doc.setFont("helvetica", "bold");
+    drawAddressRow("Present Address", item.PresentAddress);
+    drawAddressRow("Permanent Address", item.PermanentAddress);
 
-    doc.text("Present Address", 12, y);
-
-    doc.setFont("helvetica", "normal");
-
-    doc.text(item.PresentAddress || '', 65, y);
-
-    doc.line(10, y + 4, 200, y + 4);
-
-    y += 8;
-    doc.setFont("helvetica", "bold");
-
-    doc.text("Permanent Address", 12, y);
-
-    doc.setFont("helvetica", "normal");
-
-    doc.text(item.PermanentAddress || '', 65, y);
-
-    doc.line(10, y + 4, 200, y + 4);
-
-    y += 8;
-    drawSection("BANK DETAILS", 27);
+    drawSection("BANK DETAILS", 26.5);
 
     drawRow(
       "Bank Name",
       item.BankName,
       "Account No",
-      item.AccountNo
+      item.AccountNo,
+      38,
+      134
     );
 
     drawRow(
       "IFSC",
       item.IFSCCode,
       "Branch",
-      item.BranchName
+      item.BranchName,
+      26,
+      126
     );
-    drawSection("NOMINEE DETAILS", 20);
+    drawSection("NOMINEE DETAILS", 19);
 
     drawRow(
       "Nominee",
       item.NomineeName,
       "Relation",
-      this.AllNomineeRelationList[item.NomineeRelation]
+      this.AllNomineeRelationList[item.NomineeRelation],
+      32,
+      128
     );
-    drawSection("DOCUMENT DETAILS", 20);
+    drawSection("DOCUMENT DETAILS", 19);
 
     drawRow(
       "Aadhar",
       item.AadharNo,
       "PAN",
-      item.PanNo
+      item.PanNo,
+      30,
+      124
     );
     doc.roundedRect(8, 255, 194, 32, 2, 2);
 
