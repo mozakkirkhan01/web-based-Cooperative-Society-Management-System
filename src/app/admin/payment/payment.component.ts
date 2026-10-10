@@ -4,7 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
 import { ConstantData } from '../../utils/constant-data';
 import { LoadDataService } from '../../utils/load-data.service';
-import { Status, BankCashType, DebitCreditType } from '../../utils/enum';
+import { Status, BankCashType, DebitCreditType, HeadType } from '../../utils/enum';
 import { ActionModel, RequestModel, StaffLoginModel } from '../../utils/interface';
 import { LocalService } from '../../utils/local.service';
 import { Router } from '@angular/router';
@@ -102,7 +102,7 @@ export class PaymentComponent {
     if (this.isSaving || this.pendingPayment) return;
     this.Payment = {
       PaymentId: 0,
-      TrnNo: '',
+      TrnNo: 'Assigned on save',
       MemberId: null,
       HeadId: null,
       BankId: null,
@@ -194,6 +194,11 @@ export class PaymentComponent {
       this.toastr.error("Error while fetching records")
     }))
   }
+  isMemberHeadSelected(): boolean {
+    if (!this.Payment.HeadId) return false;
+    const selectedHead = this.HeadList.find((x: any) => x.HeadId == this.Payment.HeadId);
+    return selectedHead ? selectedHead.HeadType === HeadType.Member : false;
+  }
   onHeadChange(headId: any) {
     const selectedHead = this.HeadList.find(
       (x: any) => x.HeadId == headId
@@ -203,6 +208,9 @@ export class PaymentComponent {
       this.Payment.HeadBalance = selectedHead.CurrentBalance;
     } else {
       this.Payment.HeadBalance = 0;
+    }
+    if (!this.isMemberHeadSelected()) {
+      this.clearMember();
     }
     this.getPaymentBalances();
   }
@@ -353,10 +361,19 @@ export class PaymentComponent {
       this.toastr.error("Select a valid head from the list");
       return;
     }
-    if (!this.AllMemberList.some((x: any) => x.MemberId == this.Payment.MemberId)) {
-      this.toastr.error("Select a valid member from the list");
-      return;
+    if (this.isMemberHeadSelected()) {
+      if (!this.AllMemberList.some((x: any) => x.MemberId == this.Payment.MemberId)) {
+        this.toastr.error("Select a valid member from the list");
+        return;
+      }
+    } else {
+      this.Payment.MemberId = null;
+      this.Payment.MemberName = '';
     }
+
+
+
+
     if (!Number.isFinite(Number(this.Payment.Amount)) || Number(this.Payment.Amount) <= 0) {
       this.toastr.error("Amount must be greater than zero");
       return;

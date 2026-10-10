@@ -33,11 +33,11 @@
                                 [style.pointer-events]="isSaving || pendingPayment ? 'none' : null">
                                 <mat-form-field appearance="outline" class="col-sm-4" readonly-field>
                                     <mat-label>Trn No.</mat-label>
-                                    <input matInput #TrnNo="ngModel" name="TrnNo" [(ngModel)]="Payment.TrnNo" required
-                                        autofocus readonly="true">
-                                    <mat-error>
-                                        Trn No. is <strong>required</strong>
-                                    </mat-error>
+                                    <input matInput #TrnNo="ngModel" name="TrnNo" [(ngModel)]="Payment.TrnNo"
+                                        readonly="true">
+
+
+
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-4">
                                     <mat-label>VoucherNo</mat-label>
@@ -87,22 +87,23 @@
                                     <mat-label>Search Member by Name/No.</mat-label>
                                     <input matInput #MemberId="ngModel" name="MemberId"
                                         (ngModelChange)="filterMemberList($event)"
-                                        placeholder="Search By Member Name/No." [(ngModel)]="Payment.MemberName"
-                                        [matAutocomplete]="autoMember" required autofocus>
+                                        [placeholder]="isMemberHeadSelected() ? 'Search By Member Name/No.' : 'Disabled for non-member accounts'" [(ngModel)]="Payment.MemberName"
+                                        [matAutocomplete]="autoMember" [disabled]="!isMemberHeadSelected()" [required]="isMemberHeadSelected()">
                                     <mat-autocomplete #autoMember="matAutocomplete"
                                         (optionSelected)="afterMemberSelected($event)">
                                         <mat-option *ngFor="let option of MemberList" [id]="option.MemberId"
                                             [value]="option.MemberName">{{option.SearchMember}}</mat-option>
                                     </mat-autocomplete>
-                                    <button type="button" mat-icon-button matSuffix *ngIf="Payment.MemberName"
+                                    <button type="button" mat-icon-button matSuffix *ngIf="Payment.MemberName && isMemberHeadSelected()"
                                         color="primary" [disabled]="isSaving" (click)="clearMember()">
                                         <mat-icon><i class="ri-close-circle-line"></i> </mat-icon>
                                     </button>
-                                    <mat-error>
+                                    <mat-error *ngIf="isMemberHeadSelected()">
                                         Member Name required !!
                                     </mat-error>
-                                    <mat-hint *ngIf="Payment.MemberName && !Payment.MemberId">Select a member from the
+                                    <mat-hint *ngIf="isMemberHeadSelected() && Payment.MemberName && !Payment.MemberId">Select a member from the
                                         suggestions</mat-hint>
+                                    <mat-hint *ngIf="!isMemberHeadSelected()">Member selection is only applicable for Member A/c heads</mat-hint>
                                 </mat-form-field>
 
 
@@ -270,7 +271,7 @@
                                         <td style="text-align: center;">{{item.VoucherNo}}</td>
                                         <td>{{item.PaymentDate | date: "dd-MM-yyyy"}}</td>
                                         <td>{{item.HeadName}}</td>
-                                        <td>{{item.MemberName}}-{{item.StaffNo}}</td>
+                                        <td>{{item.MemberName ? (item.MemberName + (item.StaffNo ? ' - ' + item.StaffNo : '')) : '—'}}</td>
                                         <td>{{AllBankCashTypeList[item.BankCashType]}}</td>
                                         <td>{{item.BankName}}</td>
                                         <td>{{item.Amount}} {{DebitCreditShort[item.DebitCreditType]}}</td>
