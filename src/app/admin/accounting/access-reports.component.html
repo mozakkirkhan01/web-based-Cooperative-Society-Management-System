@@ -84,12 +84,16 @@
               [(ngModel)]="Search" (ngModelChange)="filtersChanged()"
               (keyup.enter)="show()"></mat-form-field><mat-checkbox [(ngModel)]="IncludeDeleted"
             (change)="filtersChanged()">Include deleted applications</mat-checkbox></div>
-        <div class="col-md-4 d-flex align-items-center gap-2 mb-3">
+        <div class="col-md-6 d-flex align-items-center gap-2 mb-3">
           <button mat-raised-button color="primary" (click)="show()"
             [disabled]="dataLoading || (Report == 'MemberLedger' && !MemberKey)">Show</button>
           <button mat-stroked-button (click)="printDayBook()" *ngIf="Report == 'DayBook' && Loaded">Print</button>
           <button mat-stroked-button (click)="load(true)" *ngIf="Report != 'Checks' && Report != 'DayBook'"
             [disabled]="dataLoading || !Loaded || !Total">Export CSV</button>
+          <button mat-raised-button color="warn" (click)="downloadPdf()" *ngIf="Report == 'TrialBalance'"
+            [disabled]="dataLoading || !Loaded || !Total" title="Download Receipts & Expenditures PDF">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+          </button>
         </div>
       </div>
       <p *ngIf="Report == 'MemberLedger' && !MemberKey">Choose a member to see each head’s opening balance, dated entries, period
