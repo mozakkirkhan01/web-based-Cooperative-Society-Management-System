@@ -29,16 +29,16 @@
 
                         <form #formReceipt="ngForm" class="d-flex justify-content-evenly flex-wrap">
                             <!-- Lock the inputs while saving; keep the submit button outside this row. -->
-                            <div class="row mt-2
-                            " [attr.inert]="isSaving || pendingReceipt ? '' : null"
+                            <div class="row mt-2" [attr.inert]="isSaving || pendingReceipt ? '' : null"
                                 [style.pointer-events]="isSaving || pendingReceipt ? 'none' : null">
 
-                                <app-accounting-balance class="col-12" [headId]="Receipt.HeadId"
-                                    [date]="Receipt.ReceiptDate" [(societyId)]="Receipt.SocietyId" sourceType="RECEIPT"
-                                    [memberId]="Receipt.MemberId" [bankId]="Receipt.BankId"
-                                    [bankCashType]="Receipt.BankCashType" (balanceChange)="onAccountingBalance($event)"
-                                    [refresh]="balanceRefresh"
-                                    [disabled]="isSaving || !!pendingReceipt"></app-accounting-balance>
+                                <mat-form-field appearance="outline" class="col-12">
+                                    <mat-label>Society</mat-label>
+                                    <mat-select name="SocietyId" [(ngModel)]="Receipt.SocietyId" (selectionChange)="getReceiptBalances()" required>
+                                        <mat-option *ngFor="let item of SocietyList" [value]="item.SocietyId">{{item.SocietyName}}</mat-option>
+                                    </mat-select>
+                                    <mat-error>Society is required</mat-error>
+                                </mat-form-field>
 
                                 <mat-form-field appearance="outline" class="col-sm-4" readonly-field>
                                     <mat-label>Trn No.</mat-label>
@@ -57,29 +57,43 @@
                                 <mat-form-field appearance="outline" class="col-sm-4 form-group">
                                     <mat-label>Receipt Date</mat-label>
                                     <input matInput #ReceiptDate="ngModel" name="ReceiptDate"
-                                        [(ngModel)]="Receipt.ReceiptDate" [matDatepicker]="ReceiptDatePicker" required>
+                                        [(ngModel)]="Receipt.ReceiptDate" [matDatepicker]="ReceiptDatePicker" (dateChange)="getReceiptBalances()" required>
                                     <mat-datepicker-toggle matIconSuffix
                                         [for]="ReceiptDatePicker"></mat-datepicker-toggle>
                                     <mat-datepicker #ReceiptDatePicker></mat-datepicker>
                                     <mat-error>A valid receipt date is required</mat-error>
                                 </mat-form-field>
-                                <mat-form-field appearance="outline" class="col-sm-8">
-                                    <mat-label [ariaSetSize]="8">Select Head</mat-label>
+
+                                <p class="small col-12 mb-3" aria-live="polite">{{balanceLoading ? 'Loading balance...' : (AccountingBalance?.BalanceMessage || '')}}</p>
+
+                                <mat-form-field appearance="outline" class="col-sm-7">
+                                    <mat-label>Select Head</mat-label>
                                     <mat-select #HeadId="ngModel" name="HeadId" [(ngModel)]="Receipt.HeadId"
                                         (selectionChange)="onHeadChange($event.value)" required>
                                         <mat-option *ngFor="let option of HeadList" [value]="option.HeadId">
                                             {{option.HeadName}}
                                         </mat-option>
                                     </mat-select>
+                                    <mat-error>Head is required</mat-error>
                                 </mat-form-field>
 
+                                <div class="w-100 d-none d-sm-block"></div>
+
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Year opening balance</mat-label>
+                                    <input matInput readonly [value]="formatBalance(AccountingBalance?.HeadOpeningBalance)">
+                                </mat-form-field>
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Head balance at selected date</mat-label>
+                                    <input matInput readonly [value]="formatBalance(AccountingBalance?.HeadBalance)">
+                                </mat-form-field>
 
                                 <!-- mat auto complete -->
                                 <mat-form-field appearance="outline" class="col-sm-12">
                                     <mat-label>Search Member by Name/No.</mat-label>
                                     <input matInput #MemberId="ngModel" name="MemberId"
                                         (ngModelChange)="filterMemberList($event)"
-                                        [placeholder]="isMemberHeadSelected() ? 'Search By Member Name/No.' : 'Disabled for non-member accounts'" [(ngModel)]="Receipt.MemberName"
+                                        placeholder="Search Member by Name/No." [(ngModel)]="Receipt.MemberName"
                                         [matAutocomplete]="autoMember" [disabled]="!isMemberHeadSelected()" [required]="isMemberHeadSelected()">
                                     <mat-autocomplete #autoMember="matAutocomplete"
                                         (optionSelected)="afterMemberSelected($event)">
@@ -94,13 +108,13 @@
                                         Member Name required !!
                                     </mat-error>
                                     <mat-hint *ngIf="!isMemberHeadSelected()">Member selection is only applicable for Member A/c heads</mat-hint>
+                                    <mat-hint *ngIf="isMemberHeadSelected() && Receipt.MemberName && !Receipt.MemberId">Select a member from the suggestions</mat-hint>
                                 </mat-form-field>
-
 
                                 <mat-form-field appearance="outline" class="col-sm-12">
                                     <mat-label>Member Balance</mat-label>
                                     <input matInput
-                                        [value]="Receipt.Balance == null ? 'Not available' : Receipt.Balance"
+                                        [value]="isMemberHeadSelected() ? formatBalance(AccountingBalance?.MemberPaid, false) : 'Not available'"
                                         readonly="true">
                                 </mat-form-field>
 
@@ -142,11 +156,11 @@
                                             {{option.BankName}}
                                         </mat-option>
                                     </mat-select>
+                                    <mat-error *ngIf="Receipt.BankCashType == AllBankCashTypeList.Bank">Bank is required for bank receipts</mat-error>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
                                     <mat-label>Bank / cash balance at selected date</mat-label>
-                                    <input matInput #OpeningBalance="ngModel" name="OpeningBalance"
-                                        [(ngModel)]="Receipt.OpeningBalance" readonly="true">
+                                    <input matInput readonly [value]="formatBalance(AccountingBalance?.BankBalance)">
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
                                     <mat-label>Cheque No.</mat-label>

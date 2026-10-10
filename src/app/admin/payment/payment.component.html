@@ -29,15 +29,21 @@
                     <div class="card-body">
 
                         <form #formPayment="ngForm" class="d-flex justify-content-evenly flex-wrap">
-                            <div class="row  mt-2" [attr.inert]="isSaving || pendingPayment ? '' : null"
+                            <div class="row mt-2" [attr.inert]="isSaving || pendingPayment ? '' : null"
                                 [style.pointer-events]="isSaving || pendingPayment ? 'none' : null">
+
+                                <mat-form-field appearance="outline" class="col-12">
+                                    <mat-label>Society</mat-label>
+                                    <mat-select name="SocietyId" [(ngModel)]="Payment.SocietyId" (selectionChange)="getPaymentBalances()" required>
+                                        <mat-option *ngFor="let item of SocietyList" [value]="item.SocietyId">{{item.SocietyName}}</mat-option>
+                                    </mat-select>
+                                    <mat-error>Society is required</mat-error>
+                                </mat-form-field>
+
                                 <mat-form-field appearance="outline" class="col-sm-4" readonly-field>
                                     <mat-label>Trn No.</mat-label>
                                     <input matInput #TrnNo="ngModel" name="TrnNo" [(ngModel)]="Payment.TrnNo"
                                         readonly="true">
-
-
-
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-4">
                                     <mat-label>VoucherNo</mat-label>
@@ -56,8 +62,11 @@
                                     <mat-datepicker #PaymentDatePicker></mat-datepicker>
                                     <mat-error>A valid payment date is required</mat-error>
                                 </mat-form-field>
-                                <mat-form-field appearance="outline" class="col-sm-8">
-                                    <mat-label [ariaSetSize]="8">Select Head</mat-label>
+
+                                <p class="small col-12 mb-3" aria-live="polite">{{balanceLoading ? 'Loading balances...' : (AccountingBalance?.BalanceMessage || '')}}</p>
+
+                                <mat-form-field appearance="outline" class="col-sm-7">
+                                    <mat-label>Select Head</mat-label>
                                     <mat-select #HeadId="ngModel" name="HeadId" [(ngModel)]="Payment.HeadId"
                                         (selectionChange)="onHeadChange($event.value)" required>
                                         <mat-option *ngFor="let option of HeadList" [value]="option.HeadId">
@@ -66,28 +75,24 @@
                                     </mat-select>
                                     <mat-error>Head is required</mat-error>
                                 </mat-form-field>
-                                <mat-form-field appearance="outline" class="col-sm-12">
-                                    <mat-label>Society</mat-label>
-                                    <mat-select name="SocietyId" [(ngModel)]="Payment.SocietyId" (selectionChange)="getPaymentBalances()" required>
-                                        <mat-option *ngFor="let item of SocietyList" [value]="item.SocietyId">{{item.SocietyName}}</mat-option>
-                                    </mat-select>
+
+                                <div class="w-100 d-none d-sm-block"></div>
+
+                                <mat-form-field appearance="outline" class="col-sm-6">
+                                    <mat-label>Year opening balance</mat-label>
+                                    <input matInput readonly [value]="formatBalance(AccountingBalance?.HeadOpeningBalance)">
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
-                                    <mat-label>Financial year (from payment date)</mat-label>
-                                    <input matInput readonly [value]="AccountingBalance.FinancialYearName || 'Not available'">
+                                    <mat-label>Head balance at selected date</mat-label>
+                                    <input matInput readonly [value]="formatBalance(AccountingBalance?.HeadBalance)">
                                 </mat-form-field>
-                                <mat-form-field appearance="outline" class="col-sm-6">
-                                    <mat-label>Head current balance</mat-label>
-                                    <input matInput readonly [value]="formatBalance(AccountingBalance.HeadBalance)">
-                                </mat-form-field>
-                                <p class="small col-12" aria-live="polite">{{balanceLoading ? 'Loading balances...' : AccountingBalance.BalanceMessage}}</p>
 
                                 <!-- mat auto complete -->
                                 <mat-form-field appearance="outline" class="col-sm-12">
                                     <mat-label>Search Member by Name/No.</mat-label>
                                     <input matInput #MemberId="ngModel" name="MemberId"
                                         (ngModelChange)="filterMemberList($event)"
-                                        [placeholder]="isMemberHeadSelected() ? 'Search By Member Name/No.' : 'Disabled for non-member accounts'" [(ngModel)]="Payment.MemberName"
+                                        placeholder="Search Member by Name/No." [(ngModel)]="Payment.MemberName"
                                         [matAutocomplete]="autoMember" [disabled]="!isMemberHeadSelected()" [required]="isMemberHeadSelected()">
                                     <mat-autocomplete #autoMember="matAutocomplete"
                                         (optionSelected)="afterMemberSelected($event)">
@@ -101,18 +106,15 @@
                                     <mat-error *ngIf="isMemberHeadSelected()">
                                         Member Name required !!
                                     </mat-error>
-                                    <mat-hint *ngIf="isMemberHeadSelected() && Payment.MemberName && !Payment.MemberId">Select a member from the
-                                        suggestions</mat-hint>
                                     <mat-hint *ngIf="!isMemberHeadSelected()">Member selection is only applicable for Member A/c heads</mat-hint>
+                                    <mat-hint *ngIf="isMemberHeadSelected() && Payment.MemberName && !Payment.MemberId">Select a member from the suggestions</mat-hint>
                                 </mat-form-field>
 
-
                                 <mat-form-field appearance="outline" class="col-sm-12">
-                                    <mat-label>Member paid for selected head</mat-label>
+                                    <mat-label>Member Balance</mat-label>
                                     <input matInput
-                                        [value]="formatBalance(AccountingBalance.MemberPaid, false)"
+                                        [value]="isMemberHeadSelected() ? formatBalance(AccountingBalance?.MemberPaid, false) : 'Not available'"
                                         readonly="true">
-                                    <mat-hint>Selected financial year through payment date, after adjustments</mat-hint>
                                 </mat-form-field>
 
                                 <mat-form-field appearance="outline" class="col-sm-6">
@@ -135,14 +137,13 @@
 
                                 <input type="hidden" name="DebitCreditType" [(ngModel)]="Payment.DebitCreditType">
 
-                                <div class="amount-error col-sm-12"
-                                    *ngIf="Amount.invalid && (Amount.touched || isSubmitted)">
-                                    Enter an amount <strong>greater than zero</strong>
-                                </div>
                                 <mat-form-field appearance="outline" class="col-sm-4">
                                     <mat-label>Amount</mat-label>
                                     <input type="number" matInput #Amount="ngModel" name="Amount"
                                         [(ngModel)]="Payment.Amount" min="0.01" step="0.01" required autofocus>
+                                    <mat-error>
+                                        Amount must be <strong>greater than zero</strong>
+                                    </mat-error>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-8">
                                     <mat-label [ariaSetSize]="8">Select Bank</mat-label>
@@ -154,11 +155,11 @@
                                             {{option.BankName}}
                                         </mat-option>
                                     </mat-select>
-                                    <mat-error>Bank is required for bank payments</mat-error>
+                                    <mat-error *ngIf="Payment.BankCashType == AllBankCashTypeList.Bank">Bank is required for bank payments</mat-error>
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
-                                    <mat-label>Society bank/cash current balance</mat-label>
-                                    <input matInput [value]="formatBalance(AccountingBalance.BankBalance)" readonly="true">
+                                    <mat-label>Bank / cash balance at selected date</mat-label>
+                                    <input matInput [value]="formatBalance(AccountingBalance?.BankBalance)" readonly="true">
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-6">
                                     <mat-label>Cheque No.</mat-label>
