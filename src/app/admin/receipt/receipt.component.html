@@ -30,19 +30,26 @@
                         <form #formReceipt="ngForm" class="d-flex justify-content-evenly flex-wrap">
                             <!-- Lock the inputs while saving; keep the submit button outside this row. -->
                             <div class="row mt-2
-                            " [attr.inert]="isSaving || pendingReceipt ? '' : null" [style.pointer-events]="isSaving || pendingReceipt ? 'none' : null">
+                            " [attr.inert]="isSaving || pendingReceipt ? '' : null"
+                                [style.pointer-events]="isSaving || pendingReceipt ? 'none' : null">
+
+                                <app-accounting-balance class="col-12" [headId]="Receipt.HeadId"
+                                    [date]="Receipt.ReceiptDate" [(societyId)]="Receipt.SocietyId" sourceType="RECEIPT"
+                                    [memberId]="Receipt.MemberId" [bankId]="Receipt.BankId"
+                                    [bankCashType]="Receipt.BankCashType" (balanceChange)="onAccountingBalance($event)"
+                                    [refresh]="balanceRefresh"
+                                    [disabled]="isSaving || !!pendingReceipt"></app-accounting-balance>
+
                                 <mat-form-field appearance="outline" class="col-sm-4" readonly-field>
                                     <mat-label>Trn No.</mat-label>
-                                    <input matInput #TrnNo="ngModel" name="TrnNo" [(ngModel)]="Receipt.TrnNo" required
-                                        autofocus readonly="true">
-                                    <mat-error>
-                                        Trn No. is <strong>required</strong>
-                                    </mat-error>
+                                    <input matInput #TrnNo="ngModel" name="TrnNo" [(ngModel)]="Receipt.TrnNo"
+                                        readonly="true">
                                 </mat-form-field>
                                 <mat-form-field appearance="outline" class="col-sm-4">
                                     <mat-label>Receipt No.</mat-label>
                                     <input matInput #ReceiptNo="ngModel" name="ReceiptNo"
-                                        [(ngModel)]="Receipt.ReceiptNo" (change)="onReceiptNoChange()" (blur)="onReceiptNoChange()" maxlength="10" required autofocus>
+                                        [(ngModel)]="Receipt.ReceiptNo" (change)="onReceiptNoChange()"
+                                        (blur)="onReceiptNoChange()" maxlength="10" required autofocus>
                                     <mat-error>
                                         Receipt No. is <strong>required</strong>
                                     </mat-error>
@@ -60,49 +67,48 @@
                                     <mat-label [ariaSetSize]="8">Select Head</mat-label>
                                     <mat-select #HeadId="ngModel" name="HeadId" [(ngModel)]="Receipt.HeadId"
                                         (selectionChange)="onHeadChange($event.value)" required>
-                                        <mat-option *ngFor="let option of HeadList"
-                                            [value]="option.HeadId">
+                                        <mat-option *ngFor="let option of HeadList" [value]="option.HeadId">
                                             {{option.HeadName}}
                                         </mat-option>
                                     </mat-select>
                                 </mat-form-field>
-                                <app-accounting-balance class="col-12" [headId]="Receipt.HeadId"
-                                    [date]="Receipt.ReceiptDate" [(societyId)]="Receipt.SocietyId" sourceType="RECEIPT"
-                                    [memberId]="Receipt.MemberId" [bankId]="Receipt.BankId" [bankCashType]="Receipt.BankCashType" (balanceChange)="onAccountingBalance($event)"
-                                    [refresh]="balanceRefresh" [disabled]="isSaving || !!pendingReceipt"></app-accounting-balance>
+
 
                                 <!-- mat auto complete -->
                                 <mat-form-field appearance="outline" class="col-sm-12">
                                     <mat-label>Search Member by Name/No.</mat-label>
                                     <input matInput #MemberId="ngModel" name="MemberId"
                                         (ngModelChange)="filterMemberList($event)"
-                                        placeholder="Search By Member Name/No." [(ngModel)]="Receipt.MemberName"
-                                        [matAutocomplete]="autoMember" required autofocus>
+                                        [placeholder]="isMemberHeadSelected() ? 'Search By Member Name/No.' : 'Disabled for non-member accounts'" [(ngModel)]="Receipt.MemberName"
+                                        [matAutocomplete]="autoMember" [disabled]="!isMemberHeadSelected()" [required]="isMemberHeadSelected()">
                                     <mat-autocomplete #autoMember="matAutocomplete"
                                         (optionSelected)="afterMemberSelected($event)">
                                         <mat-option *ngFor="let option of MemberList" [id]="option.MemberId"
                                             [value]="option.MemberName">{{option.SearchMember}}</mat-option>
                                     </mat-autocomplete>
-                                    <button type="button" [disabled]="isSaving || !!pendingReceipt" mat-icon-button matSuffix *ngIf="Receipt.MemberName" color="primary"
-                                        (click)="clearMember()">
+                                    <button type="button" [disabled]="isSaving || !!pendingReceipt" mat-icon-button
+                                        matSuffix *ngIf="Receipt.MemberName && isMemberHeadSelected()" color="primary" (click)="clearMember()">
                                         <mat-icon><i class="ri-close-circle-line"></i> </mat-icon>
                                     </button>
-                                    <mat-error>
+                                    <mat-error *ngIf="isMemberHeadSelected()">
                                         Member Name required !!
                                     </mat-error>
+                                    <mat-hint *ngIf="!isMemberHeadSelected()">Member selection is only applicable for Member A/c heads</mat-hint>
                                 </mat-form-field>
 
 
                                 <mat-form-field appearance="outline" class="col-sm-12">
                                     <mat-label>Member Balance</mat-label>
-                                    <input matInput [value]="Receipt.Balance == null ? 'Not available' : Receipt.Balance"
+                                    <input matInput
+                                        [value]="Receipt.Balance == null ? 'Not available' : Receipt.Balance"
                                         readonly="true">
                                 </mat-form-field>
 
                                 <mat-form-field appearance="outline" class="col-sm-6">
                                     <mat-label>Bank/Cash</mat-label>
                                     <mat-select #BankCashType="ngModel" name="BankCashType"
-                                        [(ngModel)]="Receipt.BankCashType" (selectionChange)="onBankCashTypeChange()" required>
+                                        [(ngModel)]="Receipt.BankCashType" (selectionChange)="onBankCashTypeChange()"
+                                        required>
                                         <mat-option [value]="BankCashType.Key"
                                             *ngFor="let BankCashType of BankCashTypeList">{{BankCashType.Value}}</mat-option>
                                     </mat-select>
@@ -132,8 +138,7 @@
                                         [disabled]="Receipt.BankCashType == 2"
                                         [required]="Receipt.BankCashType == AllBankCashTypeList.Bank"
                                         (selectionChange)="onBankChange($event.value)">
-                                        <mat-option *ngFor="let option of BankList"
-                                            [value]="option.BankId">
+                                        <mat-option *ngFor="let option of BankList" [value]="option.BankId">
                                             {{option.BankName}}
                                         </mat-option>
                                     </mat-select>
@@ -153,16 +158,19 @@
                                     <textarea matInput #Narration="ngModel" name="Narration"
                                         [(ngModel)]="Receipt.Narration" rows="3" maxlength="250"></textarea>
                                 </mat-form-field>
-                               
+
                             </div>
 
                             <button type="button" mat-raised-button color="warn" class="col-sm-5 me-2"
-                                    data-bs-dismiss="modal" [disabled]="isSaving || !!pendingReceipt" (click)="resetForm()">Cancel</button>
-                                <button type="button" mat-raised-button color="primary" (click)="saveReceipt()"
-                                    [disabled]="isSaving" *ngIf="Receipt.ReceiptId > 0 ? action.CanEdit : action.CanCreate"
-                                    class="col-sm-6">{{isSaving ? 'Saving...' : (pendingReceipt ? 'Retry receipt' : (Receipt.ReceiptId >
-                                    0 ? 'Update':'Submit'))}}</button>
-                            <p class="col-12 mt-3" *ngIf="pendingReceipt">Receipt confirmation is pending. Retry this receipt before entering another.</p>
+                                data-bs-dismiss="modal" [disabled]="isSaving || !!pendingReceipt"
+                                (click)="resetForm()">Cancel</button>
+                            <button type="button" mat-raised-button color="primary" (click)="saveReceipt()"
+                                [disabled]="isSaving" *ngIf="Receipt.ReceiptId > 0 ? action.CanEdit : action.CanCreate"
+                                class="col-sm-6">{{isSaving ? 'Saving...' : (pendingReceipt ? 'Retry receipt' :
+                                (Receipt.ReceiptId >
+                                0 ? 'Update':'Submit'))}}</button>
+                            <p class="col-12 mt-3" *ngIf="pendingReceipt">Receipt confirmation is pending. Retry this
+                                receipt before entering another.</p>
                         </form>
 
                     </div>
@@ -179,13 +187,15 @@
                         <div class="row">
                             <mat-form-field appearance="outline" class="col-sm-6">
                                 <mat-label>From Date</mat-label>
-                                <input matInput [(ngModel)]="FromDate" [matDatepicker]="FromDatePicker" (dateChange)="filterReceiptList()">
+                                <input matInput [(ngModel)]="FromDate" [matDatepicker]="FromDatePicker"
+                                    (dateChange)="filterReceiptList()">
                                 <mat-datepicker-toggle matIconSuffix [for]="FromDatePicker"></mat-datepicker-toggle>
                                 <mat-datepicker #FromDatePicker></mat-datepicker>
                             </mat-form-field>
                             <mat-form-field appearance="outline" class="col-sm-6">
                                 <mat-label>To Date</mat-label>
-                                <input matInput [(ngModel)]="ToDate" [matDatepicker]="ToDatePicker" (dateChange)="filterReceiptList()">
+                                <input matInput [(ngModel)]="ToDate" [matDatepicker]="ToDatePicker"
+                                    (dateChange)="filterReceiptList()">
                                 <mat-datepicker-toggle matIconSuffix [for]="ToDatePicker"></mat-datepicker-toggle>
                                 <mat-datepicker #ToDatePicker></mat-datepicker>
                             </mat-form-field>
@@ -205,7 +215,8 @@
                                 </div>
                                 <div class="dataTable-search">
                                     <input class="dataTable-input form-control form-control-sm" [(ngModel)]="Search"
-                                        placeholder="Search..." type="text" maxlength="100" (ngModelChange)="filterReceiptList()">
+                                        placeholder="Search..." type="text" maxlength="100"
+                                        (ngModelChange)="filterReceiptList()">
                                 </div>
                             </div>
 
@@ -213,10 +224,11 @@
                                 <thead>
                                     <tr>
                                         <th>S.No</th>
-                                         <th *ngIf="action.CanEdit">Edit</th>
+                                        <th *ngIf="action.CanEdit">Edit</th>
                                         <th *ngIf="action.CanDelete">Delete</th>
                                         <th style="cursor:pointer;" (click)="sort('TrnNo')">Trn No.</th>
-                                        <th style="cursor:pointer;text-align: center;" (click)="sort('ReceiptNo')">  Receipt No. </th>
+                                        <th style="cursor:pointer;text-align: center;" (click)="sort('ReceiptNo')">
+                                            Receipt No. </th>
                                         <th style="cursor:pointer;" (click)="sort('ReceiptDate')">Receipt Date</th>
                                         <th style="cursor:pointer;" (click)="sort('HeadName')">Head Name</th>
                                         <th style="cursor:pointer;" (click)="sort('MemberName')">Staff Name/No.</th>
@@ -224,21 +236,27 @@
                                         <th style="cursor:pointer;" (click)="sort('BankName')">Bank Name</th>
                                         <th style="cursor:pointer;" (click)="sort('Amount')">Amount</th>
                                         <th style="cursor:pointer;" (click)="sort('ChequeNo')">Cheque No.</th>
-                                       
+
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr
                                         *ngFor="let item of ReceiptList |paginate: { itemsPerPage: itemPerPage, currentPage: p, totalItems: TotalRecords } ; let i = index;">
                                         <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
-                                         <td *ngIf="action.CanEdit">
+                                        <td *ngIf="action.CanEdit">
                                             <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
-                                                data-bs-target="#staticBackdrop" [disabled]="isSaving || !!pendingReceipt || item.AccountingPosted" title="Posted receipts are corrected through journals" (click)="editReceipt(item)">
+                                                data-bs-target="#staticBackdrop"
+                                                [disabled]="isSaving || !!pendingReceipt || item.AccountingPosted"
+                                                title="Posted receipts are corrected through journals"
+                                                (click)="editReceipt(item)">
                                                 <i class="bi bi-pencil-square"></i>
                                             </button>
                                         </td>
                                         <td *ngIf="action.CanDelete">
-                                            <button class="btn btn-sm btn-danger" [disabled]="isSaving || !!pendingReceipt || item.AccountingPosted" title="Posted receipts are corrected through journals" (click)="deleteReceipt(item)">
+                                            <button class="btn btn-sm btn-danger"
+                                                [disabled]="isSaving || !!pendingReceipt || item.AccountingPosted"
+                                                title="Posted receipts are corrected through journals"
+                                                (click)="deleteReceipt(item)">
                                                 <i class="bi bi-trash-fill"></i>
                                             </button>
                                         </td>
@@ -246,13 +264,14 @@
                                         <td style="text-align: center;">{{item.ReceiptNo}}</td>
                                         <td>{{item.ReceiptDate | date: "dd-MM-yyyy"}}</td>
                                         <td>{{item.HeadName}}</td>
-                                        <td>{{item.MemberName}}-{{item.StaffNo}}</td>
+                                        <td>{{item.MemberName ? (item.MemberName + (item.StaffNo ? ' - ' + item.StaffNo : '')) : '—'}}</td>
                                         <td>{{AllBankCashTypeList[item.BankCashType]}}</td>
                                         <td>{{item.BankName}}</td>
-                                        <td>{{item.Amount | number: '1.2-2'}} {{DebitCreditShort[item.DebitCreditType]}}</td>
+                                        <td>{{item.Amount | number: '1.2-2'}} {{DebitCreditShort[item.DebitCreditType]}}
+                                        </td>
                                         <td>{{item.ChequeNo}}</td>
 
-                                       
+
                                     </tr>
                                 </tbody>
                             </table>

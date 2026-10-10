@@ -4,7 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
 import { ConstantData } from '../../utils/constant-data';
 import { LoadDataService } from '../../utils/load-data.service';
-import { Status, BankCashType, DebitCreditType } from '../../utils/enum';
+import { Status, BankCashType, DebitCreditType, HeadType } from '../../utils/enum';
 import { ActionModel, RequestModel, StaffLoginModel } from '../../utils/interface';
 import { LocalService } from '../../utils/local.service';
 import { Router } from '@angular/router';
@@ -97,7 +97,7 @@ export class ReceiptComponent {
     if (this.isSaving || this.pendingReceipt) return;
     this.Receipt = {
       ReceiptId: 0,
-      TrnNo: '',
+      TrnNo: 'Assigned on save',
       MemberId: null,
       HeadId: null,
       BankId: null,
@@ -150,6 +150,11 @@ export class ReceiptComponent {
       this.dataLoading = false;
     }))
   }
+  isMemberHeadSelected(): boolean {
+    if (!this.Receipt.HeadId) return false;
+    const selectedHead = this.HeadList.find((x: any) => x.HeadId == this.Receipt.HeadId);
+    return selectedHead ? selectedHead.HeadType === HeadType.Member : false;
+  }
   onHeadChange(headId: any) {
     const selectedHead = this.HeadList.find(
       (x: any) => x.HeadId == headId
@@ -159,6 +164,9 @@ export class ReceiptComponent {
       this.Receipt.HeadBalance = selectedHead.CurrentBalance;
     } else {
       this.Receipt.HeadBalance = 0;
+    }
+    if (!this.isMemberHeadSelected()) {
+      this.clearMember();
     }
   }
 
@@ -280,7 +288,7 @@ onBankCashTypeChange() {
     };
     this.service.getMemberByReceiptNo(obj).subscribe((r1: any) => {
       let response = r1 as any;
-      if (response.Message == ConstantData.SuccessMessage && response.MemberId > 0) {
+      if (response.Message == ConstantData.SuccessMessage && response.MemberId > 0 && this.isMemberHeadSelected()) {
         const pool = this.AllMemberList.length ? this.AllMemberList : this.MemberList;
         const member = pool.find((x: any) => x.MemberId == response.MemberId);
         if (member) {
@@ -310,10 +318,19 @@ onBankCashTypeChange() {
       return
     }
     // A typed member name alone is not a valid member selection.
-    if (!this.AllMemberList.some((x: any) => x.MemberId == this.Receipt.MemberId)) {
-      this.toastr.error("Select a valid member from the list");
-      return;
+    if (this.isMemberHeadSelected()) {
+      if (!this.AllMemberList.some((x: any) => x.MemberId == this.Receipt.MemberId)) {
+        this.toastr.error("Select a valid member from the list");
+        return;
+      }
+    } else {
+      this.Receipt.MemberId = null;
+      this.Receipt.MemberName = '';
     }
+
+
+
+
     if (!this.HeadList.some((x: any) => x.HeadId == this.Receipt.HeadId)) {
       this.toastr.error("Select a valid head from the list");
       return;
