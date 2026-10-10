@@ -32,19 +32,12 @@
                 [value]="year.YearId">{{year.YearName}}</mat-option></mat-select></mat-form-field></div>
         <ng-container *ngIf="Report != 'Checks' && Report != 'LoanApplications'">
           
-            <div class="col-md-3" *ngIf="Report == 'DayBook'"><mat-form-field appearance="outline"
+            <div class="col-md-3" *ngIf="Report == 'DayBook' || Report == 'CashBank'"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>Date</mat-label><input matInput [ngModel]="FromDate"
-                  [matDatepicker]="DayBookDatePicker" (dateInput)="dayBookDateChanged($event.value)"
+                  [matDatepicker]="ReportDatePicker" (dateInput)="dayBookDateChanged($event.value)"
                   required><mat-datepicker-toggle matIconSuffix
-                  [for]="DayBookDatePicker"></mat-datepicker-toggle><mat-datepicker
-                  #DayBookDatePicker></mat-datepicker><mat-error>A valid date is required</mat-error></mat-form-field>
-            </div>
-            <div class="col-md-3" *ngIf="Report == 'CashBank'"><mat-form-field appearance="outline"
-                class="w-100"><mat-label>Up to date</mat-label><input matInput [(ngModel)]="CashBankDate"
-                  [matDatepicker]="CashBankDatePicker" (dateInput)="cashBankDateChanged($event.value)"
-                  required><mat-datepicker-toggle matIconSuffix
-                  [for]="CashBankDatePicker"></mat-datepicker-toggle><mat-datepicker
-                  #CashBankDatePicker></mat-datepicker><mat-error>A valid date is required</mat-error></mat-form-field>
+                  [for]="ReportDatePicker"></mat-datepicker-toggle><mat-datepicker
+                  #ReportDatePicker></mat-datepicker><mat-error>A valid date is required</mat-error></mat-form-field>
             </div>
             <div class="col-md-3" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>From date</mat-label><input matInput type="date" [(ngModel)]="FromDate"
@@ -52,10 +45,9 @@
             <div class="col-md-3" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>To date</mat-label><input matInput type="date" [(ngModel)]="ToDate"
                   (ngModelChange)="filtersChanged()"></mat-form-field></div>
-            <div class="col-md-3" *ngIf="Report != 'DayBook'"><mat-form-field appearance="outline"
+            <div class="col-md-3" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>Head</mat-label><mat-select [(ngModel)]="HeadCode"
-                  (selectionChange)="filtersChanged()"><mat-option value="">All {{Report == 'CashBank' ? 'cash / bank
-                    heads' : 'heads'}}</mat-option><mat-option *ngFor="let head of Heads"
+                  (selectionChange)="filtersChanged()"><mat-option value="">All heads</mat-option><mat-option *ngFor="let head of Heads"
                     [value]="head.HeadCode">{{head.HeadCode}} —
                     {{head.HeadName}}</mat-option></mat-select></mat-form-field></div>
             <div class="col-md-3 d-flex align-items-center mb-3" *ngIf="Report == 'DayBook'">
@@ -87,8 +79,8 @@
         <div class="col-md-6 d-flex align-items-center gap-2 mb-3">
           <button mat-raised-button color="primary" (click)="show()"
             [disabled]="dataLoading || (Report == 'MemberLedger' && !MemberKey)">Show</button>
-          <button mat-stroked-button (click)="printDayBook()" *ngIf="Report == 'DayBook' && Loaded">Print</button>
-          <button mat-stroked-button (click)="load(true)" *ngIf="Report != 'Checks' && Report != 'DayBook'"
+          <button mat-stroked-button (click)="printDayBook()" *ngIf="(Report == 'DayBook' || Report == 'CashBank') && Loaded">Print</button>
+          <button mat-stroked-button (click)="load(true)" *ngIf="Report != 'Checks' && Report != 'DayBook' && Report != 'CashBank'"
             [disabled]="dataLoading || !Loaded || !Total">Export CSV</button>
           <button mat-raised-button color="warn" (click)="downloadPdf()" *ngIf="Report == 'TrialBalance'"
             [disabled]="dataLoading || !Loaded || !Total" title="Download Receipts & Expenditures PDF">
@@ -98,7 +90,7 @@
       </div>
       <p *ngIf="Report == 'MemberLedger' && !MemberKey">Choose a member to see each head’s opening balance, dated entries, period
         totals and running balance.</p>
-      <p *ngIf="Report == 'CashBank'">Credit represents receipts/deposits into the bank; debit represents payments/withdrawals. Transfers between these accounts appear on both sides.</p>
+      <p *ngIf="Report == 'CashBank'">Daily Cash and Bank Book summary across Cash and Bank accounts, matching the cooperative society CashBook register.</p>
       <p *ngIf="Report == 'DayBook'">Daily journal of receipts and payments across Cash and Bank accounts, matching the cooperative society Daybook.</p>
       <p *ngIf="Report == 'MemberBalances'">Balances are grouped by member and head. Select LOAN TO MEMBER or LOAN TO
         STAFF for outstanding loan principal by member; this is not an individual-loan schedule.</p>
@@ -358,7 +350,133 @@
       </div>
     </div>
   </div>
-  <div class="card" *ngIf="Loaded && Report != 'Checks' && Report != 'LoanApplications' && (Report != 'DayBook' || !Checks.DayBook)">
+  <!-- CashBook (Cash & Bank Book) View matching desktop design -->
+  <div class="card cashbook-card cashbook-container mb-4" *ngIf="Loaded && Report == 'CashBank' && Checks.DayBook">
+    <div class="card-body">
+
+      <!-- Main CashBook Table Grid -->
+      <div class="table-responsive cashbook-scroll">
+        <table class="cashbook-table">
+          <thead>
+            <tr class="cashbook-header-row">
+              <th class="cashbook-col-v"></th>
+              <th class="cashbook-col-head">Head</th>
+              <th *ngFor="let acc of Checks.DayBook.Accounts" class="cashbook-col-acc text-end">
+                {{acc.ShortName}}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- OPENINGS ROW -->
+            <tr class="cashbook-openings-row">
+              <td class="cashbook-col-v"></td>
+              <td class="cashbook-label-cell">Openings:</td>
+              <td *ngFor="let acc of Checks.DayBook.Accounts" class="cashbook-box-cell text-end">
+                <div class="cashbook-box">{{acc.Opening | number:'1.2-2'}}</div>
+              </td>
+            </tr>
+
+            <!-- RECEIPTS SECTION -->
+            <ng-container *ngIf="getCashBankReceiptHeads().length > 0; else noReceiptsRow">
+              <tr *ngFor="let g of getCashBankReceiptHeads(); let isFirst = first" class="cashbook-data-row">
+                <td *ngIf="isFirst" [attr.rowspan]="getCashBankReceiptHeads().length" class="cashbook-v-ribbon">
+                  <div class="cashbook-v-stack receipts-v-stack">
+                    <span>R</span><span>E</span><span>C</span><span>E</span><span>I</span><span>P</span><span>T</span><span>S</span>
+                  </div>
+                </td>
+                <td class="cashbook-head-name">{{g.HeadName}}</td>
+                <td *ngFor="let acc of Checks.DayBook.Accounts; let i = index" class="cashbook-data-val text-end" [class.zero-amount]="!(g.Totals && g.Totals[i])">
+                  {{(g.Totals && g.Totals[i] !== undefined ? g.Totals[i] : 0) | number:'1.2-2'}}
+                </td>
+              </tr>
+            </ng-container>
+            <ng-template #noReceiptsRow>
+              <tr class="cashbook-data-row">
+                <td class="cashbook-v-ribbon receipts-v-ribbon">
+                  <div class="cashbook-v-stack receipts-v-stack">
+                    <span>R</span><span>E</span><span>C</span><span>E</span><span>I</span><span>P</span><span>T</span><span>S</span>
+                  </div>
+                </td>
+                <td class="cashbook-head-name text-muted fst-italic">(No receipts on this date)</td>
+                <td *ngFor="let acc of Checks.DayBook.Accounts" class="cashbook-data-val text-end zero-amount">0.00</td>
+              </tr>
+            </ng-template>
+
+            <!-- RECEIPTS SUMMARY ROWS -->
+            <tr class="cashbook-summary-row receipts-summary-row">
+              <td class="cashbook-col-v"></td>
+              <td class="cashbook-label-cell">Receipts:</td>
+              <td *ngFor="let acc of Checks.DayBook.Accounts; let i = index" class="cashbook-box-cell text-end">
+                <div class="cashbook-box">{{(Checks.DayBook.ReceiptTotals && Checks.DayBook.ReceiptTotals[i] !== undefined ? Checks.DayBook.ReceiptTotals[i] : acc.Receipts) | number:'1.2-2'}}</div>
+              </td>
+            </tr>
+            <tr class="cashbook-total-row receipts-total-row">
+              <td class="cashbook-col-v"></td>
+              <td class="cashbook-label-cell">Total:</td>
+              <td *ngFor="let acc of Checks.DayBook.Accounts" class="cashbook-box-cell text-end">
+                <div class="cashbook-box">{{acc.ReceiptTotal | number:'1.2-2'}}</div>
+              </td>
+            </tr>
+
+            <!-- SECTION DIVIDER -->
+            <tr class="cashbook-section-divider">
+              <td [attr.colspan]="Checks.DayBook.Accounts.length + 2"></td>
+            </tr>
+
+            <!-- PAYMENTS SECTION -->
+            <ng-container *ngIf="getCashBankPaymentHeads().length > 0; else noPaymentsRow">
+              <tr *ngFor="let g of getCashBankPaymentHeads(); let isFirst = first" class="cashbook-data-row">
+                <td *ngIf="isFirst" [attr.rowspan]="getCashBankPaymentHeads().length" class="cashbook-v-ribbon payments-v-ribbon">
+                  <div class="cashbook-v-stack payments-v-stack">
+                    <span>P</span><span>A</span><span>Y</span><span>M</span><span>E</span><span>N</span><span>T</span><span>S</span>
+                  </div>
+                </td>
+                <td class="cashbook-head-name">{{g.HeadName}}</td>
+                <td *ngFor="let acc of Checks.DayBook.Accounts; let i = index" class="cashbook-data-val text-end" [class.zero-amount]="!(g.Totals && g.Totals[i])">
+                  {{(g.Totals && g.Totals[i] !== undefined ? g.Totals[i] : 0) | number:'1.2-2'}}
+                </td>
+              </tr>
+            </ng-container>
+            <ng-template #noPaymentsRow>
+              <tr class="cashbook-data-row">
+                <td class="cashbook-v-ribbon payments-v-ribbon">
+                  <div class="cashbook-v-stack payments-v-stack">
+                    <span>P</span><span>A</span><span>Y</span><span>M</span><span>E</span><span>N</span><span>T</span><span>S</span>
+                  </div>
+                </td>
+                <td class="cashbook-head-name text-muted fst-italic">(No payments on this date)</td>
+                <td *ngFor="let acc of Checks.DayBook.Accounts" class="cashbook-data-val text-end zero-amount">0.00</td>
+              </tr>
+            </ng-template>
+
+            <!-- PAYMENTS SUMMARY ROWS -->
+            <tr class="cashbook-summary-row payments-summary-row">
+              <td class="cashbook-col-v"></td>
+              <td class="cashbook-label-cell">Payments:</td>
+              <td *ngFor="let acc of Checks.DayBook.Accounts; let i = index" class="cashbook-box-cell text-end">
+                <div class="cashbook-box">{{(Checks.DayBook.PaymentTotals && Checks.DayBook.PaymentTotals[i] !== undefined ? Checks.DayBook.PaymentTotals[i] : acc.Payments) | number:'1.2-2'}}</div>
+              </td>
+            </tr>
+            <tr class="cashbook-closings-row">
+              <td class="cashbook-col-v"></td>
+              <td class="cashbook-label-cell">Closings:</td>
+              <td *ngFor="let acc of Checks.DayBook.Accounts" class="cashbook-box-cell text-end">
+                <div class="cashbook-box">{{acc.Closing | number:'1.2-2'}}</div>
+              </td>
+            </tr>
+            <tr class="cashbook-total-row payments-total-row">
+              <td class="cashbook-col-v"></td>
+              <td class="cashbook-label-cell">Total:</td>
+              <td *ngFor="let acc of Checks.DayBook.Accounts" class="cashbook-box-cell text-end">
+                <div class="cashbook-box">{{acc.PaymentTotal | number:'1.2-2'}}</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="card" *ngIf="Loaded && Report != 'Checks' && Report != 'LoanApplications' && (Report != 'DayBook' || !Checks.DayBook) && (Report != 'CashBank' || !Checks.DayBook)">
     <div class="card-body">
       <h5 class="card-title">{{Title}} · {{FromDate | date:'dd-MM-yyyy'}}<ng-container *ngIf="Report != 'DayBook'"> to
           {{ToDate | date:'dd-MM-yyyy'}}</ng-container></h5>

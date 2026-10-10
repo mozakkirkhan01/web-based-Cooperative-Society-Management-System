@@ -1,5 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
@@ -28,7 +28,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   AccessReview = ConstantData.AccessReview; Notice = '';
   private routeSubscription?: Subscription;
   constructor(private service: AppService, private localService: LocalService, private toastr: ToastrService,
-    private route: ActivatedRoute, private loadData: LoadDataService) { }
+    private route: ActivatedRoute, private router: Router, private loadData: LoadDataService) { }
   ngOnInit() {
     this.routeSubscription = this.route.data.subscribe(data => {
       this.Report = data['report']; this.Title = data['title']; this.Allowed = false;
@@ -43,7 +43,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     return {
       request: this.localService.encrypt(JSON.stringify({
         StaffLoginId: this.localService.getEmployeeDetail().StaffLoginId, Report: this.Report, Mode: mode,
-        YearId: this.YearId, FromDate: this.FromDate || null, ToDate: (this.Report == 'DayBook' ? this.FromDate : this.ToDate) || null,
+        YearId: this.YearId, FromDate: this.FromDate || null, ToDate: (this.Report == 'DayBook' || this.Report == 'CashBank' ? this.FromDate : this.ToDate) || null,
         HeadCode: this.HeadCode, MemberKey: this.MemberKey, Search: this.Search,
         PageNumber: this.PageNumber, PageSize: this.PageSize, IncludeDeleted: this.IncludeDeleted,
         IncludeScheduleDetails: this.IncludeScheduleDetails, ...extra
@@ -61,12 +61,12 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
       this.Allowed = true; this.Years = r.Years; this.YearId = r.Year.YearId; this.Heads = r.Heads;
       if (r.Company) this.Company = r.Company;
       this.FromDate = r.Year.StartDate.substring(0, 10); this.ToDate = r.Year.EndDate.substring(0, 10);
-      if (this.Report == 'CashBank') this.CashBankDate = new Date(this.ToDate);
-      if (this.Report == 'DayBook') {
+      if (this.Report == 'DayBook' || this.Report == 'CashBank') {
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         this.FromDate = today < this.FromDate ? this.FromDate : today > this.ToDate ? this.ToDate : today;
         this.ToDate = this.FromDate;
+        this.CashBankDate = new Date(this.FromDate);
       }
       this.PageNumber = 1;
       if (this.Report != 'MemberLedger') this.load();
@@ -79,11 +79,14 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   dayBookDateChanged(date: any) {
     this.FromDate = date ? this.loadData.loadDateYMD(date) || '' : '';
     this.ToDate = this.FromDate;
+    this.CashBankDate = date ? new Date(date) : null;
     this.filtersChanged();
+    if (this.Report == 'CashBank' || this.Report == 'DayBook') {
+      this.load();
+    }
   }
   cashBankDateChanged(date: any) {
-    this.ToDate = date ? this.loadData.loadDateYMD(date) || '' : '';
-    this.filtersChanged();
+    this.dayBookDateChanged(date);
   }
   filtersChanged() { this.requestNumber++; this.Rows = []; this.Totals = {}; this.Loaded = false; this.dataLoading = false; }
   findMembers() {
@@ -101,7 +104,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   }
   show() { this.PageNumber = 1; this.load(); }
   load(exportCsv = false) {
-    if (this.Report == 'DayBook') {
+    if (this.Report == 'DayBook' || this.Report == 'CashBank') {
       if (!this.FromDate) { this.toastr.error('Select a date first'); return; }
       this.ToDate = this.FromDate;
     }
@@ -139,6 +142,27 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     }
     if (this.Checks?.DayBook?.Payments) {
       this.Checks.DayBook.Payments.forEach((g: any) => g.collapsed = !expand);
+    }
+  }
+  getCashBankReceiptHeads(): any[] {
+    if (!this.Checks?.DayBook?.Receipts || !this.Checks?.DayBook?.Accounts) return [];
+    const accCount = this.Checks.DayBook.Accounts.length;
+    return this.Checks.DayBook.Receipts.filter((g: any) =>
+      g.Totals && g.Totals.slice(0, accCount).some((v: number) => v !== 0)
+    );
+  }
+  getCashBankPaymentHeads(): any[] {
+    if (!this.Checks?.DayBook?.Payments || !this.Checks?.DayBook?.Accounts) return [];
+    const accCount = this.Checks.DayBook.Accounts.length;
+    return this.Checks.DayBook.Payments.filter((g: any) =>
+      g.Totals && g.Totals.slice(0, accCount).some((v: number) => v !== 0)
+    );
+  }
+  closeCashBook() {
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      this.router.navigate(['/admin/admin-dashboard']);
     }
   }
   balance(value: number) {
