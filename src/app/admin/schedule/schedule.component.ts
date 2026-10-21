@@ -60,7 +60,7 @@ export class ScheduleComponent implements OnInit, OnDestroy {
   get IssueCount() { return this.Lines.filter(row => row.Issue).length; }
   formatMonth(yyyymm: string) {
     if (!yyyymm || yyyymm.length !== 6) return yyyymm;
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const m = parseInt(yyyymm.substring(4, 6), 10);
     return (months[m - 1] || yyyymm.substring(4, 6)) + '-' + yyyymm.substring(0, 4);
   }
