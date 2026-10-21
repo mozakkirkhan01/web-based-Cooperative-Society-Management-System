@@ -26,7 +26,7 @@
     <div class="card-body">
       <h5 class="card-title">{{Title}} filters</h5>
       <div class="row align-items-start">
-        <div class="col-md-3"><mat-form-field appearance="outline" class="w-100"><mat-label>Financial
+        <div [ngClass]="isTrialBalance ? 'col-md-3 col-lg-2' : 'col-md-3'"><mat-form-field appearance="outline" class="w-100"><mat-label>Financial
               year</mat-label><mat-select [(ngModel)]="YearId" (selectionChange)="yearChanged()"
               [disabled]="dataLoading"><mat-option *ngFor="let year of Years"
                 [value]="year.YearId">{{year.YearName}}</mat-option></mat-select></mat-form-field></div>
@@ -39,13 +39,23 @@
                   [for]="ReportDatePicker"></mat-datepicker-toggle><mat-datepicker
                   #ReportDatePicker></mat-datepicker><mat-error>A valid date is required</mat-error></mat-form-field>
             </div>
-            <div class="col-md-3" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
-                class="w-100"><mat-label>From date</mat-label><input matInput type="date" [(ngModel)]="FromDate"
-                  (ngModelChange)="filtersChanged()"></mat-form-field></div>
-            <div class="col-md-3" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
-                class="w-100"><mat-label>To date</mat-label><input matInput type="date" [(ngModel)]="ToDate"
-                  (ngModelChange)="filtersChanged()"></mat-form-field></div>
-            <div class="col-md-3" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
+            <div class="col-md-3 col-lg-2" *ngIf="isTrialBalance"><mat-form-field appearance="outline"
+                class="w-100"><mat-label>For</mat-label><mat-select [(ngModel)]="PeriodFilter"
+                  (selectionChange)="onPeriodFilterChange()" [disabled]="dataLoading"><mat-option *ngFor="let p of PeriodList"
+                    [value]="p">{{p}}</mat-option></mat-select></mat-form-field></div>
+            <div [ngClass]="isTrialBalance ? 'col-md-3 col-lg-2' : 'col-md-3'" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
+                class="w-100"><mat-label>From date</mat-label><input matInput [matDatepicker]="FromDatePicker"
+                  [ngModel]="FromDateValue || FromDate" (dateChange)="fromDateChanged($event.value)"
+                  (dateInput)="fromDateChanged($event.value)"><mat-datepicker-toggle matIconSuffix
+                  [for]="FromDatePicker"></mat-datepicker-toggle><mat-datepicker
+                  #FromDatePicker></mat-datepicker></mat-form-field></div>
+            <div [ngClass]="isTrialBalance ? 'col-md-3 col-lg-2' : 'col-md-3'" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
+                class="w-100"><mat-label>To date</mat-label><input matInput [matDatepicker]="ToDatePicker"
+                  [ngModel]="ToDateValue || ToDate" (dateChange)="toDateChanged($event.value)"
+                  (dateInput)="toDateChanged($event.value)"><mat-datepicker-toggle matIconSuffix
+                  [for]="ToDatePicker"></mat-datepicker-toggle><mat-datepicker
+                  #ToDatePicker></mat-datepicker></mat-form-field></div>
+            <div [ngClass]="isTrialBalance ? 'col-md-6 col-lg-4' : 'col-md-3'" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>Head</mat-label><mat-select [(ngModel)]="HeadCode"
                   (selectionChange)="filtersChanged()"><mat-option value="">All heads</mat-option><mat-option *ngFor="let head of Heads"
                     [value]="head.HeadCode">{{head.HeadCode}} —
@@ -82,7 +92,7 @@
           <button mat-stroked-button (click)="printDayBook()" *ngIf="(Report == 'DayBook' || Report == 'CashBank') && Loaded">Print</button>
           <button mat-stroked-button (click)="load(true)" *ngIf="Report != 'Checks' && Report != 'DayBook' && Report != 'CashBank'"
             [disabled]="dataLoading || !Loaded || !Total">Export CSV</button>
-          <button mat-raised-button color="warn" (click)="downloadPdf()" *ngIf="Report == 'TrialBalance'"
+          <button mat-raised-button color="warn" (click)="downloadPdf()" *ngIf="isTrialBalance"
             [disabled]="dataLoading || !Loaded || !Total" title="Download Receipts & Expenditures PDF">
             <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
           </button>
@@ -487,7 +497,7 @@
         <div class="col-md-3" *ngIf="Report != 'DayBook'">Closing (net): <strong>{{balance(Totals.Closing)}}</strong>
         </div>
       </div>
-      <p *ngIf="Report == 'TrialBalance'">Closing debit: <strong>{{Totals.ClosingDebit | number:'1.2-2'}}</strong> ·
+      <p *ngIf="isTrialBalance">Closing debit: <strong>{{Totals.ClosingDebit | number:'1.2-2'}}</strong> ·
         Closing credit: <strong>{{Totals.ClosingCredit | number:'1.2-2'}}</strong>. Totals reflect the selected filters.
       </p>
       <div class="d-flex justify-content-between align-items-center mb-3"><label>Entries per page <select
@@ -509,9 +519,9 @@
               <th *ngIf="isBalance" class="text-end">Opening</th>
               <th class="text-end">{{Report == 'CashBank' ? 'Payments / Debit' : 'Debit'}}</th>
               <th class="text-end">{{Report == 'CashBank' ? 'Receipts / Credit' : 'Credit'}}</th>
-              <th *ngIf="Report != 'DayBook'" class="text-end">{{Report == 'TrialBalance' ? 'Closing debit' :
+              <th *ngIf="Report != 'DayBook'" class="text-end">{{isTrialBalance ? 'Closing debit' :
                 'Closing'}}</th>
-              <th *ngIf="Report == 'TrialBalance'" class="text-end">Closing credit</th>
+              <th *ngIf="isTrialBalance" class="text-end">Closing credit</th>
             </tr>
           </thead>
           <tbody>
@@ -529,9 +539,9 @@
               <td *ngIf="isBalance" class="text-end text-nowrap">{{balance(row.Opening)}}</td>
               <td class="text-end">{{row.Kind == 'Opening' ? '' : (row.Debit | number:'1.2-2')}}</td>
               <td class="text-end">{{row.Kind == 'Opening' ? '' : (row.Credit | number:'1.2-2')}}</td>
-              <td *ngIf="Report != 'DayBook'" class="text-end text-nowrap">{{Report == 'TrialBalance' ? ((row.Closing >
+              <td *ngIf="Report != 'DayBook'" class="text-end text-nowrap">{{isTrialBalance ? ((row.Closing >
                 0 ? row.Closing : 0) | number:'1.2-2') : balance(row.Closing)}}</td>
-              <td *ngIf="Report == 'TrialBalance'" class="text-end">{{(row.Closing < 0 ? -row.Closing : 0) |
+              <td *ngIf="isTrialBalance" class="text-end">{{(row.Closing < 0 ? -row.Closing : 0) |
                   number:'1.2-2'}}</td>
             </tr>
           </tbody>

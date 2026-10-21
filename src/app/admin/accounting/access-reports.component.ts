@@ -19,6 +19,15 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   HeadCode = ''; FromDate = ''; ToDate = ''; MemberKey = ''; MemberSearch = '';
   Members: any[] = []; SelectedMember: any = null; Search = '';
   CashBankDate: any = null;
+  FromDateValue: any = null;
+  ToDateValue: any = null;
+  PeriodFilter = 'Till Date';
+  PeriodList: string[] = [
+    'Till Date',
+    'Whole Year',
+    'April', 'May', 'June', 'July', 'August', 'September',
+    'October', 'November', 'December', 'January', 'February', 'March'
+  ];
   Rows: any[] = []; Totals: any = {}; Checks: any = {}; Total = 0;
   Company: any = null;
   PageNumber = 1; PageSize = 20; dataLoading = false; Loaded = false;
@@ -61,12 +70,15 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
       this.Allowed = true; this.Years = r.Years; this.YearId = r.Year.YearId; this.Heads = r.Heads;
       if (r.Company) this.Company = r.Company;
       this.FromDate = r.Year.StartDate.substring(0, 10); this.ToDate = r.Year.EndDate.substring(0, 10);
+      this.FromDateValue = new Date(r.Year.StartDate); this.ToDateValue = new Date(r.Year.EndDate);
       if (this.Report == 'DayBook' || this.Report == 'CashBank') {
         const now = new Date();
         const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         this.FromDate = today < this.FromDate ? this.FromDate : today > this.ToDate ? this.ToDate : today;
         this.ToDate = this.FromDate;
         this.CashBankDate = new Date(this.FromDate);
+      } else if (this.Report == 'TrialBalance' || this.Report == 'ReceiptsExpenditures') {
+        this.applyPeriodFilter();
       }
       this.PageNumber = 1;
       if (this.Report != 'MemberLedger') this.load();
@@ -87,6 +99,61 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   }
   cashBankDateChanged(date: any) {
     this.dayBookDateChanged(date);
+  }
+  applyPeriodFilter() {
+    const year = this.Years.find(y => y.YearId == this.YearId);
+    if (!year) return;
+    const start = new Date(year.StartDate);
+    const startYear = start.getFullYear();
+    const end = new Date(year.EndDate);
+    const endYear = end.getFullYear();
+
+    if (this.PeriodFilter === 'Till Date') {
+      const now = new Date();
+      let till = now;
+      if (now < start) till = start;
+      else if (now > end) till = end;
+
+      this.FromDateValue = start;
+      this.ToDateValue = till;
+      this.FromDate = this.loadData.loadDateYMD(start) || '';
+      this.ToDate = this.loadData.loadDateYMD(till) || '';
+    } else if (this.PeriodFilter === 'Whole Year') {
+      this.FromDateValue = start;
+      this.ToDateValue = end;
+      this.FromDate = this.loadData.loadDateYMD(start) || '';
+      this.ToDate = this.loadData.loadDateYMD(end) || '';
+    } else {
+      const monthNames = ['April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'];
+      const monthIdx = monthNames.indexOf(this.PeriodFilter);
+      if (monthIdx >= 0) {
+        const targetYear = monthIdx < 9 ? startYear : endYear;
+        const targetJsMonth = monthIdx < 9 ? (monthIdx + 3) : (monthIdx - 9);
+
+        const mStart = new Date(targetYear, targetJsMonth, 1);
+        const mEnd = new Date(targetYear, targetJsMonth + 1, 0);
+
+        this.FromDateValue = mStart;
+        this.ToDateValue = mEnd;
+        this.FromDate = this.loadData.loadDateYMD(mStart) || '';
+        this.ToDate = this.loadData.loadDateYMD(mEnd) || '';
+      }
+    }
+  }
+  onPeriodFilterChange() {
+    this.applyPeriodFilter();
+    this.filtersChanged();
+    this.load();
+  }
+  fromDateChanged(date: any) {
+    this.FromDateValue = date ? new Date(date) : null;
+    this.FromDate = date ? this.loadData.loadDateYMD(date) || '' : '';
+    this.filtersChanged();
+  }
+  toDateChanged(date: any) {
+    this.ToDateValue = date ? new Date(date) : null;
+    this.ToDate = date ? this.loadData.loadDateYMD(date) || '' : '';
+    this.filtersChanged();
   }
   filtersChanged() { this.requestNumber++; this.Rows = []; this.Totals = {}; this.Loaded = false; this.dataLoading = false; }
   findMembers() {
@@ -184,7 +251,8 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     if (!this.Checks?.DayBook?.Payments || !this.Checks.DayBook.Payments.length) return 2;
     return this.Checks.DayBook.Payments.reduce((sum: number, g: any) => sum + 2 + (g.collapsed ? 0 : (g.Rows?.length || 0)), 0) + 1;
   }
-  get isBalance() { return this.Report == 'TrialBalance' || this.Report == 'MemberBalances'; }
+  get isBalance() { return this.Report == 'TrialBalance' || this.Report == 'ReceiptsExpenditures' || this.Report == 'MemberBalances'; }
+  get isTrialBalance() { return this.Report == 'TrialBalance' || this.Report == 'ReceiptsExpenditures'; }
   get showMember() { return this.Report == 'DayBook' || this.Report == 'HeadLedger' || this.Report == 'CashBank' || this.Report == 'MemberBalances'; }
   get pageCount() { return Math.max(1, Math.ceil(this.Total / this.PageSize)); }
   matches(row: any) { return row.ActiveRows == row.ImportedRows && row.OpeningRows == row.ImportedOpenings && row.SourceDebit == row.ImportedDebit && row.SourceCredit == row.ImportedCredit && row.SourceOpening == row.ImportedOpening; }
@@ -255,7 +323,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   }
 
   downloadPdf() {
-    if (this.Report !== 'TrialBalance') return;
+    if (this.Report !== 'TrialBalance' && this.Report !== 'ReceiptsExpenditures') return;
     this.dataLoading = true;
     this.service.accessReport(this.request('Data', { Export: true })).subscribe((r: any) => {
       this.dataLoading = false;
