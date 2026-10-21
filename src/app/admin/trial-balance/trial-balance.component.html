@@ -1,0 +1,142 @@
+<app-progress *ngIf="dataLoading"></app-progress>
+<main id="main" class="main">
+  <div class="pagetitle dashboard no-print">
+    <h1>Trial Balance</h1>
+    <nav>
+      <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+        <li class="breadcrumb-item">Reports</li>
+        <li class="breadcrumb-item active">Trial Balance</li>
+      </ol>
+    </nav>
+  </div>
+
+  <!-- Filter Card: Show Trial Balance on -->
+  <div class="card mb-3 filter-card no-print">
+    <div class="card-body">
+      <h5 class="card-title text-primary"><i class="bi bi-sliders me-1"></i> Show Trial Balance on</h5>
+      <div class="row align-items-center g-3">
+        <div class="col-md-3 col-lg-2">
+          <mat-form-field appearance="outline" class="w-100">
+            <mat-label>Financial year</mat-label>
+            <mat-select [(ngModel)]="YearId" (selectionChange)="yearChanged()" [disabled]="dataLoading">
+              <mat-option *ngFor="let y of Years" [value]="y.YearId">{{y.YearName}}</mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <div class="col-md-3 col-lg-2">
+          <mat-form-field appearance="outline" class="w-100">
+            <mat-label>Date</mat-label>
+            <input matInput [matDatepicker]="TrialDatePicker" [ngModel]="TrialDateValue"
+              (dateChange)="dateChanged($event.value)" (dateInput)="dateChanged($event.value)">
+            <mat-datepicker-toggle matIconSuffix [for]="TrialDatePicker"></mat-datepicker-toggle>
+            <mat-datepicker #TrialDatePicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+
+        <div class="col-md-6 col-lg-8 d-flex flex-wrap align-items-center gap-2 mb-3">
+          <button mat-raised-button color="primary" (click)="load()" [disabled]="dataLoading">
+            <i class="bi bi-play-fill me-1"></i> Show
+          </button>
+          <button mat-raised-button color="accent" class="btn-print" (click)="printPdf()"
+            [disabled]="dataLoading || !Loaded || !totalItemsCount">
+            <i class="bi bi-printer me-1"></i> Print
+          </button>
+          <button mat-stroked-button color="warn" (click)="downloadPdfFile()"
+            [disabled]="dataLoading || !Loaded || !totalItemsCount">
+            <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+          </button>
+          <button mat-stroked-button (click)="close()">
+            <i class="bi bi-x-circle me-1"></i> Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-danger no-print" *ngIf="Error">{{Error}}</div>
+
+  <!-- Data Display Card -->
+  <div class="card" *ngIf="Loaded">
+    <div class="card-body">
+      <!-- Printable Report Header (Visible when printed) -->
+      <div class="print-only report-print-header text-center mb-3">
+        <h2 class="mb-0 fw-bold fs-5 text-decoration-underline">{{Company?.CompanyName || 'Bokaro Steel Employees (TA/Med./Mat.) Co-op. Cr. Soc. Ltd.'}}</h2>
+        <div class="hindi-title fs-6 fw-bold my-1" *ngIf="Company?.CompanyNameHindi">{{Company.CompanyNameHindi}}</div>
+        <div class="small text-muted mb-2">(Regd. No.- {{Company?.RegistrationNo || 'BAGH-6/78'}}) &nbsp;&nbsp; {{Company?.CompanyAddress || 'Old Admn. Bldg., Bokaro Steel City-827001'}}</div>
+        <h3 class="fw-bold fs-6 text-decoration-underline mb-2">Trial Balance</h3>
+        <div class="d-flex justify-content-between small fw-bold px-2 border-top border-bottom py-1">
+          <span>Trial on Date: {{formatDateDDMMMYYYY(TrialDate)}}</span>
+          <span>Report Date: {{formatDateDDMMMYYYY(TrialDateValue)}}</span>
+        </div>
+      </div>
+
+      <!-- Balance Status Banner -->
+      <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2 no-print">
+        <div>
+          <span class="badge bg-success-light text-success fs-6 p-2 border border-success" *ngIf="isBalanced">
+            <i class="bi bi-check-circle-fill me-1"></i> Trial Balance is Balanced: <strong>₹{{totalAssetsDr | number:'1.2-2'}}</strong>
+          </span>
+          <span class="badge bg-danger-light text-danger fs-6 p-2 border border-danger" *ngIf="!isBalanced">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> Difference: <strong>₹{{Math.abs(totalAssetsDr - totalLiabilitiesCr) | number:'1.2-2'}}</strong>
+          </span>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+          <input type="text" class="form-control form-control-sm search-box" placeholder="Search head..." [(ngModel)]="SearchText" style="max-width: 250px;">
+          <span class="text-muted small text-nowrap">{{totalItemsCount}} heads (as on {{formatDateDDMMMYYYY(TrialDate)}})</span>
+        </div>
+      </div>
+
+      <!-- 4-Column Table -->
+      <div class="table-responsive trial-table-wrapper">
+        <table class="table table-bordered table-sm align-middle trial-balance-table">
+          <thead class="table-light">
+            <tr>
+              <th class="text-center" style="width: 70px;">Sl.</th>
+              <th>Head</th>
+              <th class="text-end" style="width: 220px;">Assets (Dr)</th>
+              <th class="text-end" style="width: 220px;">Liabilities (Cr)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- General Heads -->
+            <tr *ngFor="let item of displayNormalRows">
+              <td class="text-center text-muted">{{item.slNo}}.</td>
+              <td class="head-cell fw-medium">{{item.HeadName}}</td>
+              <td class="text-end">{{item.assetsDr !== null ? (item.assetsDr | number:'1.2-2') : ''}}</td>
+              <td class="text-end">{{item.liabilitiesCr !== null ? (item.liabilitiesCr | number:'1.2-2') : ''}}</td>
+            </tr>
+
+            <!-- Cash and Banks Section Header -->
+            <tr class="table-secondary section-row" *ngIf="displayBankRows.length > 0">
+              <td colspan="4" class="fw-bold ps-3 py-2 text-dark bg-light">
+                <i class="bi bi-bank me-2"></i>Cash and Banks
+              </td>
+            </tr>
+
+            <!-- Cash and Bank Heads -->
+            <tr *ngFor="let item of displayBankRows">
+              <td class="text-center text-muted">{{item.slNo}}.</td>
+              <td class="head-cell fw-medium">{{item.HeadName}}</td>
+              <td class="text-end ">{{item.assetsDr !== null ? (item.assetsDr | number:'1.2-2') : ''}}</td>
+              <td class="text-end ">{{item.liabilitiesCr !== null ? (item.liabilitiesCr | number:'1.2-2') : ''}}</td>
+            </tr>
+
+            <tr *ngIf="!displayNormalRows.length && !displayBankRows.length">
+              <td colspan="4" class="text-center text-muted py-4">No heads found matching filter.</td>
+            </tr>
+          </tbody>
+          <tfoot class="table-light">
+            <tr class="total-row fw-bold">
+              <td colspan="2" class="text-end pe-3 fs-6">Total:</td>
+              <td class="text-end  fs-6">{{totalAssetsDr | number:'1.2-2'}}</td>
+              <td class="text-end  fs-6">{{totalLiabilitiesCr | number:'1.2-2'}}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>

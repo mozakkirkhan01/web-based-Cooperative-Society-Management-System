@@ -1,0 +1,107 @@
+.filter-card {
+  border-top: 3px solid #0d6efd;
+}
+
+.search-box {
+  border-radius: 4px;
+}
+
+.btn-print {
+  background-color: #0d6efd !important;
+  color: #fff !important;
+}
+
+.trial-balance-table {
+  font-size: 0.88rem;
+  border-collapse: collapse;
+}
+
+.trial-balance-table thead th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  border-bottom: 2px solid #dee2e6;
+  padding: 8px 10px;
+}
+
+.trial-balance-table tbody td {
+  padding: 5px 10px;
+  vertical-align: middle;
+}
+
+.trial-balance-table tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+.head-cell {
+  letter-spacing: 0.2px;
+}
+
+.section-row td {
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+  border-top: 2px solid #0d6efd !important;
+  border-bottom: 1px solid #ced4da !important;
+}
+
+.total-row td {
+  background-color: #f8f9fa;
+  border-top: 2px solid #212529 !important;
+  border-bottom: 3px double #212529 !important;
+  padding: 8px 10px;
+}
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  .no-print,
+  #header,
+  #sidebar,
+  .footer {
+    display: none !important;
+  }
+
+  main#main {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  .card-body {
+    padding: 0 !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .trial-balance-table {
+    font-size: 10pt !important;
+    width: 100% !important;
+    border: 1px solid #000 !important;
+  }
+
+  .trial-balance-table thead th {
+    border-top: 1px solid #000 !important;
+    border-bottom: 1px solid #000 !important;
+    background: transparent !important;
+    color: #000 !important;
+  }
+
+  .trial-balance-table tbody td {
+    padding: 2px 6px !important;
+    border: none !important;
+  }
+
+  .total-row td {
+    border-top: 1px solid #000 !important;
+    border-bottom: 3px double #000 !important;
+    background: transparent !important;
+    color: #000 !important;
+  }
+}
