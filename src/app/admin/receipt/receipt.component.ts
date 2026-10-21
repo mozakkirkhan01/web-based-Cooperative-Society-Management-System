@@ -16,6 +16,10 @@ declare var $: any;
 })
 export class ReceiptComponent {
   balanceRefresh = 0;
+  SocietyList: any[] = [];
+  AccountingBalance: any = {};
+  balanceLoading = false;
+  balanceRequest = 0;
   BankList: any[] = [];
   // IMPORTANT: expose enum for HTML
   BankCashType = BankCashType;
@@ -117,8 +121,49 @@ export class ReceiptComponent {
 
     this.isSubmitted = false;
 
-    // Show the placeholder until the API saves the receipt.
     this.getReceiptTransactionNo();
+    this.getReceiptBalances();
+  }
+
+  getReceiptBalances() {
+    const request = ++this.balanceRequest;
+    this.AccountingBalance = {};
+    this.balanceLoading = true;
+    const date = this.Receipt.ReceiptDate ? this.loadData.loadDateYMD(this.Receipt.ReceiptDate) : null;
+    const data = {
+      StaffLoginId: this.staffLogin.StaffLoginId,
+      SocietyId: this.Receipt.SocietyId || 0,
+      HeadId: this.Receipt.HeadId || 0,
+      MemberId: this.Receipt.MemberId || null,
+      BankId: this.Receipt.BankId || null,
+      BankCashType: this.Receipt.BankCashType || null,
+      AsOfDate: date && !date.includes('NaN') ? date : null,
+      SourceType: 'RECEIPT'
+    };
+    this.service.accounting('PaymentBalances', { request: this.localService.encrypt(JSON.stringify(data)).toString() }).subscribe((response: any) => {
+      if (request != this.balanceRequest) return;
+      this.balanceLoading = false;
+      if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
+      this.SocietyList = response.SocietyList;
+      this.AccountingBalance = response.Balance || {};
+      this.Receipt.Balance = this.AccountingBalance.MemberPaid ?? null;
+      this.Receipt.OpeningBalance = this.AccountingBalance.BankBalance ?? null;
+      if (!this.Receipt.SocietyId && this.SocietyList.length == 1) {
+        this.Receipt.SocietyId = this.SocietyList[0].SocietyId;
+        this.getReceiptBalances();
+      }
+    }, err => {
+      if (request != this.balanceRequest) return;
+      this.balanceLoading = false;
+      this.AccountingBalance = { BalanceMessage: err.error?.Message || 'Unable to load balances.' };
+    });
+  }
+
+  formatBalance(value: any, signed = true) {
+    if (value == null) return this.balanceLoading ? 'Loading...' : 'Not available';
+    const amount = signed ? Math.abs(value) : value;
+    return amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
+      (signed ? (value > 0 ? ' Dr' : value < 0 ? ' Cr' : '') : '');
   }
 
   sort(key: any) {
@@ -168,6 +213,7 @@ export class ReceiptComponent {
     if (!this.isMemberHeadSelected()) {
       this.clearMember();
     }
+    this.getReceiptBalances();
   }
 
   getBankList() {
@@ -192,6 +238,7 @@ export class ReceiptComponent {
   onBankChange(BankId: any) {
     this.Receipt.OpeningBalance = null;
     this.balanceRefresh++;
+    this.getReceiptBalances();
   }
   onAccountingBalance(balance: any) {
     this.Receipt.Balance = balance?.MemberPaid ?? null;
@@ -210,6 +257,7 @@ onBankCashTypeChange() {
     this.Receipt.ChequeNo = '';
     this.Receipt.OpeningBalance = null;
   }
+  this.getReceiptBalances();
 }
 
   //mat auto complete
@@ -223,6 +271,7 @@ onBankCashTypeChange() {
     }
     this.Receipt.MemberId = 0;
     this.Receipt.Balance = null;
+    this.getReceiptBalances();
   }
   clearMember() {
     if (this.isSaving || this.pendingReceipt) return;
@@ -231,6 +280,7 @@ onBankCashTypeChange() {
     this.Receipt.MemberId = null;
     this.Receipt.MemberName = '';
     this.Receipt.Balance = null;
+    this.getReceiptBalances();
   }
   // clearMember() {
   //   this.MemberList = this.AllMemberList;
@@ -277,6 +327,7 @@ onBankCashTypeChange() {
     if (member) {
       this.Receipt.MemberName = member.SearchMember;
     }
+    this.getReceiptBalances();
   }
 
   onReceiptNoChange() {
@@ -311,6 +362,7 @@ onBankCashTypeChange() {
       return;
     }
     if (!this.Receipt.SocietyId) { this.toastr.error('Select a society for accounting'); return; }
+    if (this.balanceLoading || !this.AccountingBalance?.CanPost) { this.toastr.error(this.AccountingBalance?.BalanceMessage || 'Wait for the balances to load'); return; }
     this.isSubmitted = true;
     this.formReceipt.control.markAllAsTouched();
     if (this.formReceipt.invalid) {
