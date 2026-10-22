@@ -318,7 +318,7 @@ export class TrialBalanceComponent implements OnInit {
         {
           content: 'Cash and Banks',
           colSpan: 4,
-          styles: { fontStyle: 'bold', fontSize: 8.5, cellPadding: { top: 3.5, bottom: 2, left: 4 } }
+          styles: { halign: 'left', fontStyle: 'bold', fontSize: 8.5, cellPadding: { top: 3.5, bottom: 2, left: 6 } }
         }
       ]);
 
@@ -380,6 +380,9 @@ export class TrialBalanceComponent implements OnInit {
       didParseCell: (data) => {
         if (data.column.index === 2 || data.column.index === 3) {
           data.cell.styles.halign = 'right';
+        }
+        if (data.cell.raw && typeof data.cell.raw === 'object' && (data.cell.raw as any).content === 'Cash and Banks') {
+          data.cell.styles.halign = 'left';
         }
       },
       didDrawCell: (data) => {
