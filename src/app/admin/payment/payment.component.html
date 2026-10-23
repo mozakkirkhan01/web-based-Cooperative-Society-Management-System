@@ -22,10 +22,10 @@
         <div class="row g-4">
             <div class="col-lg-5">
                 <div class="card h-100">
-                    <div class="card-header">
+                    <!-- <div class="card-header">
                         <h5 class="card-title">{{Payment.PaymentId > 0 ? 'Edit Payment' : 'New Payment'}}</h5>
                         <p class="mb-2">Member collection into the society's bank or cash account</p>
-                    </div>
+                    </div> -->
                     <div class="card-body">
 
                         <form #formPayment="ngForm" class="d-flex justify-content-evenly flex-wrap">
@@ -65,7 +65,7 @@
 
                                 <p class="small col-12 mb-3" aria-live="polite">{{balanceLoading ? 'Loading balances...' : (AccountingBalance?.BalanceMessage || '')}}</p>
 
-                                <mat-form-field appearance="outline" class="col-sm-7">
+                                <mat-form-field appearance="outline" class="col-sm-12">
                                     <mat-label>Select Head</mat-label>
                                     <mat-select #HeadId="ngModel" name="HeadId" [(ngModel)]="Payment.HeadId"
                                         (selectionChange)="onHeadChange($event.value)" required>
