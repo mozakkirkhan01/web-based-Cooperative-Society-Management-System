@@ -75,7 +75,7 @@ export class AccountingComponent implements OnInit {
       this.CompanyList = r.CompanyList || [];
       this.unlinkedCompanies = this.CompanyList.filter(c => !this.SocietyList.some(s => s.CompanyId == c.CompanyId));
       if (this.unlinkedCompanies.length == 1) this.CompanyId = this.unlinkedCompanies[0].CompanyId;
-      this.HeadList = r.HeadList; this.BankList = r.BankList; this.RuleList = r.RuleList; this.SettlementList = r.SettlementList;
+      this.HeadList = (r.HeadList || []).sort((a: any, b: any) => (a.HeadName || '').localeCompare(b.HeadName || '')); this.BankList = r.BankList; this.RuleList = r.RuleList; this.SettlementList = r.SettlementList;
       if (!this.SocietyId && this.SocietyList.length == 1) this.SocietyId = this.SocietyList[0].SocietyId;
     }, err => { this.dataLoading = false; this.toastr.error(err.error?.Message || 'Unable to load accounting setup'); });
   }
