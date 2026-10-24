@@ -28,6 +28,14 @@ export class PaymentComponent {
   // BankList: any = [];
   MemberList: any = []
   HeadList: any = []
+  headSearchText = '';
+  get filteredHeadList(): any[] {
+    if (!this.headSearchText?.trim()) return this.HeadList;
+    const term = this.headSearchText.toLowerCase().trim();
+    return (this.HeadList || []).filter((h: any) =>
+      (h.HeadName || '').toLowerCase().includes(term) || h.HeadId === this.Payment?.HeadId
+    );
+  }
   PaymentList: any = []
   Payment: any = {}
   isSubmitted = false
@@ -184,7 +192,7 @@ export class PaymentComponent {
     this.service.getHeadList(obj).subscribe(r1 => {
       let response = r1 as any
       if (response.Message == ConstantData.SuccessMessage) {
-        this.HeadList = response.HeadList;
+        this.HeadList = (response.HeadList || []).sort((a: any, b: any) => (a.HeadName || '').localeCompare(b.HeadName || ''));
         this.onHeadChange(this.Payment.HeadId);
       } else {
         this.toastr.error(response.Message)

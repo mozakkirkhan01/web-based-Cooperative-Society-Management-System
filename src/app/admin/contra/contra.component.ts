@@ -13,6 +13,14 @@ import { ConstantData } from '../../utils/constant-data';
 export class ContraComponent implements OnInit, OnDestroy {
   SocietyList: any[] = [];
   HeadList: any[] = [];
+  headSearchText = '';
+  get filteredHeadList(): any[] {
+    if (!this.headSearchText?.trim()) return this.HeadList;
+    const term = this.headSearchText.toLowerCase().trim();
+    return (this.HeadList || []).filter((h: any) =>
+      (h.HeadName || '').toLowerCase().includes(term) || h.HeadId === this.Line?.HeadId
+    );
+  }
   RuleList: any[] = [];
   BalanceList: any[] = [];
   MemberList: any[] = [];
@@ -64,7 +72,9 @@ export class ContraComponent implements OnInit, OnDestroy {
       if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
       this.SocietyList = response.SocietyList;
       this.RuleList = response.RuleList;
-      this.HeadList = response.HeadList.filter((x: any) => (x.HeadType == 1 || x.HeadType == 2) && !this.RuleList.some(r => r.HeadId == x.HeadId && !r.IsPostingAllowed));
+      this.HeadList = (response.HeadList || [])
+        .filter((x: any) => (x.HeadType == 1 || x.HeadType == 2) && !this.RuleList.some(r => r.HeadId == x.HeadId && !r.IsPostingAllowed))
+        .sort((a: any, b: any) => (a.HeadName || '').localeCompare(b.HeadName || ''));
       this.CanCreate = response.CanCreate;
       if (this.SocietyList.length == 1) this.SocietyId = this.SocietyList[0].SocietyId;
       this.getContext();

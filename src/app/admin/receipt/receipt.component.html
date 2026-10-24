@@ -68,9 +68,9 @@
 
                                 <mat-form-field appearance="outline" class="col-sm-12">
                                     <mat-label>Select Head</mat-label>
-                                    <mat-select #HeadId="ngModel" name="HeadId" [(ngModel)]="Receipt.HeadId"
+                                    <mat-select #HeadId="ngModel" name="HeadId" [(ngModel)]="Receipt.HeadId" (openedChange)="headSearchText = ''"
                                         (selectionChange)="onHeadChange($event.value)" required>
-                                        <mat-option *ngFor="let option of HeadList" [value]="option.HeadId">
+                                        <div class="p-2" style="position: sticky; top: 0; background: white; z-index: 1000; border-bottom: 1px solid #e0e0e0;" (click)="$event.stopPropagation()"><input type="text" class="form-control form-control-sm" placeholder="Search head..." [(ngModel)]="headSearchText" [ngModelOptions]="{standalone: true}" (keydown)="$event.stopPropagation()"></div><mat-option *ngFor="let option of filteredHeadList" [value]="option.HeadId">
                                             {{option.HeadName}}
                                         </mat-option>
                                     </mat-select>

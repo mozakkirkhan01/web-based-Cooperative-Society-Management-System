@@ -14,6 +14,22 @@ import * as XLSX from 'xlsx';
 export class ScheduleComponent implements OnInit, OnDestroy {
   SocietyList: any[] = [];
   HeadList: any[] = [];
+  headSearchText = '';
+  get filteredHeadList(): any[] {
+    if (!this.headSearchText?.trim()) return this.HeadList;
+    const term = this.headSearchText.toLowerCase().trim();
+    return (this.HeadList || []).filter((h: any) =>
+      (h.HeadName || '').toLowerCase().includes(term) || h.HeadId === this.Line?.HeadId
+    );
+  }
+  sourceHeadSearchText = '';
+  get filteredSourceHeadList(): any[] {
+    if (!this.sourceHeadSearchText?.trim()) return this.SourceHeadList;
+    const term = this.sourceHeadSearchText.toLowerCase().trim();
+    return (this.SourceHeadList || []).filter((h: any) =>
+      (h.HeadName || '').toLowerCase().includes(term) || h.HeadId === this.SettlementHeadId
+    );
+  }
   RuleList: any[] = [];
   BalanceList: any[] = [];
   MemberList: any[] = [];
@@ -87,9 +103,15 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
       this.SocietyList = response.SocietyList;
       this.RuleList = response.RuleList;
-      this.HeadList = response.HeadList.filter((x: any) => (x.HeadType != 1 && x.HeadType != 2) && !this.RuleList.some(r => r.HeadId == x.HeadId && !r.IsPostingAllowed));
-      this.BankHeadList = response.HeadList.filter((x: any) => (x.HeadType == 1 || x.HeadType == 2) && !this.RuleList.some(r => r.HeadId == x.HeadId && !r.IsPostingAllowed));
-      this.SourceHeadList = response.HeadList.filter((x: any) => !this.RuleList.some(r => r.HeadId == x.HeadId && (!r.IsPostingAllowed || r.RequiresMember)));
+      this.HeadList = (response.HeadList || [])
+        .filter((x: any) => (x.HeadType != 1 && x.HeadType != 2) && !this.RuleList.some(r => r.HeadId == x.HeadId && !r.IsPostingAllowed))
+        .sort((a: any, b: any) => (a.HeadName || '').localeCompare(b.HeadName || ''));
+      this.BankHeadList = (response.HeadList || [])
+        .filter((x: any) => (x.HeadType == 1 || x.HeadType == 2) && !this.RuleList.some(r => r.HeadId == x.HeadId && !r.IsPostingAllowed))
+        .sort((a: any, b: any) => (a.HeadName || '').localeCompare(b.HeadName || ''));
+      this.SourceHeadList = (response.HeadList || [])
+        .filter((x: any) => !this.RuleList.some(r => r.HeadId == x.HeadId && (!r.IsPostingAllowed || r.RequiresMember)))
+        .sort((a: any, b: any) => (a.HeadName || '').localeCompare(b.HeadName || ''));
       this.CanCreate = response.CanCreate;
       if (this.SocietyList.length == 1) this.SocietyId = this.SocietyList[0].SocietyId;
       this.getContext();

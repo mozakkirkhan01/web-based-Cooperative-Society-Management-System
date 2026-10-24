@@ -87,7 +87,7 @@ export class HeadComponent {
     this.service.getHeadList(obj).subscribe(r1 => {
       let response = r1 as any
       if (response.Message == ConstantData.SuccessMessage) {
-        this.HeadList = response.HeadList;
+        this.HeadList = (response.HeadList || []).sort((a: any, b: any) => (a.HeadName || '').localeCompare(b.HeadName || ''));
       } else {
         this.toastr.error(response.Message)
       }

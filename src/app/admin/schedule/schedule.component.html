@@ -36,8 +36,8 @@
               (required)</mat-label><input matInput [(ngModel)]="ExternalReference" [readonly]="!!SourceMonth"
               maxlength="100"></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-8" id="sourceHeadField"><mat-label>Source head (cut from) e.g. RECOVERY FROM BSP</mat-label><mat-select
-              [(ngModel)]="SettlementHeadId" (selectionChange)="getContext()" [disabled]="isSaving || !!pendingTransaction || !CanCreate" placeholder="Select source head manually"><mat-option [value]="null">-- Select head manually --</mat-option><mat-option
-                *ngFor="let head of SourceHeadList"
+              [(ngModel)]="SettlementHeadId" (selectionChange)="getContext()" (openedChange)="sourceHeadSearchText = ''" [disabled]="isSaving || !!pendingTransaction || !CanCreate" placeholder="Select source head manually"><div class="p-2" style="position: sticky; top: 0; background: white; z-index: 1000; border-bottom: 1px solid #e0e0e0;" (click)="$event.stopPropagation()"><input type="text" class="form-control form-control-sm" placeholder="Search head..." [(ngModel)]="sourceHeadSearchText" (keydown)="$event.stopPropagation()"></div><mat-option [value]="null">-- Select head manually --</mat-option><mat-option
+                *ngFor="let head of filteredSourceHeadList"
                 [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Source head balance</mat-label><input
               matInput readonly [value]="formatBalance(balance(SettlementHeadId))"></mat-form-field>
@@ -53,8 +53,8 @@
         <h5 class="card-title">Add entry</h5>
         <div class="row">
           <mat-form-field appearance="outline" class="col-md-8"><mat-label>Head</mat-label><mat-select
-              [(ngModel)]="Line.HeadId" (selectionChange)="getContext()"
-              [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option *ngFor="let head of HeadList"
+              [(ngModel)]="Line.HeadId" (selectionChange)="getContext()" (openedChange)="headSearchText = ''"
+              [disabled]="isSaving || !!pendingTransaction || !CanCreate"><div class="p-2" style="position: sticky; top: 0; background: white; z-index: 1000; border-bottom: 1px solid #e0e0e0;" (click)="$event.stopPropagation()"><input type="text" class="form-control form-control-sm" placeholder="Search head..." [(ngModel)]="headSearchText" (keydown)="$event.stopPropagation()"></div><mat-option *ngFor="let head of filteredHeadList"
                 [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Head balance at selected
               date</mat-label><input matInput readonly [value]="formatBalance(balance(Line.HeadId))"></mat-form-field>
