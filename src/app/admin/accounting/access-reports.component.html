@@ -39,7 +39,7 @@
                   [for]="ReportDatePicker"></mat-datepicker-toggle><mat-datepicker
                   #ReportDatePicker></mat-datepicker><mat-error>A valid date is required</mat-error></mat-form-field>
             </div>
-            <div class="col-md-3 col-lg-2" *ngIf="isTrialBalance"><mat-form-field appearance="outline"
+            <div class="col-md-3 col-lg-2" *ngIf="isTrialBalance || isMainLedger"><mat-form-field appearance="outline"
                 class="w-100"><mat-label>For</mat-label><mat-select [(ngModel)]="PeriodFilter"
                   (selectionChange)="onPeriodFilterChange()" [disabled]="dataLoading"><mat-option *ngFor="let p of PeriodList"
                     [value]="p">{{p}}</mat-option></mat-select></mat-form-field></div>
@@ -60,7 +60,7 @@
                   <div class="p-2" style="position: sticky; top: 0; background: white; z-index: 1000; border-bottom: 1px solid #e0e0e0;" (click)="$event.stopPropagation()"><input type="text" class="form-control form-control-sm" placeholder="Search head..." [(ngModel)]="headSearchText" (keydown)="$event.stopPropagation()"></div><mat-option value="">All heads</mat-option><mat-option *ngFor="let head of filteredHeads"
                     [value]="head.HeadCode">
                     {{head.HeadName}}</mat-option></mat-select></mat-form-field></div>
-            <div class="col-md-3 d-flex align-items-center mb-3" *ngIf="Report == 'DayBook'">
+            <div class="col-md-3 d-flex align-items-center mb-3" *ngIf="isMainLedger"><mat-checkbox [(ngModel)]="IncludeMonthSubTotal">Include Month SubTotal</mat-checkbox></div><div class="col-md-3 d-flex align-items-center mb-3" *ngIf="Report == 'DayBook'">
               <mat-checkbox [(ngModel)]="IncludeScheduleDetails" (change)="filtersChanged()">
                 Include details of Schedule Entry
               </mat-checkbox>
@@ -88,7 +88,7 @@
             (change)="filtersChanged()">Include deleted applications</mat-checkbox></div>
         <div class="col-md-6 d-flex align-items-center gap-2 mb-3">
           <button mat-raised-button color="primary" (click)="show()"
-            [disabled]="dataLoading || (Report == 'MemberLedger' && !MemberKey)">Show</button>
+            [disabled]="dataLoading || (Report == 'MemberLedger' && !MemberKey)"><i class="bi bi-search me-1" *ngIf="isMainLedger"></i>Show</button><button mat-raised-button color="primary" (click)="downloadPdf()" *ngIf="isMainLedger && Loaded" [disabled]="dataLoading || !Total"><i class="bi bi-printer me-1"></i> Print</button><button mat-stroked-button (click)="openDayBook()" *ngIf="isMainLedger && Loaded"><i class="bi bi-journal-text me-1"></i> Show DayBook</button>
           <button mat-stroked-button (click)="printDayBook()" *ngIf="(Report == 'DayBook' || Report == 'CashBank') && Loaded">Print</button>
           <button mat-stroked-button (click)="load(true)" *ngIf="Report != 'Checks' && Report != 'DayBook' && Report != 'CashBank'"
             [disabled]="dataLoading || !Loaded || !Total">Export CSV</button>
@@ -486,7 +486,137 @@
       </div>
     </div>
   </div>
-  <div class="card" *ngIf="Loaded && Report != 'Checks' && Report != 'LoanApplications' && (Report != 'DayBook' || !Checks.DayBook) && (Report != 'CashBank' || !Checks.DayBook)">
+    <div class="card main-ledger-card shadow-sm border-0 mb-4" *ngIf="Loaded && isMainLedger">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+        <div>
+          <h4 class="card-title fw-bold mb-1 text-primary">Main Ledger</h4>
+          <div class="text-muted small">
+            <span class="fw-semibold text-dark">{{headDisplayName}}</span> · From <strong>{{FromDate | date:'dd-MM-yyyy'}}</strong> to <strong>{{ToDate | date:'dd-MM-yyyy'}}</strong>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button mat-stroked-button color="primary" (click)="openDayBook()" title="View DayBook for this date">
+            <i class="bi bi-journal-text me-1"></i> Show DayBook
+          </button>
+          <button mat-raised-button color="primary" (click)="downloadPdf()" [disabled]="dataLoading || !Total">
+            <i class="bi bi-printer me-1"></i> Print
+          </button>
+          <button mat-stroked-button (click)="closeCashBook()" title="Close and return to dashboard">
+            Close
+          </button>
+        </div>
+      </div>
+
+      <!-- Key Balance Summary Cards -->
+      <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-md-3">
+          <div class="p-3 bg-light rounded-3 border">
+            <div class="text-muted small text-uppercase fw-semibold">Opening Balance</div>
+            <div class="fs-5 fw-bold text-dark mt-1">{{formatLedgerBalance(Totals.Opening)}}</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="p-3 bg-light rounded-3 border">
+            <div class="text-muted small text-uppercase fw-semibold">Total Debits</div>
+            <div class="fs-5 fw-bold text-danger mt-1">{{Totals.Debit | number:'1.2-2'}}</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="p-3 bg-light rounded-3 border">
+            <div class="text-muted small text-uppercase fw-semibold">Total Credits</div>
+            <div class="fs-5 fw-bold text-success mt-1">{{Totals.Credit | number:'1.2-2'}}</div>
+          </div>
+        </div>
+        <div class="col-sm-6 col-md-3">
+          <div class="p-3 bg-light rounded-3 border">
+            <div class="text-muted small text-uppercase fw-semibold">Closing Balance</div>
+            <div class="fs-5 fw-bold text-primary mt-1">{{formatLedgerBalance(Totals.Closing)}}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Ledger Table -->
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle main-ledger-table mb-0">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 25%;">Date</th>
+              <th class="text-end" style="width: 25%;">Debits</th>
+              <th class="text-end" style="width: 25%;">Credits</th>
+              <th class="text-end" style="width: 25%;">Balance</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Opening Row -->
+            <tr class="table-warning fw-semibold" style="background-color: #fff3cd !important;">
+              <td>
+                <i class="bi bi-calendar-check me-1 text-muted"></i>
+                Opening Balance as on {{FromDate | date:'dd-MM-yyyy'}}:
+              </td>
+              <td class="text-end">-</td>
+              <td class="text-end">-</td>
+              <td class="text-end fw-bold">{{formatLedgerBalance(Totals.Opening)}}</td>
+            </tr>
+
+            <!-- Dynamic Rows -->
+            <ng-container *ngFor="let row of mainLedgerRows">
+              <!-- Daily Transaction Row -->
+              <tr *ngIf="row.Kind == 'Transaction'" class="day-row">
+                <td>
+                  <a href="javascript:void(0)" (click)="openDayBook(row.EntryDate)" class="text-decoration-none fw-semibold text-primary" title="Click to view DayBook for this date">
+                    {{row.EntryDate | date:'dd-MM-yyyy'}}
+                    <i class="bi bi-box-arrow-up-right ms-1 text-muted small"></i>
+                  </a>
+                </td>
+                <td class="text-end">{{row.Debit | number:'1.2-2'}}</td>
+                <td class="text-end">{{row.Credit | number:'1.2-2'}}</td>
+                <td class="text-end fw-semibold">{{formatLedgerBalance(row.Closing)}}</td>
+              </tr>
+
+              <!-- Month SubTotal Row (Yellow highlighted matching legacy software) -->
+              <tr *ngIf="row.Kind == 'MonthTotal'" class="month-subtotal-row fw-bold" style="background-color: #fff275 !important; border-top: 2px solid #e0c800; border-bottom: 2px solid #e0c800;">
+                <td class="text-dark">
+                  <i class="bi bi-calendar-month me-1 text-secondary"></i>
+                  {{row.EntryDate | date:'MMM-yyyy'}}
+                </td>
+                <td class="text-end text-dark">{{row.Debit | number:'1.2-2'}}</td>
+                <td class="text-end text-dark">{{row.Credit | number:'1.2-2'}}</td>
+                <td class="text-end text-dark">{{formatLedgerBalance(row.Closing)}}</td>
+              </tr>
+            </ng-container>
+          </tbody>
+          <tfoot class="table-dark fw-bold">
+            <tr>
+              <td>Total:</td>
+              <td class="text-end">{{Totals.Debit | number:'1.2-2'}}</td>
+              <td class="text-end">{{Totals.Credit | number:'1.2-2'}}</td>
+              <td class="text-end">{{formatLedgerBalance(Totals.Closing)}}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Bottom action buttons -->
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+        <div class="d-flex gap-2">
+          <button mat-stroked-button (click)="openDayBook()">
+            <i class="bi bi-journal-text me-1"></i> Show DayBook
+          </button>
+          <button mat-raised-button color="primary" (click)="downloadPdf()">
+            <i class="bi bi-printer me-1"></i> Print
+          </button>
+          <button mat-stroked-button (click)="closeCashBook()">
+            Close
+          </button>
+        </div>
+        <span class="text-muted small">
+          {{mainLedgerRows.length}} active days/totals · {{headDisplayName}}
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="card" *ngIf="Loaded && !isMainLedger && Report != 'Checks' && Report != 'LoanApplications' && (Report != 'DayBook' || !Checks.DayBook) && (Report != 'CashBank' || !Checks.DayBook)">
     <div class="card-body">
       <h5 class="card-title">{{Title}} · {{FromDate | date:'dd-MM-yyyy'}}<ng-container *ngIf="Report != 'DayBook'"> to
           {{ToDate | date:'dd-MM-yyyy'}}</ng-container></h5>

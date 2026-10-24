@@ -42,6 +42,19 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   Allowed = false; Error = ''; requestNumber = 0; memberRequest = 0;
   IncludeDeleted = false;
   IncludeScheduleDetails = false;
+  IncludeMonthSubTotal = true;
+  get isMainLedger(): boolean { return this.Report === 'HeadLedger' || this.Report === 'MainLedger'; }
+  get headDisplayName(): string {
+    const selected = (this.Heads || []).find((h: any) => h.HeadCode === this.HeadCode);
+    return selected ? selected.HeadName : (this.Rows && this.Rows.length ? this.Rows[0].HeadName : 'Main Ledger');
+  }
+  get mainLedgerRows(): any[] {
+    if (!this.Rows) return [];
+    if (!this.IncludeMonthSubTotal) {
+      return this.Rows.filter((r: any) => r.Kind !== 'MonthTotal');
+    }
+    return this.Rows;
+  }
   AccessReview = ConstantData.AccessReview; Notice = '';
   private routeSubscription?: Subscription;
   constructor(private service: AppService, private localService: LocalService, private toastr: ToastrService,
@@ -55,6 +68,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
       this.setup();
     });
   }
+
   ngOnDestroy() { this.routeSubscription?.unsubscribe(); this.requestNumber++; this.memberRequest++; }
   request(mode: string, extra: any = {}) {
     return {
@@ -86,8 +100,14 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
         this.FromDate = today < this.FromDate ? this.FromDate : today > this.ToDate ? this.ToDate : today;
         this.ToDate = this.FromDate;
         this.CashBankDate = new Date(this.FromDate);
-      } else if (this.Report == 'TrialBalance' || this.Report == 'ReceiptsExpenditures') {
+      } else if (this.Report == 'TrialBalance' || this.Report == 'ReceiptsExpenditures' || this.isMainLedger) {
         this.applyPeriodFilter();
+        if (this.isMainLedger) {
+          this.PageSize = 100;
+          if (!this.HeadCode && this.Heads.length > 0) {
+            this.HeadCode = this.Heads[0].HeadCode;
+          }
+        }
       }
       this.PageNumber = 1;
       if (this.Report != 'MemberLedger') this.load();
@@ -247,6 +267,54 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     }
     return `${Math.abs(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''}`;
   }
+  formatLedgerBalance(value: number): string {
+    const num = Math.abs(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (value > 0) return `${num} Dr`;
+    if (value < 0) return `${num} Cr`;
+    return `${num} Cr`;
+  }
+  formatPdfLedgerBalance(value: number): string {
+    const num = Math.abs(value || 0).toFixed(2);
+    if (value > 0) return `${num} Dr`;
+    if (value < 0) return `${num} Cr`;
+    return `${num} Cr`;
+  }
+  formatDateDDMMYY(dateInput: any): string {
+    if (!dateInput) return '';
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = String(d.getFullYear()).slice(-2);
+    return `${day}-${month}-${year}`;
+  }
+  formatDateDDMMYYYYNumeric(dateInput: any): string {
+    if (!dateInput) return '';
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}-${month}-${year}`;
+  }
+  formatMonthYear(dateInput: any): string {
+    if (!dateInput) return '';
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return String(dateInput);
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[d.getMonth()]}-${d.getFullYear()}`;
+  }
+  openDayBook(date?: any) {
+    let d = this.FromDate;
+    if (date) {
+      if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}/.test(date)) {
+        d = date.substring(0, 10);
+      } else {
+        d = this.loadData.loadDateYMD(date) || this.FromDate;
+      }
+    }
+    this.router.navigate(['/admin/day-book'], { queryParams: { date: d } });
+  }
   sum(arr: number[], count?: number): number {
     if (!arr || !arr.length) return 0;
     const items = count !== undefined ? arr.slice(0, count) : arr;
@@ -332,6 +400,10 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   }
 
   downloadPdf() {
+    if (this.isMainLedger) {
+      this.generateMainLedgerPdf();
+      return;
+    }
     if (this.Report !== 'TrialBalance' && this.Report !== 'ReceiptsExpenditures') return;
     this.dataLoading = true;
     this.service.accessReport(this.request('Data', { Export: true })).subscribe((r: any) => {
@@ -542,6 +614,210 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
       this.dataLoading = false;
       this.toastr.error(err.error?.Message || 'Failed to download PDF');
     });
+  }
+
+  generateMainLedgerPdf() {
+    this.dataLoading = true;
+    this.service.accessReport(this.request('Data', { Export: true })).subscribe((r: any) => {
+      this.dataLoading = false;
+      if (r.Message != ConstantData.SuccessMessage) {
+        this.toastr.error(r.Message || 'Unable to fetch report data for PDF');
+        return;
+      }
+      this.renderMainLedgerPdf(r);
+    }, err => {
+      this.dataLoading = false;
+      this.toastr.error(err.error?.Message || 'Failed to download PDF');
+    });
+  }
+
+  private renderMainLedgerPdf(r: any) {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const centerX = pageWidth / 2;
+
+    const company = r.Company || this.Company || {};
+    const companyName = company.CompanyName || 'Bokaro Steel Employees (TA/Med./Mat.) Co-op. Cr. Soc.';
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(0);
+    doc.text(companyName, centerX, 15, { align: 'center' });
+
+    const hindiName = company.CompanyNameHindi || 'बोकारो इस्पात कर्मचारी (टी०ए०/मेड०/मेट०) सहकारी साख समिति लिमिटेड';
+    const hindiImg = this.createHindiTextImage(hindiName);
+    let nextY = 17.5;
+    if (hindiImg) {
+      doc.addImage(hindiImg.dataUrl, 'PNG', centerX - hindiImg.widthMm / 2, nextY, hindiImg.widthMm, hindiImg.heightMm);
+      nextY += hindiImg.heightMm + 1.5;
+    } else {
+      nextY += 5;
+    }
+
+    const regNo = company.RegistrationNo || 'BAGH-6/78';
+    const addr = company.CompanyAddress || 'Old Admn. Bldg., Bokaro Steel City-827001';
+    const regAddressText = `(Regd. No.- ${regNo})    ${addr}`;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.text(regAddressText, centerX, nextY + 3, { align: 'center' });
+    nextY += 8;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    const reportTitle = 'Main Ledger';
+    doc.text(reportTitle, centerX, nextY + 2, { align: 'center' });
+    const titleW = doc.getTextWidth(reportTitle);
+    doc.setLineWidth(0.4);
+    doc.line(centerX - titleW / 2, nextY + 3, centerX + titleW / 2, nextY + 3);
+    nextY += 8;
+
+    const selectedHead = (this.Heads || []).find((h: any) => h.HeadCode === this.HeadCode);
+    const headDisplayName = selectedHead?.HeadName || (r.Rows && r.Rows.length ? r.Rows[0].HeadName : '') || 'MAIN LEDGER';
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10.5);
+    doc.text(`Head: ${headDisplayName.toUpperCase()}`, 15, nextY + 2);
+    nextY += 6;
+
+    const fromDateStr = this.formatDateDDMMMYYYY(this.FromDate || r.FromDate);
+    const toDateStr = this.formatDateDDMMMYYYY(this.ToDate || r.ToDate);
+    const todayStr = this.formatDateDDMMMYYYY(new Date());
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9.5);
+    doc.text(`From: ${fromDateStr} To: ${toDateStr}`, 15, nextY + 2);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Report Date: ${todayStr}`, pageWidth - 15, nextY + 2, { align: 'right' });
+    nextY += 6;
+
+    const allRows: any[] = r.Rows || [];
+    const body: any[] = [];
+
+    const openingVal = Number(r.Totals?.Opening ?? this.Totals?.Opening ?? 0);
+    const openingDateStr = this.formatDateDDMMYY(this.FromDate || r.FromDate);
+    body.push([
+      `Opening (${openingDateStr})`,
+      '',
+      '',
+      this.formatPdfLedgerBalance(openingVal)
+    ]);
+
+    let totalDebit = 0;
+    let totalCredit = 0;
+    let closingBalance = openingVal;
+
+    for (const row of allRows) {
+      if (row.Kind === 'Opening') continue;
+      if (row.Kind === 'MonthTotal') {
+        if (this.IncludeMonthSubTotal) {
+          const monthStr = this.formatMonthYear(row.EntryDate);
+          body.push([
+            monthStr,
+            Number(row.Debit || 0).toFixed(2),
+            Number(row.Credit || 0).toFixed(2),
+            this.formatPdfLedgerBalance(row.Closing)
+          ]);
+        }
+        continue;
+      }
+      if (row.Kind === 'Total') {
+        totalDebit = Number(row.Debit || 0);
+        totalCredit = Number(row.Credit || 0);
+        closingBalance = Number(row.Closing || 0);
+        continue;
+      }
+
+      const dayStr = this.formatDateDDMMYYYYNumeric(row.EntryDate);
+      body.push([
+        dayStr,
+        Number(row.Debit || 0).toFixed(2),
+        Number(row.Credit || 0).toFixed(2),
+        this.formatPdfLedgerBalance(row.Closing)
+      ]);
+    }
+
+    const totalRowIndex = body.length;
+    body.push([
+      'Total:',
+      (totalDebit || r.Totals?.Debit || this.Totals?.Debit || 0).toFixed(2),
+      (totalCredit || r.Totals?.Credit || this.Totals?.Credit || 0).toFixed(2),
+      this.formatPdfLedgerBalance(closingBalance ?? r.Totals?.Closing ?? this.Totals?.Closing ?? 0)
+    ]);
+
+    autoTable(doc, {
+      head: [
+        [
+          { content: 'Date', styles: { halign: 'left' } },
+          { content: 'Debit', styles: { halign: 'right' } },
+          { content: 'Credit', styles: { halign: 'right' } },
+          { content: 'Balance', styles: { halign: 'right' } }
+        ]
+      ],
+      body: body,
+      startY: nextY + 1,
+      margin: { top: 14, bottom: 16, left: 15, right: 15 },
+      theme: 'plain',
+      styles: {
+        font: 'helvetica',
+        fontSize: 8.5,
+        cellPadding: { top: 1.2, bottom: 1.2, left: 1, right: 1 },
+        textColor: [0, 0, 0],
+        overflow: 'ellipsize'
+      },
+      headStyles: {
+        font: 'helvetica',
+        fontStyle: 'bold',
+        fontSize: 9,
+        textColor: [0, 0, 0],
+        fillColor: false,
+        lineWidth: { top: 0.4, bottom: 0.4 },
+        lineColor: [0, 0, 0],
+        cellPadding: { top: 2, bottom: 2, left: 1, right: 1 }
+      },
+      columnStyles: {
+        0: { cellWidth: 40, halign: 'left' },
+        1: { cellWidth: 46, halign: 'right' },
+        2: { cellWidth: 46, halign: 'right' },
+        3: { cellWidth: 48, halign: 'right' }
+      },
+      didParseCell: (data) => {
+        if (data.column.index >= 1) {
+          data.cell.styles.halign = 'right';
+        }
+      },
+      didDrawCell: (data) => {
+        if (data.row.index === totalRowIndex) {
+          doc.setDrawColor(0);
+          doc.setLineWidth(0.35);
+          doc.line(data.cell.x, data.cell.y, data.cell.x + data.cell.width, data.cell.y);
+          const bottomY = data.cell.y + data.cell.height;
+          doc.line(data.cell.x, bottomY, data.cell.x + data.cell.width, bottomY);
+        }
+      }
+    });
+
+    const totalPages = doc.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(0);
+      doc.setLineWidth(0.3);
+      const lineY = pageHeight - 12;
+      doc.line(15, lineY, pageWidth - 15, lineY);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      doc.setTextColor(0);
+      doc.text(`Page - ${i} of ${totalPages}`, centerX, pageHeight - 7, { align: 'center' });
+    }
+
+    const safeHead = (headDisplayName || 'Main_Ledger').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const fileName = `Main_Ledger_${safeHead}_${this.FromDate}_to_${this.ToDate}.pdf`;
+    doc.save(fileName);
+    this.toastr.success('Main Ledger PDF downloaded successfully');
   }
 }
 
