@@ -45,6 +45,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   IncludeMonthSubTotal = true;
   get isMainLedger(): boolean { return this.Report === 'HeadLedger' || this.Report === 'MainLedger'; }
   get headDisplayName(): string {
+    if (!this.HeadCode) return 'All Heads';
     const selected = (this.Heads || []).find((h: any) => h.HeadCode === this.HeadCode);
     return selected ? selected.HeadName : (this.Rows && this.Rows.length ? this.Rows[0].HeadName : 'Main Ledger');
   }
@@ -57,6 +58,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   }
   AccessReview = ConstantData.AccessReview; Notice = '';
   private routeSubscription?: Subscription;
+  private queryParamsSubscription?: Subscription;
   constructor(private service: AppService, private localService: LocalService, private toastr: ToastrService,
     private route: ActivatedRoute, private router: Router, private loadData: LoadDataService) { }
   ngOnInit() {
@@ -67,9 +69,29 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
       this.YearId = 0; this.Years = []; this.Heads = []; this.Members = []; this.Notice = '';
       this.setup();
     });
+    this.queryParamsSubscription = this.route.queryParams.subscribe(params => {
+      if ((this.Report == 'DayBook' || this.Report == 'CashBank') && params['date'] && this.Allowed) {
+        const qpDate = params['date'];
+        const qpYear = params['yearId'] ? Number(params['yearId']) : null;
+        if (qpDate !== this.FromDate || (qpYear && qpYear !== this.YearId)) {
+          this.FromDate = qpDate;
+          this.ToDate = qpDate;
+          this.CashBankDate = new Date(qpDate);
+          this.FromDateValue = new Date(qpDate);
+          this.ToDateValue = new Date(qpDate);
+          if (qpYear) this.YearId = qpYear;
+          this.load();
+        }
+      }
+    });
   }
 
-  ngOnDestroy() { this.routeSubscription?.unsubscribe(); this.requestNumber++; this.memberRequest++; }
+  ngOnDestroy() {
+    this.routeSubscription?.unsubscribe();
+    this.queryParamsSubscription?.unsubscribe();
+    this.requestNumber++;
+    this.memberRequest++;
+  }
   request(mode: string, extra: any = {}) {
     return {
       request: this.localService.encrypt(JSON.stringify({
@@ -84,6 +106,18 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   setup() {
     const current = ++this.requestNumber; this.memberRequest++;
     this.dataLoading = true; this.Error = ''; this.Notice = ''; this.Allowed = false; this.Loaded = false; this.Rows = []; this.Totals = {};
+    if (this.Report == 'DayBook' || this.Report == 'CashBank') {
+      const qpDate = this.route.snapshot.queryParams['date'];
+      const qpYear = this.route.snapshot.queryParams['yearId'];
+      if (qpYear) this.YearId = Number(qpYear);
+      if (qpDate) {
+        this.FromDate = qpDate;
+        this.ToDate = qpDate;
+        this.CashBankDate = new Date(qpDate);
+        this.FromDateValue = new Date(qpDate);
+        this.ToDateValue = new Date(qpDate);
+      }
+    }
     this.service.accessReport(this.request('Setup')).subscribe((r: any) => {
       if (current != this.requestNumber) return;
       this.dataLoading = false;
@@ -95,18 +129,34 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
       this.FromDate = r.Year.StartDate.substring(0, 10); this.ToDate = r.Year.EndDate.substring(0, 10);
       this.FromDateValue = new Date(r.Year.StartDate); this.ToDateValue = new Date(r.Year.EndDate);
       if (this.Report == 'DayBook' || this.Report == 'CashBank') {
-        const now = new Date();
-        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        this.FromDate = today < this.FromDate ? this.FromDate : today > this.ToDate ? this.ToDate : today;
-        this.ToDate = this.FromDate;
-        this.CashBankDate = new Date(this.FromDate);
+        const qpDate = this.route.snapshot.queryParams['date'];
+        const qpYear = this.route.snapshot.queryParams['yearId'];
+        if (qpDate) {
+          this.FromDate = qpDate;
+          this.ToDate = qpDate;
+          this.CashBankDate = new Date(qpDate);
+          this.FromDateValue = new Date(qpDate);
+          this.ToDateValue = new Date(qpDate);
+          if (qpYear) {
+            this.YearId = Number(qpYear);
+          } else {
+            const matchingYear = this.Years.find(y => qpDate >= y.StartDate.substring(0, 10) && qpDate <= y.EndDate.substring(0, 10));
+            if (matchingYear) this.YearId = matchingYear.YearId;
+          }
+        } else {
+          const now = new Date();
+          const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+          this.FromDate = today < this.FromDate ? this.FromDate : today > this.ToDate ? this.ToDate : today;
+          this.ToDate = this.FromDate;
+          this.CashBankDate = new Date(this.FromDate);
+          this.FromDateValue = new Date(this.FromDate);
+          this.ToDateValue = new Date(this.FromDate);
+        }
       } else if (this.Report == 'TrialBalance' || this.Report == 'ReceiptsExpenditures' || this.isMainLedger) {
         this.applyPeriodFilter();
         if (this.isMainLedger) {
-          this.PageSize = 100;
-          if (!this.HeadCode && this.Heads.length > 0) {
-            this.HeadCode = this.Heads[0].HeadCode;
-          }
+          this.PageSize = 1000;
+          this.HeadCode = '';
         }
       }
       this.PageNumber = 1;
@@ -121,6 +171,14 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     this.FromDate = date ? this.loadData.loadDateYMD(date) || '' : '';
     this.ToDate = this.FromDate;
     this.CashBankDate = date ? new Date(date) : null;
+    this.FromDateValue = date ? new Date(date) : null;
+    this.ToDateValue = this.FromDateValue;
+    if (this.FromDate && this.Years && this.Years.length) {
+      const matchingYear = this.Years.find(y => this.FromDate >= y.StartDate.substring(0, 10) && this.FromDate <= y.EndDate.substring(0, 10));
+      if (matchingYear && matchingYear.YearId !== this.YearId) {
+        this.YearId = matchingYear.YearId;
+      }
+    }
     this.filtersChanged();
     if (this.Report == 'CashBank' || this.Report == 'DayBook') {
       this.load();
@@ -313,7 +371,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
         d = this.loadData.loadDateYMD(date) || this.FromDate;
       }
     }
-    this.router.navigate(['/admin/day-book'], { queryParams: { date: d } });
+    this.router.navigate(['/admin/day-book'], { queryParams: { date: d, yearId: this.YearId } });
   }
   sum(arr: number[], count?: number): number {
     if (!arr || !arr.length) return 0;
@@ -678,7 +736,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     nextY += 8;
 
     const selectedHead = (this.Heads || []).find((h: any) => h.HeadCode === this.HeadCode);
-    const headDisplayName = selectedHead?.HeadName || (r.Rows && r.Rows.length ? r.Rows[0].HeadName : '') || 'MAIN LEDGER';
+    const headDisplayName = selectedHead?.HeadName || (this.HeadCode ? (r.Rows && r.Rows.length ? r.Rows[0].HeadName : '') : 'ALL HEADS');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10.5);
     doc.text(`Head: ${headDisplayName.toUpperCase()}`, 15, nextY + 2);
@@ -695,29 +753,43 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     doc.text(`Report Date: ${todayStr}`, pageWidth - 15, nextY + 2, { align: 'right' });
     nextY += 6;
 
+    const isAllHeads = !this.HeadCode;
     const allRows: any[] = r.Rows || [];
     const body: any[] = [];
 
     const openingVal = Number(r.Totals?.Opening ?? this.Totals?.Opening ?? 0);
     const openingDateStr = this.formatDateDDMMYY(this.FromDate || r.FromDate);
-    body.push([
-      `Opening (${openingDateStr})`,
-      '',
-      '',
-      this.formatPdfLedgerBalance(openingVal)
-    ]);
+
+    if (!isAllHeads) {
+      body.push([
+        `Opening (${openingDateStr})`,
+        '',
+        '',
+        this.formatPdfLedgerBalance(openingVal)
+      ]);
+    }
 
     let totalDebit = 0;
     let totalCredit = 0;
     let closingBalance = openingVal;
 
     for (const row of allRows) {
-      if (row.Kind === 'Opening') continue;
+      if (row.Kind === 'Opening') {
+        if (isAllHeads) {
+          body.push([
+            `[${row.HeadName}] Opening (${openingDateStr})`,
+            '',
+            '',
+            this.formatPdfLedgerBalance(row.Closing)
+          ]);
+        }
+        continue;
+      }
       if (row.Kind === 'MonthTotal') {
         if (this.IncludeMonthSubTotal) {
           const monthStr = this.formatMonthYear(row.EntryDate);
           body.push([
-            monthStr,
+            isAllHeads ? `${monthStr} (${row.HeadName})` : monthStr,
             Number(row.Debit || 0).toFixed(2),
             Number(row.Credit || 0).toFixed(2),
             this.formatPdfLedgerBalance(row.Closing)
@@ -726,15 +798,24 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
         continue;
       }
       if (row.Kind === 'Total') {
-        totalDebit = Number(row.Debit || 0);
-        totalCredit = Number(row.Credit || 0);
-        closingBalance = Number(row.Closing || 0);
+        if (isAllHeads) {
+          body.push([
+            `Total (${row.HeadName}):`,
+            Number(row.Debit || 0).toFixed(2),
+            Number(row.Credit || 0).toFixed(2),
+            this.formatPdfLedgerBalance(row.Closing)
+          ]);
+        } else {
+          totalDebit = Number(row.Debit || 0);
+          totalCredit = Number(row.Credit || 0);
+          closingBalance = Number(row.Closing || 0);
+        }
         continue;
       }
 
       const dayStr = this.formatDateDDMMYYYYNumeric(row.EntryDate);
       body.push([
-        dayStr,
+        isAllHeads ? `${dayStr} - ${row.HeadName}` : dayStr,
         Number(row.Debit || 0).toFixed(2),
         Number(row.Credit || 0).toFixed(2),
         this.formatPdfLedgerBalance(row.Closing)
@@ -743,10 +824,10 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
 
     const totalRowIndex = body.length;
     body.push([
-      'Total:',
-      (totalDebit || r.Totals?.Debit || this.Totals?.Debit || 0).toFixed(2),
-      (totalCredit || r.Totals?.Credit || this.Totals?.Credit || 0).toFixed(2),
-      this.formatPdfLedgerBalance(closingBalance ?? r.Totals?.Closing ?? this.Totals?.Closing ?? 0)
+      isAllHeads ? 'Grand Total:' : 'Total:',
+      (isAllHeads ? (r.Totals?.Debit || this.Totals?.Debit || 0) : (totalDebit || r.Totals?.Debit || this.Totals?.Debit || 0)).toFixed(2),
+      (isAllHeads ? (r.Totals?.Credit || this.Totals?.Credit || 0) : (totalCredit || r.Totals?.Credit || this.Totals?.Credit || 0)).toFixed(2),
+      this.formatPdfLedgerBalance(isAllHeads ? (r.Totals?.Closing ?? this.Totals?.Closing ?? 0) : (closingBalance ?? r.Totals?.Closing ?? this.Totals?.Closing ?? 0))
     ]);
 
     autoTable(doc, {
@@ -780,10 +861,10 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
         cellPadding: { top: 2, bottom: 2, left: 1, right: 1 }
       },
       columnStyles: {
-        0: { cellWidth: 40, halign: 'left' },
-        1: { cellWidth: 46, halign: 'right' },
-        2: { cellWidth: 46, halign: 'right' },
-        3: { cellWidth: 48, halign: 'right' }
+        0: { cellWidth: isAllHeads ? 65 : 45, halign: 'left' },
+        1: { cellWidth: 38, halign: 'right' },
+        2: { cellWidth: 38, halign: 'right' },
+        3: { cellWidth: isAllHeads ? 39 : 59, halign: 'right' }
       },
       didParseCell: (data) => {
         if (data.column.index >= 1) {

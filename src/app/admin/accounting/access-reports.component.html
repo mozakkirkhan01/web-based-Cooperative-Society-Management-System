@@ -33,8 +33,8 @@
         <ng-container *ngIf="Report != 'Checks' && Report != 'LoanApplications'">
           
             <div class="col-md-3" *ngIf="Report == 'DayBook' || Report == 'CashBank'"><mat-form-field appearance="outline"
-                class="w-100"><mat-label>Date</mat-label><input matInput [ngModel]="FromDate"
-                  [matDatepicker]="ReportDatePicker" (dateInput)="dayBookDateChanged($event.value)"
+                class="w-100"><mat-label>Date</mat-label><input matInput [ngModel]="FromDateValue || FromDate"
+                  [matDatepicker]="ReportDatePicker" (dateInput)="dayBookDateChanged($event.value)" (dateChange)="dayBookDateChanged($event.value)"
                   required><mat-datepicker-toggle matIconSuffix
                   [for]="ReportDatePicker"></mat-datepicker-toggle><mat-datepicker
                   #ReportDatePicker></mat-datepicker><mat-error>A valid date is required</mat-error></mat-form-field>
@@ -548,8 +548,8 @@
             </tr>
           </thead>
           <tbody>
-            <!-- Opening Row -->
-            <tr class="table-warning fw-semibold" style="background-color: #fff3cd !important;">
+            <!-- Opening Row when a single Head is selected -->
+            <tr *ngIf="HeadCode" class="table-warning fw-semibold" style="background-color: #fff3cd !important;">
               <td>
                 <i class="bi bi-calendar-check me-1 text-muted"></i>
                 Opening Balance as on {{FromDate | date:'dd-MM-yyyy'}}:
@@ -561,6 +561,17 @@
 
             <!-- Dynamic Rows -->
             <ng-container *ngFor="let row of mainLedgerRows">
+              <!-- Opening Row for each head when All Heads is selected -->
+              <tr *ngIf="!HeadCode && row.Kind == 'Opening'" class="table-warning fw-semibold" style="background-color: #fff3cd !important;">
+                <td>
+                  <i class="bi bi-calendar-check me-1 text-muted"></i>
+                  <strong>[{{row.HeadName}}]</strong> Opening Balance as on {{FromDate | date:'dd-MM-yyyy'}}:
+                </td>
+                <td class="text-end">-</td>
+                <td class="text-end">-</td>
+                <td class="text-end fw-bold">{{formatLedgerBalance(row.Closing)}}</td>
+              </tr>
+
               <!-- Daily Transaction Row -->
               <tr *ngIf="row.Kind == 'Transaction'" class="day-row">
                 <td>
@@ -568,6 +579,7 @@
                     {{row.EntryDate | date:'dd-MM-yyyy'}}
                     <i class="bi bi-box-arrow-up-right ms-1 text-muted small"></i>
                   </a>
+                  <span *ngIf="!HeadCode" class="badge bg-light text-secondary border ms-2">{{row.HeadName}}</span>
                 </td>
                 <td class="text-end">{{row.Debit | number:'1.2-2'}}</td>
                 <td class="text-end">{{row.Credit | number:'1.2-2'}}</td>
@@ -575,11 +587,20 @@
               </tr>
 
               <!-- Month SubTotal Row (Yellow highlighted matching legacy software) -->
-              <tr *ngIf="row.Kind == 'MonthTotal'" class="month-subtotal-row fw-bold" style="background-color: #fff275 !important; border-top: 2px solid #e0c800; border-bottom: 2px solid #e0c800;">
+              <tr *ngIf="row.Kind == 'MonthTotal'" class="month-subtotal-row fw-bold" style="background-color: #fff275 !important; border-top: 2px solid #fff69e; border-bottom: 2px solid #fff69e;">
                 <td class="text-dark">
                   <i class="bi bi-calendar-month me-1 text-secondary"></i>
                   {{row.EntryDate | date:'MMM-yyyy'}}
+                  <span *ngIf="!HeadCode" class="ms-2">({{row.HeadName}})</span>
                 </td>
+                <td class="text-end text-dark">{{row.Debit | number:'1.2-2'}}</td>
+                <td class="text-end text-dark">{{row.Credit | number:'1.2-2'}}</td>
+                <td class="text-end text-dark">{{formatLedgerBalance(row.Closing)}}</td>
+              </tr>
+
+              <!-- Head Total Row when All Heads is selected -->
+              <tr *ngIf="!HeadCode && row.Kind == 'Total'" class="table-secondary fw-bold" style="border-top: 1px solid #999; border-bottom: 2px solid #555;">
+                <td class="text-dark">Total ({{row.HeadName}}):</td>
                 <td class="text-end text-dark">{{row.Debit | number:'1.2-2'}}</td>
                 <td class="text-end text-dark">{{row.Credit | number:'1.2-2'}}</td>
                 <td class="text-end text-dark">{{formatLedgerBalance(row.Closing)}}</td>
@@ -598,7 +619,7 @@
       </div>
 
       <!-- Bottom action buttons -->
-      <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+      <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top flex-wrap gap-2">
         <div class="d-flex gap-2">
           <button mat-stroked-button (click)="openDayBook()">
             <i class="bi bi-journal-text me-1"></i> Show DayBook
@@ -609,6 +630,11 @@
           <button mat-stroked-button (click)="closeCashBook()">
             Close
           </button>
+        </div>
+        <div *ngIf="Total > PageSize" class="d-flex align-items-center gap-2">
+          <span class="text-muted small">Page {{PageNumber}} of {{pageCount}}</span>
+          <button mat-button (click)="page(-1)" [disabled]="dataLoading || PageNumber == 1">Previous</button>
+          <button mat-button (click)="page(1)" [disabled]="dataLoading || PageNumber >= pageCount">Next</button>
         </div>
         <span class="text-muted small">
           {{mainLedgerRows.length}} active days/totals · {{headDisplayName}}
