@@ -56,9 +56,9 @@
                   [for]="ToDatePicker"></mat-datepicker-toggle><mat-datepicker
                   #ToDatePicker></mat-datepicker></mat-form-field></div>
             <div [ngClass]="isTrialBalance ? 'col-md-6 col-lg-4' : 'col-md-3'" *ngIf="Report != 'DayBook' && Report != 'CashBank'"><mat-form-field appearance="outline"
-                class="w-100"><mat-label>Head</mat-label><mat-select [(ngModel)]="HeadCode"
-                  (selectionChange)="filtersChanged()"><mat-option value="">All heads</mat-option><mat-option *ngFor="let head of Heads"
-                    [value]="head.HeadCode">{{head.HeadCode}} —
+                class="w-100"><mat-label>Head</mat-label><mat-select [(ngModel)]="HeadCode" (selectionChange)="filtersChanged()" (openedChange)="headSearchText = ''">
+                  <div class="p-2" style="position: sticky; top: 0; background: white; z-index: 1000; border-bottom: 1px solid #e0e0e0;" (click)="$event.stopPropagation()"><input type="text" class="form-control form-control-sm" placeholder="Search head..." [(ngModel)]="headSearchText" (keydown)="$event.stopPropagation()"></div><mat-option value="">All heads</mat-option><mat-option *ngFor="let head of filteredHeads"
+                    [value]="head.HeadCode">
                     {{head.HeadName}}</mat-option></mat-select></mat-form-field></div>
             <div class="col-md-3 d-flex align-items-center mb-3" *ngIf="Report == 'DayBook'">
               <mat-checkbox [(ngModel)]="IncludeScheduleDetails" (change)="filtersChanged()">
@@ -527,7 +527,7 @@
           <tbody>
             <tr *ngFor="let row of Rows" [class.table-warning]="row.Kind == 'Opening'"
               [class.table-info]="row.Kind == 'Total'" [class.month-total]="row.Kind == 'MonthTotal'">
-              <td>{{row.HeadCode}} — {{row.HeadName}}</td>
+              <td>{{row.HeadName}}</td>
               <td *ngIf="!isBalance" class="text-nowrap">{{row.EntryDate | date:(row.Kind == 'MonthTotal' ? 'MMM-yyyy' : 'dd-MM-yyyy')}}</td>
               <td *ngIf="!isBalance">{{row.VoucherNumber}}<small *ngIf="row.ReferenceNumber" class="d-block">Ref:
                   {{row.ReferenceNumber}}</small><small *ngIf="row.ChequeNumber" class="d-block">Cheque:
@@ -652,7 +652,7 @@
             </thead>
             <tbody>
               <tr *ngFor="let row of Checks.Differences">
-                <td>{{row.HeadCode}} — {{row.HeadName}}</td>
+                <td>{{row.HeadName}}</td>
                 <td>{{balance(row.PreviousClosing)}}</td>
                 <td>{{balance(row.NextOpening)}}</td>
                 <td>{{balance(row.Difference)}}</td>

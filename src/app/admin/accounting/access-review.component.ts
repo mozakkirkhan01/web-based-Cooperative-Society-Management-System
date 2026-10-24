@@ -11,6 +11,13 @@ export class AccessReviewComponent implements OnInit {
   Mode = 'Heads';
   Search = '';
   HeadId: any = null;
+  headSearchText = '';
+  get filteredHeadList(): any[] {
+    const list = this.Summary?.HeadList || [];
+    if (!this.headSearchText?.trim()) return list;
+    const term = this.headSearchText.toLowerCase().trim();
+    return list.filter((h: any) => (h.HeadName || '').toLowerCase().includes(term) || h.HeadId === this.HeadId);
+  }
   MemberId: any = null;
   MemberName = '';
   IncludeDeleted = false;
@@ -29,6 +36,9 @@ export class AccessReviewComponent implements OnInit {
     this.service.accounting('AccessReview', this.request({ Mode: 'Summary' })).subscribe((r: any) => {
       this.dataLoading = false;
       if (r.Message != ConstantData.SuccessMessage) { this.toastr.error(r.Message); return; }
+      if (r.HeadList) {
+        r.HeadList.sort((a: any, b: any) => (a.HeadName || '').localeCompare(b.HeadName || ''));
+      }
       this.Summary = r; this.load();
     }, err => { this.dataLoading = false; this.toastr.error(err.error?.Message || 'Unable to load the test import'); });
   }

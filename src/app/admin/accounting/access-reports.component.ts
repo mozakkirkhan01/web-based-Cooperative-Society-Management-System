@@ -16,6 +16,14 @@ import autoTable from 'jspdf-autotable';
 })
 export class AccessReportsComponent implements OnInit, OnDestroy {
   Report = ''; Title = ''; YearId = 0; Years: any[] = []; Heads: any[] = [];
+  headSearchText = '';
+  get filteredHeads(): any[] {
+    if (!this.headSearchText?.trim()) return this.Heads;
+    const term = this.headSearchText.toLowerCase().trim();
+    return (this.Heads || []).filter((h: any) =>
+      (h.HeadName || '').toLowerCase().includes(term) || h.HeadCode === this.HeadCode
+    );
+  }
   HeadCode = ''; FromDate = ''; ToDate = ''; MemberKey = ''; MemberSearch = '';
   Members: any[] = []; SelectedMember: any = null; Search = '';
   CashBankDate: any = null;
@@ -67,7 +75,8 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
       this.dataLoading = false;
       if (r.Message != ConstantData.SuccessMessage) { this.fail(r.Message); return; }
       if (r.Available === false) { this.Notice = r.Notice; return; }
-      this.Allowed = true; this.Years = r.Years; this.YearId = r.Year.YearId; this.Heads = r.Heads;
+      this.Allowed = true; this.Years = r.Years; this.YearId = r.Year.YearId;
+      this.Heads = (r.Heads || []).sort((a: any, b: any) => (a.HeadName || '').localeCompare(b.HeadName || ''));
       if (r.Company) this.Company = r.Company;
       this.FromDate = r.Year.StartDate.substring(0, 10); this.ToDate = r.Year.EndDate.substring(0, 10);
       this.FromDateValue = new Date(r.Year.StartDate); this.ToDateValue = new Date(r.Year.EndDate);

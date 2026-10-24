@@ -47,9 +47,8 @@
               reference</mat-label><input matInput [(ngModel)]="Search" (keyup.enter)="search()"></mat-form-field></div>
         <div class="col-md-4" *ngIf="Mode == 'Ledger'"><mat-form-field appearance="outline"
             class="w-100"><mat-label>Head</mat-label><mat-select [(ngModel)]="HeadId"
-              (selectionChange)="search()"><mat-option [value]="null">All heads</mat-option><mat-option
-                *ngFor="let h of Summary.HeadList" [value]="h.HeadId">{{h.HeadCode}} —
-                {{h.HeadName}}</mat-option></mat-select></mat-form-field></div>
+              (selectionChange)="search()" (openedChange)="headSearchText = ''"><div class="p-2" style="position: sticky; top: 0; background: white; z-index: 1000; border-bottom: 1px solid #e0e0e0;" (click)="$event.stopPropagation()"><input type="text" class="form-control form-control-sm" placeholder="Search head..." [(ngModel)]="headSearchText" (keydown)="$event.stopPropagation()"></div><mat-option [value]="null">All heads</mat-option><mat-option
+                *ngFor="let h of filteredHeadList" [value]="h.HeadId">{{h.HeadName}}</mat-option></mat-select></mat-form-field></div>
         <div class="col-md-3"><button type="button" mat-raised-button color="primary" (click)="search()"
             [disabled]="dataLoading">Search</button></div>
       </div>
