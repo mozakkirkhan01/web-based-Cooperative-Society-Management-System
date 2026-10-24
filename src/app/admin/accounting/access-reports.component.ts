@@ -253,7 +253,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   }
   get isBalance() { return this.Report == 'TrialBalance' || this.Report == 'ReceiptsExpenditures' || this.Report == 'MemberBalances'; }
   get isTrialBalance() { return this.Report == 'TrialBalance' || this.Report == 'ReceiptsExpenditures'; }
-  get showMember() { return this.Report == 'DayBook' || this.Report == 'HeadLedger' || this.Report == 'CashBank' || this.Report == 'MemberBalances'; }
+  get showMember() { return this.Report == 'DayBook' || this.Report == 'HeadLedger' || this.Report == 'MainLedger' || this.Report == 'CashBank' || this.Report == 'MemberBalances'; }
   get pageCount() { return Math.max(1, Math.ceil(this.Total / this.PageSize)); }
   matches(row: any) { return row.ActiveRows == row.ImportedRows && row.OpeningRows == row.ImportedOpenings && row.SourceDebit == row.ImportedDebit && row.SourceCredit == row.ImportedCredit && row.SourceOpening == row.ImportedOpening; }
   private download(rows: any[]) {
