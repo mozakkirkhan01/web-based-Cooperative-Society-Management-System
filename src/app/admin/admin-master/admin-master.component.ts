@@ -8,6 +8,7 @@ import { ToastrService } from 'ngx-toastr';
 import { Status } from '../../utils/enum';
 import { RequestModel, StaffLoginModel } from '../../utils/interface';
 import { DOCUMENT } from '@angular/common';
+import { NotificationService } from '../../utils/notification.service';
 
 @Component({
   selector: 'app-admin-master',
@@ -21,6 +22,8 @@ export class AdminMasterComponent implements OnInit {
   imageUrl = this.service.getImageUrl();
   screenWidth: any;
   docElm: any;
+  pendingCount = 0;
+  pendingNotifications: any[] = [];
 
   constructor(
     @Inject(DOCUMENT) private document: any,
@@ -28,6 +31,7 @@ export class AdminMasterComponent implements OnInit {
     private router: Router,
     private service: AppService,
     private toastr: ToastrService,
+    public notificationService: NotificationService
   ) { }
 
   ngOnInit(): void {
@@ -36,6 +40,31 @@ export class AdminMasterComponent implements OnInit {
     this.getUserMenuList();
     this.getCompanyList();
     this.docElm = this.document.documentElement;
+    this.notificationService.pendingCount$.subscribe(count => {
+      this.pendingCount = count;
+    });
+    this.notificationService.pendingNotifications$.subscribe(list => {
+      this.pendingNotifications = list;
+    });
+    this.notificationService.refresh();
+  }
+
+  getNotificationIcon(txnType: string): string {
+    const type = (txnType || '').toUpperCase();
+    if (type === 'PAYMENT') return 'bi bi-arrow-up-circle-fill text-danger';
+    if (type === 'RECEIPT') return 'bi bi-arrow-down-circle-fill text-success';
+    if (type === 'TRANSFER') return 'bi bi-arrow-left-right text-primary';
+    if (type === 'CONTRA') return 'bi bi-bank2 text-info';
+    if (type === 'SCHEDULE') return 'bi bi-calendar2-week-fill text-warning';
+    return 'bi bi-journal-check text-secondary';
+  }
+
+  openVerifyPage(item?: any) {
+    if (item && item.VoucherId) {
+      this.router.navigate(['/admin/verify-transactions'], { queryParams: { voucherId: item.VoucherId } });
+    } else {
+      this.router.navigate(['/admin/verify-transactions']);
+    }
   }
   Company: any = {};
   getCompanyList() {

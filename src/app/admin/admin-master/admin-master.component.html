@@ -20,6 +20,53 @@
 
   <nav class="header-nav ms-auto">
     <ul class="d-flex align-items-center">
+      <!-- Notification Nav Item -->
+      <li class="nav-item dropdown">
+        <a class="nav-link nav-icon" href="javascript:void(0)" data-bs-toggle="dropdown" title="Pending Verification Notifications">
+          <i class="bi bi-bell"></i>
+          <span class="badge bg-primary badge-number" *ngIf="pendingCount > 0">{{pendingCount}}</span>
+        </a>
+
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
+          <li class="dropdown-header">
+            <span>You have <strong>{{pendingCount}}</strong> pending transaction{{pendingCount === 1 ? '' : 's'}}</span>
+            <a routerLink="/admin/verify-transactions">
+              <span class="badge rounded-pill bg-primary p-2 ms-2">View all</span>
+            </a>
+          </li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
+
+          <li *ngIf="pendingNotifications.length === 0" class="notification-item text-center py-3 text-muted">
+            <i class="bi bi-check-circle text-success fs-4 me-2"></i>
+            <div>
+              <h4 class="mb-0">All verified!</h4>
+              <p class="mb-0 small">No transactions waiting</p>
+            </div>
+          </li>
+
+          <ng-container *ngFor="let item of pendingNotifications">
+            <li class="notification-item" style="cursor: pointer;" (click)="openVerifyPage(item)">
+              <i [ngClass]="getNotificationIcon(item.TxnType)"></i>
+              <div>
+                <h4>{{item.TxnType}} · {{item.VoucherNumber}}</h4>
+                <p class="mb-1 text-dark fw-bold">₹{{item.Amount | number:'1.2-2'}}</p>
+                <p class="text-truncate text-muted small" style="max-width: 220px;">{{item.Narration || 'Awaiting verification'}}</p>
+                <p class="small text-muted mb-0">{{item.TimeAgo}}</p>
+              </div>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+          </ng-container>
+
+          <li class="dropdown-footer text-center">
+            <a routerLink="/admin/verify-transactions" class="fw-semibold">Open Verify Transactions</a>
+          </li>
+        </ul>
+      </li><!-- End Notification Nav Item -->
+
       <li class="nav-item dropdown">
         <a class="nav-link nav-icon show" (click)="fullScreen()">
           <i class="bi bi-arrows-fullscreen"></i>
@@ -94,6 +141,13 @@
       <a class="nav-link " routerLink="admin-dashboard">
         <i class="bi bi-grid"></i>
         <span>Dashboard</span>
+      </a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link d-flex align-items-center" routerLink="verify-transactions">
+        <i class="bi bi-patch-check"></i>
+        <span>Verify Transactions</span>
+        <span class="badge bg-warning text-dark ms-auto" *ngIf="pendingCount > 0">{{pendingCount}}</span>
       </a>
     </li>
 
