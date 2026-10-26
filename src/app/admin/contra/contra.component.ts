@@ -4,6 +4,7 @@ import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
 import { LoadDataService } from '../../utils/load-data.service';
 import { ConstantData } from '../../utils/constant-data';
+import { NotificationService } from '../../utils/notification.service';
 
 @Component({
   selector: 'app-contra',
@@ -50,7 +51,8 @@ export class ContraComponent implements OnInit, OnDestroy {
   selectedVoucher: any = null;
 
   constructor(private service: AppService, private localService: LocalService,
-    private loadData: LoadDataService, private toastr: ToastrService) { }
+    private loadData: LoadDataService, private toastr: ToastrService,
+    private notificationService: NotificationService) { }
 
   ngOnInit() {
     this.resetLine();
@@ -177,7 +179,8 @@ export class ContraComponent implements OnInit, OnDestroy {
         this.ChequeNo = '';
       }
       this.Narration = ''; this.ExternalReference = ''; this.resetLine(); this.getContext();
-      this.toastr.success('Contra posted: ' + response.VoucherNumber);
+      this.toastr.success('Contra submitted for verification: ' + response.VoucherNumber);
+      this.notificationService.refresh();
     }, error => {
       this.isSaving = false;
       if ([400, 401, 403, 404, 409].includes(error.status)) { sessionStorage.removeItem(this.pendingKey()); this.pendingTransaction = null; }
