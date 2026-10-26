@@ -4,6 +4,7 @@ import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
 import { LoadDataService } from '../../utils/load-data.service';
 import { ConstantData } from '../../utils/constant-data';
+import { NotificationService } from '../../utils/notification.service';
 
 @Component({
   selector: 'app-transfer',
@@ -11,6 +12,9 @@ import { ConstantData } from '../../utils/constant-data';
   styleUrls: ['./transfer.component.css']
 })
 export class TransferComponent implements OnInit, OnDestroy {
+  showViewModal = false;
+  viewLoading = false;
+  selectedVoucher: any = null;
   SocietyList: any[] = [];
   HeadList: any[] = [];
   headSearchText = '';
@@ -57,7 +61,8 @@ export class TransferComponent implements OnInit, OnDestroy {
   }
 
   constructor(private service: AppService, private localService: LocalService,
-    private loadData: LoadDataService, private toastr: ToastrService) { }
+    private loadData: LoadDataService, private toastr: ToastrService,
+    private notificationService: NotificationService) { }
 
   ngOnInit() {
     this.resetLine(true);
@@ -268,7 +273,8 @@ this.Line.DebitCredit = selectedDebitCredit;
       this.Lines = [];
       this.Narration = '';
       const assignedTrnNo = response.TrnNo || response.VoucherNumber;
-      this.toastr.success(`Transfer posted successfully. Trn No: ${assignedTrnNo}, Transaction No: ${savedVoucherNo}`);
+      this.toastr.success(`Transfer submitted for verification. Trn No: ${assignedTrnNo}, Transaction No: ${savedVoucherNo}`);
+      this.notificationService.refresh();
       if (this.autoIncrement && this.TransactionNo) {
         const match = this.TransactionNo.match(/^([A-Za-z]*)(\d+)$/);
         if (match) {
@@ -294,4 +300,34 @@ this.Line.DebitCredit = selectedDebitCredit;
       this.toastr.error(error.error?.Message || 'Confirmation unavailable. Retry this same transaction.');
     });
   }
+
+  viewVoucher(voucher: any) {
+    this.showViewModal = true;
+    this.viewLoading = true;
+    this.selectedVoucher = null;
+    this.service.accounting('TransactionDetail', this.request({
+      SourceId: voucher.VoucherId,
+      VoucherId: voucher.VoucherId,
+      SourceType: 'TRANSFER',
+      SocietyId: this.SocietyId
+    })).subscribe((response: any) => {
+      this.viewLoading = false;
+      if (response.Message != ConstantData.SuccessMessage) {
+        this.toastr.error(response.Message || 'Failed to load voucher details');
+        this.closeViewModal();
+        return;
+      }
+      this.selectedVoucher = response;
+    }, () => {
+      this.viewLoading = false;
+      this.toastr.error('Unable to load transfer details');
+      this.closeViewModal();
+    });
+  }
+
+  closeViewModal() {
+    this.showViewModal = false;
+    this.selectedVoucher = null;
+  }
+
 }
