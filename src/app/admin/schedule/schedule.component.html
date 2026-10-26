@@ -223,15 +223,21 @@
               <th>Transaction no.</th>
               <th>Date</th>
               <th>Narration</th>
-              <th>Amount</th>
+              <th class="text-end">Amount</th>
+              <th class="text-center" style="width: 80px;">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let voucher of VoucherList">
-              <td>{{voucher.VoucherNumber}}</td>
+              <td><strong class="text-primary">{{voucher.VoucherNumber}}</strong></td>
               <td>{{voucher.VoucherDate | date:'dd-MM-yyyy'}}</td>
               <td>{{voucher.Narration}}</td>
-              <td>{{voucher.Amount | number:'1.2-2'}}</td>
+              <td class="text-end font-monospace">₹{{voucher.Amount | number:'1.2-2'}}</td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-info text-white shadow-sm" (click)="viewVoucher(voucher)" title="View Read-Only Details">
+                  <i class="bi bi-eye"></i> View
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -240,3 +246,94 @@
     </div>
   </div>
 </main>
+<!-- VIEW SCHEDULE DETAILS MODAL (READ-ONLY) -->
+<div class="modal fade" [class.show]="showViewModal" [style.display]="showViewModal ? 'block' : 'none'" tabindex="-1" role="dialog" aria-modal="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content shadow-lg border-0 rounded-3">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title d-flex align-items-center">
+          <i class="bi bi-file-earmark-text me-2"></i>
+          Schedule Entry Details — {{selectedVoucher?.VoucherNumber}}
+          <span class="badge bg-light text-primary ms-3 fs-6">VERIFIED · READ-ONLY</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" (click)="closeViewModal()" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4 text-center" *ngIf="viewLoading">
+        <div class="spinner-border text-primary my-3" role="status"></div>
+        <p class="text-muted">Loading schedule details...</p>
+      </div>
+
+      <div class="modal-body p-4" *ngIf="!viewLoading && selectedVoucher">
+        <div class="row g-3 mb-4 p-3 bg-light rounded border">
+          <div class="col-sm-6 col-md-3">
+            <div class="text-muted small">Transaction No.</div>
+            <div class="fw-bold text-primary fs-6">{{selectedVoucher.VoucherNumber}}</div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="text-muted small">Date</div>
+            <div class="fw-semibold">{{selectedVoucher.VoucherDate | date:'dd-MM-yyyy'}}</div>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="text-muted small">Status</div>
+            <span class="badge bg-success">{{selectedVoucher.Status}}</span>
+          </div>
+          <div class="col-sm-6 col-md-3">
+            <div class="text-muted small">Total Amount</div>
+            <div class="fw-bold fs-6 font-monospace">₹{{selectedVoucher.TotalDebit | number:'1.2-2'}}</div>
+          </div>
+          <div class="col-12" *ngIf="selectedVoucher.Narration">
+            <div class="text-muted small">Narration</div>
+            <div class="p-2 bg-white rounded border fst-italic">{{selectedVoucher.Narration}}</div>
+          </div>
+        </div>
+
+        <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-list-columns me-1"></i> Recovery Lines Breakdown (Read-Only)</h6>
+        <div class="table-responsive">
+          <table class="table table-bordered table-striped align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th style="width: 50px;" class="text-center">#</th>
+                <th>Account Head</th>
+                <th>Member Details</th>
+                <th class="text-end" style="width: 140px;">Debit (₹)</th>
+                <th class="text-end" style="width: 140px;">Credit (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let line of selectedVoucher.Lines; let i = index">
+                <td class="text-center font-monospace text-muted">{{i + 1}}</td>
+                <td class="fw-semibold text-dark">{{line.HeadName}}</td>
+                <td>
+                  <span *ngIf="line.MemberId || line.MemberName">
+                    <span class="badge bg-light text-dark border me-1" *ngIf="line.StaffNo">Staff: {{line.StaffNo}}</span>
+                    {{line.MemberName}}
+                  </span>
+                  <span *ngIf="!line.MemberId && !line.MemberName" class="text-muted">—</span>
+                </td>
+                <td class="text-end font-monospace" [class.fw-bold]="line.Debit > 0" [class.text-primary]="line.Debit > 0">
+                  {{line.Debit > 0 ? (line.Debit | number:'1.2-2') : '—'}}
+                </td>
+                <td class="text-end font-monospace" [class.fw-bold]="line.Credit > 0" [class.text-success]="line.Credit > 0">
+                  {{line.Credit > 0 ? (line.Credit | number:'1.2-2') : '—'}}
+                </td>
+              </tr>
+            </tbody>
+            <tfoot class="table-light fw-bold">
+              <tr>
+                <td colspan="3" class="text-end">Total:</td>
+                <td class="text-end font-monospace text-primary">₹{{selectedVoucher.TotalDebit | number:'1.2-2'}}</td>
+                <td class="text-end font-monospace text-success">₹{{selectedVoucher.TotalCredit | number:'1.2-2'}}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm px-4" (click)="closeViewModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-backdrop fade show" *ngIf="showViewModal" (click)="closeViewModal()"></div>

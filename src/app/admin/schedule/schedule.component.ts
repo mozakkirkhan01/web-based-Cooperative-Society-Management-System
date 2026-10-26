@@ -12,6 +12,9 @@ import * as XLSX from 'xlsx';
   styleUrls: ['./schedule.component.css']
 })
 export class ScheduleComponent implements OnInit, OnDestroy {
+  showViewModal = false;
+  viewLoading = false;
+  selectedVoucher: any = null;
   SocietyList: any[] = [];
   HeadList: any[] = [];
   headSearchText = '';
@@ -413,5 +416,34 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       this.toastr.error(error.error?.Message || 'Confirmation unavailable. Retry this same transaction.');
     });
   }
-}
 
+  viewVoucher(voucher: any) {
+    this.showViewModal = true;
+    this.viewLoading = true;
+    this.selectedVoucher = null;
+    this.service.accounting('TransactionDetail', this.request({
+      SourceId: voucher.VoucherId,
+      VoucherId: voucher.VoucherId,
+      SourceType: 'SCHEDULE',
+      SocietyId: this.SocietyId
+    })).subscribe((response: any) => {
+      this.viewLoading = false;
+      if (response.Message != ConstantData.SuccessMessage) {
+        this.toastr.error(response.Message || 'Failed to load voucher details');
+        this.closeViewModal();
+        return;
+      }
+      this.selectedVoucher = response;
+    }, () => {
+      this.viewLoading = false;
+      this.toastr.error('Unable to load schedule details');
+      this.closeViewModal();
+    });
+  }
+
+  closeViewModal() {
+    this.showViewModal = false;
+    this.selectedVoucher = null;
+  }
+
+}
