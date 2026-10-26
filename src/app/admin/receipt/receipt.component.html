@@ -25,12 +25,19 @@
                     <div class="card-header">
                         <h5 class="card-title">{{Receipt.ReceiptId > 0 ? 'Edit Receipt' : 'New Receipt'}}</h5>
                     </div>
-                    <div class="card-body">
+                                        <div class="card-body">
+                        <div *ngIf="isReadOnly" class="alert alert-info py-2 small d-flex align-items-center justify-content-between mb-2">
+                            <div>
+                                <i class="bi bi-shield-lock-fill me-1 text-primary"></i>
+                                <strong>Verified · Read-Only</strong>: This receipt is already posted to the General Ledger.
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary py-0" (click)="resetForm()">New</button>
+                        </div>
 
                         <form #formReceipt="ngForm" class="d-flex justify-content-evenly flex-wrap">
                             <!-- Lock the inputs while saving; keep the submit button outside this row. -->
-                            <div class="row mt-2" [attr.inert]="isSaving || pendingReceipt ? '' : null"
-                                [style.pointer-events]="isSaving || pendingReceipt ? 'none' : null">
+                            <div class="row mt-2" [attr.inert]="isSaving || pendingReceipt || isReadOnly ? '' : null"
+                                [style.pointer-events]="isSaving || pendingReceipt || isReadOnly ? 'none' : null">
 
                                 <mat-form-field appearance="outline" class="col-12">
                                     <mat-label>Society</mat-label>
@@ -258,12 +265,14 @@
                                         *ngFor="let item of ReceiptList |paginate: { itemsPerPage: itemPerPage, currentPage: p, totalItems: TotalRecords } ; let i = index;">
                                         <td>{{(itemPerPage * (p -1)) +i+ 1}}</td>
                                         <td *ngIf="action.CanEdit">
-                                            <button class="btn btn-sm btn-warning" data-bs-toggle="modal"
+                                            <button class="btn btn-sm"
+                                                [ngClass]="item.AccountingPosted ? 'btn-info text-white' : 'btn-warning'"
+                                                data-bs-toggle="modal"
                                                 data-bs-target="#staticBackdrop"
-                                                [disabled]="isSaving || !!pendingReceipt || item.AccountingPosted"
-                                                title="Posted receipts are corrected through journals"
-                                                (click)="editReceipt(item)">
-                                                <i class="bi bi-pencil-square"></i>
+                                                [disabled]="isSaving || !!pendingReceipt"
+                                                [title]="item.AccountingPosted ? 'View Read-Only Details' : 'Edit Receipt'"
+                                                (click)="item.AccountingPosted ? viewReceipt(item) : editReceipt(item)">
+                                                <i class="bi" [ngClass]="item.AccountingPosted ? 'bi-eye' : 'bi-pencil-square'"></i>
                                             </button>
                                         </td>
                                         <td *ngIf="action.CanDelete">

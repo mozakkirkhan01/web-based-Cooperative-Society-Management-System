@@ -15,6 +15,7 @@ declare var $: any;
   styleUrls: ['./receipt.component.css']
 })
 export class ReceiptComponent {
+  isReadOnly = false;
   balanceRefresh = 0;
   SocietyList: any[] = [];
   AccountingBalance: any = {};
@@ -81,7 +82,8 @@ export class ReceiptComponent {
       const pending = sessionStorage.getItem('ReceiptPending:' + this.staffLogin.StaffLoginId);
       if (pending) {
         this.pendingReceipt = JSON.parse(this.localService.decrypt(pending));
-        this.Receipt = { ...this.pendingReceipt, ReceiptDate: this.loadData.loadDate(this.pendingReceipt.ReceiptDate) };
+        this.isReadOnly = false;
+    this.Receipt = { ...this.pendingReceipt, ReceiptDate: this.loadData.loadDate(this.pendingReceipt.ReceiptDate) };
         this.toastr.warning("A receipt is awaiting confirmation. Retry it before starting another receipt.");
       }
     } catch {
@@ -107,6 +109,7 @@ export class ReceiptComponent {
   @ViewChild('formReceipt') formReceipt: NgForm;
   resetForm() {
     if (this.isSaving || this.pendingReceipt) return;
+    this.isReadOnly = false;
     this.Receipt = {
       ReceiptId: 0,
       TrnNo: 'Assigned on save',
@@ -548,10 +551,24 @@ onBankCashTypeChange() {
     }
   }
 
+  
+  viewReceipt(obj: any) {
+    this.isReadOnly = true;
+    this.transactionNoRequest++;
+    this.Receipt = { ...obj, ReceiptDate: this.loadData.loadDate(obj.ReceiptDate), Balance: null };
+    if (this.formReceipt) this.formReceipt.resetForm(this.Receipt);
+    this.isSubmitted = false;
+    this.onHeadChange(this.Receipt.HeadId);
+    this.onBankChange(this.Receipt.BankId);
+    this.onBankCashTypeChange();
+  }
+
   editReceipt(obj: any) {
+    this.isReadOnly = false;
     if (this.isSaving || this.pendingReceipt || !this.action.CanEdit) return;
     // Edit a copy; the displayed row changes only after a successful save.
     this.transactionNoRequest++;
+    this.isReadOnly = false;
     this.Receipt = { ...obj, ReceiptDate: this.loadData.loadDate(obj.ReceiptDate), Balance: null };
     if (this.formReceipt) this.formReceipt.resetForm(this.Receipt);
     this.isSubmitted = false;
