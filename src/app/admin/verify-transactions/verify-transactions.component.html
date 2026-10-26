@@ -1,0 +1,353 @@
+<main id="main" class="main">
+  <div class="pagetitle d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h1>Verify Transactions</h1>
+      <nav>
+        <ol class="breadcrumb mb-0">
+          <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+          <li class="breadcrumb-item">Transaction</li>
+          <li class="breadcrumb-item active">Verify Transactions</li>
+        </ol>
+      </nav>
+    </div>
+    <div>
+      <span *ngIf="!isUnmarkMode" class="badge bg-primary-subtle text-primary border border-primary px-3 py-2 fs-6">
+        <i class="bi bi-clock-history me-1"></i> Pending Verification Mode
+      </span>
+      <span *ngIf="isUnmarkMode" class="badge bg-warning text-dark border border-warning px-3 py-2 fs-6">
+        <i class="bi bi-unlock-fill me-1"></i> Unmark Verification Mode (Posted Entries)
+      </span>
+    </div>
+  </div>
+
+  <!-- Unmark Mode Alert Banner -->
+  <div *ngIf="isUnmarkMode" class="alert alert-warning alert-dismissible fade show d-flex align-items-center justify-content-between shadow-sm" role="alert">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-exclamation-triangle-fill fs-3 me-3 text-warning"></i>
+      <div>
+        <h5 class="alert-heading mb-1 fw-bold">Unmark Verification Active</h5>
+        <span class="small">You are viewing posted transactions. Select a transaction and click <strong>"Unmark Selected"</strong> to revert it back to Draft so it can be edited or deleted.</span>
+      </div>
+    </div>
+    <button type="button" class="btn btn-outline-dark btn-sm ms-3" (click)="exitUnmarkMode()">
+      <i class="bi bi-arrow-left me-1"></i> Back to Pending Mode
+    </button>
+  </div>
+
+  <!-- Filters Card -->
+  <div class="card mb-3 shadow-sm border-0">
+    <div class="card-body p-3">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-3 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Transaction Type</label>
+          <select class="form-select form-select-sm" [(ngModel)]="txnType" (change)="onFilter()">
+            <option value="ALL">All Types</option>
+            <option value="PAYMENT">Payments</option>
+            <option value="RECEIPT">Receipts</option>
+            <option value="CONTRA">Contra</option>
+            <option value="TRANSFER">Transfer</option>
+            <option value="SCHEDULE">Schedule</option>
+            <option value="SALARY">Salary</option>
+          </select>
+        </div>
+
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">From Date</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="dateFrom" (change)="onFilter()">
+        </div>
+
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">To Date</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="dateTo" (change)="onFilter()">
+        </div>
+
+        <div class="col-md-3 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Search</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control" placeholder="Txn no, RV no, narration, amount..." [(ngModel)]="searchText" (keyup.enter)="onFilter()">
+          </div>
+        </div>
+
+        <div class="col-md-2 col-sm-12 d-flex gap-1 justify-content-end">
+          <button class="btn btn-primary btn-sm px-3 flex-grow-1" (click)="onFilter()" [disabled]="dataLoading">
+            <i class="bi bi-funnel me-1"></i> Filter
+          </button>
+          <button class="btn btn-outline-secondary btn-sm px-2" (click)="onResetFilter()" title="Reset Filters">
+            <i class="bi bi-arrow-counterclockwise"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upper Grid: Transactions -->
+  <div class="card mb-3 shadow-sm border-0">
+    <div class="card-header bg-white py-2 d-flex flex-wrap justify-content-between align-items-center border-bottom">
+      <div class="d-flex align-items-center gap-2">
+        <h5 class="card-title m-0 py-0 fw-bold fs-6 text-dark">
+          <i class="bi bi-list-check me-1 text-primary"></i>
+          {{ isUnmarkMode ? 'Verified Transactions' : 'Pending Transactions' }}
+          <span class="badge bg-secondary ms-1">{{ transactions.length }}</span>
+        </h5>
+        <span *ngIf="selectedIds.size > 0" class="badge bg-info-subtle text-info-emphasis border border-info">
+          {{ selectedIds.size }} selected
+        </span>
+      </div>
+
+      <!-- Action Buttons Toolbar -->
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <!-- Pending Mode Buttons -->
+        <ng-container *ngIf="!isUnmarkMode">
+          <button class="btn btn-success btn-sm px-3 shadow-sm" (click)="verifySelected()" [disabled]="isProcessing || transactions.length === 0" title="Verify selected transaction(s)">
+            <i class="bi bi-check2-circle me-1"></i> Verify
+          </button>
+          <button class="btn btn-outline-success btn-sm px-2" (click)="verifyAll()" [disabled]="isProcessing || transactions.length === 0" title="Verify all listed transactions">
+            <i class="bi bi-check-all me-1"></i> Verify All
+          </button>
+          <button class="btn btn-danger btn-sm px-3 shadow-sm" (click)="deleteSelected()" [disabled]="isProcessing || transactions.length === 0" title="Delete selected draft transaction(s)">
+            <i class="bi bi-trash3 me-1"></i> Delete
+          </button>
+          <button class="btn btn-outline-danger btn-sm px-2" (click)="deleteAll()" [disabled]="isProcessing || transactions.length === 0" title="Delete all draft transactions">
+            <i class="bi bi-x-circle me-1"></i> Delete All
+          </button>
+          <button class="btn btn-warning btn-sm px-3 shadow-sm text-dark fw-semibold" (click)="openUnmarkModal()" [disabled]="isProcessing" title="Unlock Unmark Verification with Master Password">
+            <i class="bi bi-lock-fill me-1"></i> Unmark Verification
+          </button>
+        </ng-container>
+
+        <!-- Unmark Mode Buttons -->
+        <ng-container *ngIf="isUnmarkMode">
+          <button class="btn btn-warning btn-sm px-3 shadow-sm text-dark fw-bold" (click)="unmarkSelected()" [disabled]="isProcessing || transactions.length === 0">
+            <i class="bi bi-arrow-counterclockwise me-1"></i> Unmark Selected
+          </button>
+          <button class="btn btn-secondary btn-sm px-3" (click)="exitUnmarkMode()">
+            <i class="bi bi-x-lg me-1"></i> Close Unmark
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <!-- Loading Spinner -->
+      <div *ngIf="dataLoading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading transactions...</span>
+        </div>
+        <p class="mt-2 text-muted small">Loading transactions...</p>
+      </div>
+
+      <!-- Transactions Table -->
+      <div *ngIf="!dataLoading" class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+        <table class="table table-hover table-striped align-middle mb-0 text-nowrap">
+          <thead class="table-light sticky-top" style="z-index: 2;">
+            <tr>
+              <th style="width: 40px;" class="text-center">
+                <input type="checkbox" class="form-check-input" [checked]="selectAll" (change)="toggleSelectAll()" title="Select All">
+              </th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>Txn No</th>
+              <th>RV No / Ref</th>
+              <th class="text-end">Amount (₹)</th>
+              <th>Narration</th>
+              <th>Status</th>
+              <th>Created By</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let tx of transactions"
+                [class.table-primary]="selectedTransaction?.VoucherId === tx.VoucherId"
+                (click)="selectTransaction(tx)"
+                style="cursor: pointer;">
+              <td class="text-center" (click)="$event.stopPropagation()">
+                <input type="checkbox" class="form-check-input" [checked]="isSelected(tx)" (click)="toggleSelect(tx, $event)">
+              </td>
+              <td class="fw-semibold">{{ tx.VoucherDate | date:'dd-MM-yyyy' }}</td>
+              <td>
+                <span class="badge {{ getTypeBadgeClass(tx.TxnType) }} px-2 py-1">
+                  {{ tx.TxnType }}
+                </span>
+              </td>
+              <td class="font-monospace fw-bold text-dark">{{ tx.VoucherNumber }}</td>
+              <td class="font-monospace text-muted">{{ tx.RVNo || '-' }}</td>
+              <td class="text-end fw-bold text-dark font-monospace">
+                ₹{{ tx.Amount | number:'1.2-2' }}
+              </td>
+              <td class="text-truncate" style="max-width: 280px;" [title]="tx.Narration">
+                {{ tx.Narration || '-' }}
+              </td>
+              <td>
+                <span *ngIf="tx.Status === 'DRAFT'" class="badge bg-warning-subtle text-warning-emphasis border border-warning">
+                  <i class="bi bi-clock me-1"></i> Pending
+                </span>
+                <span *ngIf="tx.Status === 'POSTED'" class="badge bg-success-subtle text-success-emphasis border border-success">
+                  <i class="bi bi-check-circle me-1"></i> Verified
+                </span>
+              </td>
+              <td class="small text-muted">
+                {{ tx.CreatedByName }}
+                <span *ngIf="tx.CreatedOn" class="d-block text-muted" style="font-size: 11px;">
+                  {{ tx.CreatedOn | date:'dd-MM hh:mm a' }}
+                </span>
+              </td>
+            </tr>
+
+            <tr *ngIf="transactions.length === 0">
+              <td colspan="9" class="text-center py-5 text-muted">
+                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                <span *ngIf="!isUnmarkMode">No pending transactions found matching the filter criteria.</span>
+                <span *ngIf="isUnmarkMode">No posted transactions found matching the filter criteria.</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lower Grid: Transaction Details (Voucher Lines) -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center border-bottom">
+      <div>
+        <h5 class="card-title m-0 py-0 fw-bold fs-6 text-dark">
+          <i class="bi bi-receipt me-1 text-info"></i>
+          Transaction Details
+          <span *ngIf="selectedTransaction" class="text-primary font-monospace ms-2">
+            · {{ selectedTransaction.VoucherNumber }} ({{ selectedTransaction.TxnType }})
+          </span>
+        </h5>
+        <span *ngIf="selectedTransaction" class="text-muted small">
+          Date: {{ selectedTransaction.VoucherDate | date:'dd-MM-yyyy' }} | Total: ₹{{ selectedTransaction.Amount | number:'1.2-2' }}
+        </span>
+      </div>
+
+      <div *ngIf="selectedTransaction" class="d-flex align-items-center gap-3">
+        <span class="badge bg-light text-dark border font-monospace">
+          Debit: ₹{{ totalDebit | number:'1.2-2' }}
+        </span>
+        <span class="badge bg-light text-dark border font-monospace">
+          Credit: ₹{{ totalCredit | number:'1.2-2' }}
+        </span>
+        <span *ngIf="totalDebit === totalCredit && totalDebit > 0" class="badge bg-success text-white">
+          <i class="bi bi-check-circle me-1"></i> Balanced
+        </span>
+        <span *ngIf="totalDebit !== totalCredit" class="badge bg-danger text-white">
+          <i class="bi bi-exclamation-triangle me-1"></i> Unbalanced
+        </span>
+      </div>
+    </div>
+
+    <div class="card-body p-0">
+      <!-- Lines Loading Spinner -->
+      <div *ngIf="linesLoading" class="text-center py-4">
+        <div class="spinner-border spinner-border-sm text-info" role="status"></div>
+        <span class="ms-2 small text-muted">Loading transaction lines...</span>
+      </div>
+
+      <!-- No Selection Prompt -->
+      <div *ngIf="!linesLoading && !selectedTransaction" class="text-center py-4 text-muted">
+        <i class="bi bi-hand-index-thumb fs-3 d-block mb-1 text-secondary"></i>
+        <span>Select a transaction from the table above to view its debit and credit line details.</span>
+      </div>
+
+      <!-- Lines Table -->
+      <div *ngIf="!linesLoading && selectedTransaction" class="table-responsive" style="max-height: 280px; overflow-y: auto;">
+        <table class="table table-sm table-striped align-middle mb-0 text-nowrap">
+          <thead class="table-light sticky-top">
+            <tr>
+              <th style="width: 50px;" class="text-center">#</th>
+              <th>Account Head</th>
+              <th style="width: 100px;">Staff No</th>
+              <th>Member Details</th>
+              <th class="text-end" style="width: 140px;">Debit (₹)</th>
+              <th class="text-end" style="width: 140px;">Credit (₹)</th>
+              <th>Narration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let line of transactionLines">
+              <td class="text-center font-monospace text-muted">{{ line.LineNumber }}</td>
+              <td class="fw-semibold text-dark">{{ line.HeadName }}</td>
+              <td class="font-monospace">{{ line.StaffNo || '-' }}</td>
+              <td>
+                <span *ngIf="line.MemberId">
+                  <span class="badge bg-light text-dark border me-1">M: {{ line.MemberNo }}</span>
+                  {{ line.MemberName }}
+                </span>
+                <span *ngIf="!line.MemberId" class="text-muted">-</span>
+              </td>
+              <td class="text-end font-monospace" [class.fw-bold]="line.Debit > 0" [class.text-primary]="line.Debit > 0">
+                {{ line.Debit > 0 ? (line.Debit | number:'1.2-2') : '-' }}
+              </td>
+              <td class="text-end font-monospace" [class.fw-bold]="line.Credit > 0" [class.text-success]="line.Credit > 0">
+                {{ line.Credit > 0 ? (line.Credit | number:'1.2-2') : '-' }}
+              </td>
+              <td class="small text-muted">{{ line.Narration || '-' }}</td>
+            </tr>
+
+            <tr *ngIf="transactionLines.length === 0">
+              <td colspan="7" class="text-center py-3 text-muted">
+                No line items found for this transaction.
+              </td>
+            </tr>
+          </tbody>
+          <tfoot *ngIf="transactionLines.length > 0" class="table-light fw-bold">
+            <tr>
+              <td colspan="4" class="text-end">Total:</td>
+              <td class="text-end font-monospace text-primary">₹{{ totalDebit | number:'1.2-2' }}</td>
+              <td class="text-end font-monospace text-success">₹{{ totalCredit | number:'1.2-2' }}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Unmark Verification Password Modal Popup -->
+<div *ngIf="showPasswordModal" class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5); z-index: 1050;" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-warning-subtle text-dark border-bottom py-3">
+        <h5 class="modal-title fw-bold d-flex align-items-center">
+          <i class="bi bi-shield-lock-fill text-warning fs-4 me-2"></i>
+          Authorization Required
+        </h5>
+        <button type="button" class="btn-close" (click)="closeUnmarkModal()"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="text-muted mb-3">
+          Unmark verification grants access to modify or delete posted/backdated transactions.
+          Please enter your password or the master authorization password to continue.
+        </p>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Authorization Password</label>
+          <div class="input-group">
+            <span class="input-group-text bg-light"><i class="bi bi-key-fill text-muted"></i></span>
+            <input [type]="showPasswordText ? 'text' : 'password'"
+                   class="form-control"
+                   placeholder="Enter password..."
+                   [(ngModel)]="unmarkPassword"
+                   (keyup.enter)="submitUnmarkPassword()"
+                   autofocus>
+            <button class="btn btn-outline-secondary" type="button" (click)="showPasswordText = !showPasswordText">
+              <i class="bi" [ngClass]="showPasswordText ? 'bi-eye-slash-fill' : 'bi-eye-fill'"></i>
+            </button>
+          </div>
+          <div *ngIf="passwordError" class="text-danger small mt-1">
+            <i class="bi bi-exclamation-circle me-1"></i> {{ passwordError }}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm px-3" (click)="closeUnmarkModal()">Cancel</button>
+        <button type="button" class="btn btn-warning btn-sm px-4 fw-bold text-dark" (click)="submitUnmarkPassword()">
+          <i class="bi bi-unlock-fill me-1"></i> Unlock
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
