@@ -4,7 +4,6 @@ import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
 import { LoadDataService } from '../../utils/load-data.service';
 import { ConstantData } from '../../utils/constant-data';
-import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-transfer',
@@ -176,7 +175,7 @@ export class TransferComponent implements OnInit, OnDestroy {
   }
   headName(id: any) { return this.HeadList.find(x => x.HeadId == id)?.HeadName || id; }
   balance(id: any) { return this.BalanceList.find(x => x.HeadId == id)?.ClosingBalance; }
-  formatBalance(value: any) { return value == null ? 'Not available' : Math.abs(value).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + (value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''); }
+  formatBalance(value: any) { return value == null ? 'Not available' : Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''); }
   total(field: string) { return this.Lines.reduce((sum, x) => sum + Math.round(Number(x[field] || 0) * 100), 0) / 100; }
   addLine() {
     if (this.dataLoading || this.isSaving || this.pendingTransaction || !this.CanCreate) return;
@@ -204,7 +203,11 @@ export class TransferComponent implements OnInit, OnDestroy {
       Debit: this.Line.DebitCredit == 'Debit' ? amount : 0,
       Credit: this.Line.DebitCredit == 'Credit' ? amount : 0
     });
-    this.resetLine(false);
+    const selectedDebitCredit = this.Line.DebitCredit;
+
+this.resetLine(false);
+
+this.Line.DebitCredit = selectedDebitCredit;
 
     // Show modal popup when balanced (matching legacy software)
     if (this.isBalanced) {
@@ -222,39 +225,14 @@ export class TransferComponent implements OnInit, OnDestroy {
     }
   }
   buildPayload() {
-    if (this.Lines.some(x => x.Issue || !x.HeadId)) { this.toastr.error('Resolve imported member/head issues before submitting'); return null; }
+    if (this.Lines.some(x => x.Issue || !x.HeadId)) { this.toastr.error('Resolve member/head issues before submitting'); return null; }
     if (this.Lines.length < 2 || Math.abs(this.total('Debit') - this.total('Credit')) > 0.001) { this.toastr.error('Add at least two lines with equal total debit and credit'); return null; }
-    return { Lines: this.Lines.map(x => ({ HeadId: x.HeadId, MemberId: x.MemberId || null, LoanId: x.LoanId || null,
-      DepositAccountId: x.DepositAccountId || null, Component: x.Component || null, Debit: x.Debit, Credit: x.Credit, Narration: x.Narration || '' })) };
-  }
-  async importFile(event: any) {
-    if (this.isSaving || this.pendingTransaction) return;
-    const file: File = event.target.files?.[0];
-    if (!file) return;
-    try {
-      if (this.Lines.length) throw new Error('Clear the current rows before importing another file');
-      if (file.size > 5 * 1024 * 1024) throw new Error('Use a file smaller than 5 MB');
-      const book = XLSX.read(await file.arrayBuffer(), { type: 'array' });
-      const rows: any[] = XLSX.utils.sheet_to_json(book.Sheets[book.SheetNames[0]], { defval: '' });
-      if (!rows.length || rows.length > 2000) throw new Error('Import between 1 and 2000 rows');
-      for (const row of rows) {
-        if (!['HeadName', 'StaffNo', 'MemberNo', 'Debit', 'Credit'].every(key => Object.prototype.hasOwnProperty.call(row, key))) throw new Error('Use the template columns: HeadName, StaffNo, MemberNo, Debit, Credit, Narration');
-        if (!String(row.StaffNo).trim() || !String(row.MemberNo).trim() || !Number.isInteger(Number(row.StaffNo)) || !Number.isInteger(Number(row.MemberNo)) || !Number.isFinite(Number(row.Debit)) || !Number.isFinite(Number(row.Credit))) throw new Error('Member/staff numbers and amounts must be numeric');
-      }
-      this.dataLoading = true;
-      this.service.accounting('ImportTransaction', this.request({ ImportRows: rows.map(x => ({ HeadName: String(x.HeadName), StaffNo: Number(x.StaffNo), MemberNo: Number(x.MemberNo), Debit: Number(x.Debit), Credit: Number(x.Credit), Narration: String(x.Narration || '') })) })).subscribe((response: any) => {
-        this.dataLoading = false;
-        if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
-        this.Lines = response.Rows;
-        this.toastr.success('Import preview loaded. Review the rows before submitting.');
-      }, error => { this.dataLoading = false; this.toastr.error(error.error?.Message || 'Import failed'); });
-    } catch (error: any) { this.toastr.error(error.message); }
-    event.target.value = '';
-  }
-  downloadTemplate() {
-    const book = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet([['HeadName', 'StaffNo', 'MemberNo', 'Debit', 'Credit', 'Narration']]), 'Entries');
-    XLSX.writeFile(book, 'transfer-template.xlsx');
+    return {
+      Lines: this.Lines.map(x => ({
+        HeadId: x.HeadId, MemberId: x.MemberId || null, LoanId: x.LoanId || null,
+        DepositAccountId: x.DepositAccountId || null, Component: x.Component || null, Debit: x.Debit, Credit: x.Credit, Narration: x.Narration || ''
+      }))
+    };
   }
   submit() {
     if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate) return;
