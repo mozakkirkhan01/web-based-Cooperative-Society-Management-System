@@ -16,6 +16,7 @@ declare var $: any;
   styleUrls: ['./payment.component.css']
 })
 export class PaymentComponent {
+  isReadOnly = false;
   balanceRefresh = 0;
   SocietyList: any[] = [];
   AccountingBalance: any = {};
@@ -82,7 +83,8 @@ export class PaymentComponent {
       try {
         this.pendingPayment = JSON.parse(this.localService.decrypt(pending));
         this.transactionNoRequest++;
-        this.Payment = { ...this.pendingPayment, PaymentDate: this.loadData.loadDate(this.pendingPayment.PaymentDate) };
+        this.isReadOnly = false;
+    this.Payment = { ...this.pendingPayment, PaymentDate: this.loadData.loadDate(this.pendingPayment.PaymentDate) };
         this.toastr.warning("A payment is awaiting confirmation. Retry it before starting another payment.");
       } catch {
         this.toastr.error("Unable to restore the pending payment. Contact the administrator before submitting another payment.");
@@ -108,6 +110,7 @@ export class PaymentComponent {
   @ViewChild('formPayment') formPayment: NgForm;
   resetForm() {
     if (this.isSaving || this.pendingPayment) return;
+    this.isReadOnly = false;
     this.Payment = {
       PaymentId: 0,
       TrnNo: 'Assigned on save',
@@ -532,9 +535,23 @@ export class PaymentComponent {
     }
   }
 
+  
+  viewPayment(obj: any) {
+    this.isReadOnly = true;
+    this.transactionNoRequest++;
+    this.Payment = { ...obj, PaymentDate: this.loadData.loadDate(obj.PaymentDate), Balance: null };
+    if (this.formPayment) this.formPayment.resetForm(this.Payment);
+    this.isSubmitted = false;
+    this.onHeadChange(this.Payment.HeadId);
+    this.onBankChange(this.Payment.BankId);
+    this.onBankCashTypeChange();
+  }
+
   editPayment(obj: any) {
+    this.isReadOnly = false;
     if (this.isSaving || this.pendingPayment || !this.action.CanEdit) return;
     this.transactionNoRequest++;
+    this.isReadOnly = false;
     this.Payment = { ...obj, PaymentDate: this.loadData.loadDate(obj.PaymentDate), Balance: null };
     if (this.formPayment) this.formPayment.resetForm(this.Payment);
     this.isSubmitted = false;
