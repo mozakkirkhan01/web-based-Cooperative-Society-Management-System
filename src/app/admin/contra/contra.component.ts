@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
@@ -29,6 +30,7 @@ export class ContraComponent implements OnInit, OnDestroy {
   SocietyId: any = null;
   VoucherDate: any = new Date();
   FinancialYearName = '';
+  TrnNo = 'Assigned on save';
   VoucherNo = '';
   Narration = '';
   ExternalReference = '';
@@ -42,6 +44,12 @@ export class ContraComponent implements OnInit, OnDestroy {
   dataLoading = false;
   isSaving = false;
   CanCreate = false;
+  isReadOnly = false;
+  currentFinancialYear: any = null;
+  isLockedFinancialYear: boolean = false;
+  lockedFYName: string = '';
+  minVoucherDate: Date | null = null;
+  maxVoucherDate: Date | null = null;
   pendingTransaction: any = null;
   contextRequest = 0;
   memberRequest = 0;
@@ -49,10 +57,12 @@ export class ContraComponent implements OnInit, OnDestroy {
   showViewModal = false;
   viewLoading = false;
   selectedVoucher: any = null;
+  editingVoucherId: number | null = null;
 
   constructor(private service: AppService, private localService: LocalService,
     private loadData: LoadDataService, private toastr: ToastrService,
-    private notificationService: NotificationService) { }
+    private notificationService: NotificationService,
+    private route: ActivatedRoute, private router: Router) { }
 
   ngOnInit() {
     this.resetLine();
@@ -60,7 +70,22 @@ export class ContraComponent implements OnInit, OnDestroy {
       const pending = sessionStorage.getItem(this.pendingKey());
       if (pending) this.pendingTransaction = JSON.parse(this.localService.decrypt(pending));
     } catch { this.storageError = true; this.toastr.error('Unable to restore the pending transaction. Contact the administrator before posting.'); }
+    this.loadData.getCurrentFinancialYear(this.service, (fy: any) => {
+      this.currentFinancialYear = fy;
+      if (fy) {
+        this.minVoucherDate = new Date(fy.StartDate);
+        this.maxVoucherDate = new Date(fy.EndDate);
+        this.checkFinancialYearLock();
+      }
+    });
     this.getSetup();
+    this.route.queryParams.subscribe(params => {
+      if (params['viewVoucherId']) {
+        this.loadForEdit(Number(params['viewVoucherId']), true);
+      } else if (params['editVoucherId']) {
+        this.loadForEdit(Number(params['editVoucherId']), false);
+      }
+    });
   }
   ngOnDestroy() { this.contextRequest++; this.memberRequest++; }
   pendingKey() { return 'CONTRAPending:' + this.localService.getEmployeeDetail().StaffLoginId; }
@@ -82,9 +107,25 @@ export class ContraComponent implements OnInit, OnDestroy {
       this.getContext();
     }, error => { this.dataLoading = false; this.toastr.error(error.error?.Message || 'Unable to load contra'); });
   }
+  checkFinancialYearLock() {
+    if (!this.currentFinancialYear || !this.VoucherDate) return;
+    const isInside = this.loadData.isDateInCurrentFY(this.VoucherDate, this.currentFinancialYear);
+    if (!isInside) {
+      this.isReadOnly = true;
+      this.isLockedFinancialYear = true;
+      const d = new Date(this.VoucherDate);
+      const year = d.getFullYear();
+      this.lockedFYName = `${year}-${(year + 1).toString().slice(-2)}`;
+    } else if (this.isLockedFinancialYear) {
+      this.isLockedFinancialYear = false;
+      this.isReadOnly = false;
+    }
+  }
+
   getContext() {
     const current = ++this.contextRequest;
     this.BalanceList = []; this.MemberBalance = null; this.FinancialYearName = ''; this.VoucherList = [];
+    this.checkFinancialYearLock();
     if (!this.SocietyId || !this.VoucherDate) return;
     this.service.accounting('JournalContext', this.request({ SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), HeadId: this.Line.HeadId || 0, MemberId: this.Line.MemberId || null })).subscribe((response: any) => {
       if (current != this.contextRequest) return;
@@ -147,13 +188,15 @@ export class ContraComponent implements OnInit, OnDestroy {
     };
   }
   submit() {
-    if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate) return;
+    if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate || this.isReadOnly) return;
     if (!this.pendingTransaction) {
       if (!this.SocietyId || !this.VoucherDate) { this.toastr.error('Select society and date'); return; }
       const payload = this.buildPayload();
       if (!payload) return;
       this.pendingTransaction = {
-        ...payload, SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate),
+        ...payload,
+        VoucherId: this.editingVoucherId,
+        SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate),
         VoucherNo: this.VoucherNo ? this.VoucherNo.trim() : null,
         Narration: this.Narration ? this.Narration.trim() : '',
         ChequeNo: this.ChequeNo ? this.ChequeNo.trim() : null,
@@ -167,25 +210,120 @@ export class ContraComponent implements OnInit, OnDestroy {
     this.service.accounting('SaveTransaction', this.request(this.pendingTransaction)).subscribe((response: any) => {
       this.isSaving = false;
       if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
-      sessionStorage.removeItem(this.pendingKey()); this.pendingTransaction = null; this.Lines = [];
-      if (this.autoIncrement && this.VoucherNo && !isNaN(Number(this.VoucherNo))) {
+      sessionStorage.removeItem(this.pendingKey());
+      const wasEdit = !!this.editingVoucherId;
+      const assignedTrnNo = response.VoucherNumber || this.TrnNo;
+      this.pendingTransaction = null; this.Lines = [];
+      if (wasEdit) {
+        this.toastr.success('Contra ' + assignedTrnNo + ' updated successfully!');
+        this.editingVoucherId = null;
+        this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+      } else {
+        this.toastr.success('Contra submitted for verification: ' + response.VoucherNumber);
+      }
+      if (!wasEdit && this.autoIncrement && this.VoucherNo && !isNaN(Number(this.VoucherNo))) {
         this.VoucherNo = String(Number(this.VoucherNo) + 1);
       } else if (!this.autoIncrement) {
         this.VoucherNo = '';
       }
-      if (this.autoIncrement && this.ChequeNo && !isNaN(Number(this.ChequeNo))) {
+      if (!wasEdit && this.autoIncrement && this.ChequeNo && !isNaN(Number(this.ChequeNo))) {
         this.ChequeNo = String(Number(this.ChequeNo) + 1);
       } else if (!this.autoIncrement) {
         this.ChequeNo = '';
       }
+      this.TrnNo = 'Assigned on save';
       this.Narration = ''; this.ExternalReference = ''; this.resetLine(); this.getContext();
-      this.toastr.success('Contra submitted for verification: ' + response.VoucherNumber);
       this.notificationService.refresh();
     }, error => {
       this.isSaving = false;
       if ([400, 401, 403, 404, 409].includes(error.status)) { sessionStorage.removeItem(this.pendingKey()); this.pendingTransaction = null; }
       this.toastr.error(error.error?.Message || 'Confirmation unavailable. Retry this same transaction.');
     });
+  }
+
+  loadForEdit(voucherId: number, isView = false) {
+    this.dataLoading = true;
+    this.service.accounting('TransactionDetail', this.request({
+      SourceId: voucherId,
+      VoucherId: voucherId,
+      SourceType: 'CONTRA',
+      SocietyId: this.SocietyId || 0
+    })).subscribe({
+      next: (response: any) => {
+        this.dataLoading = false;
+        if (response.Message !== ConstantData.SuccessMessage || !response.Voucher) {
+          this.toastr.error(response.Message || 'Failed to load contra');
+          return;
+        }
+        const v = response.Voucher;
+        const isPosted = v.Status === 'POSTED';
+        this.isReadOnly = isPosted || isView;
+        this.editingVoucherId = v.VoucherId;
+        this.TrnNo = v.VoucherNumber;
+        this.VoucherNo = v.VoucherNo || '';
+        this.SocietyId = v.SocietyId;
+        this.VoucherDate = this.loadData.loadDate(v.VoucherDate);
+        this.ChequeNo = v.ChequeNo || '';
+
+        let cleanNarration = v.Narration || '';
+        if (cleanNarration.startsWith('CONTRA | ')) {
+          cleanNarration = cleanNarration.substring(9).trim();
+        }
+        const vNoIndex = cleanNarration.indexOf(' | VNo: ');
+        if (vNoIndex >= 0) {
+          cleanNarration = cleanNarration.substring(0, vNoIndex).trim();
+        }
+        const chqIndex = cleanNarration.indexOf(' | Cheque: ');
+        if (chqIndex >= 0) {
+          cleanNarration = cleanNarration.substring(0, chqIndex).trim();
+        }
+        this.Narration = cleanNarration;
+
+        this.Lines = (v.Lines || []).map((l: any) => ({
+          HeadId: l.HeadId,
+          HeadName: l.HeadName,
+          MemberId: l.MemberId,
+          MemberNo: l.MemberNo,
+          StaffNo: l.StaffNo,
+          MemberName: l.MemberName,
+          LoanId: l.LoanId,
+          DepositAccountId: l.DepositAccountId,
+          Component: l.Component,
+          Debit: l.Debit,
+          Credit: l.Credit,
+          Narration: l.Narration || ''
+        }));
+
+        this.resetLine();
+        this.checkFinancialYearLock();
+        if (this.isLockedFinancialYear) {
+          this.toastr.warning(`This transaction belongs to prior Financial Year ${this.lockedFYName}. Opened in Read-Only mode.`);
+        }
+        this.getContext();
+        if (this.isReadOnly) {
+          this.toastr.info(`Loaded Contra ${this.TrnNo} in Read-Only mode.`);
+        } else {
+          this.toastr.info(`Loaded Contra ${this.TrnNo} for editing.`);
+        }
+      },
+      error: (err: any) => {
+        this.dataLoading = false;
+        this.toastr.error(err.error?.Message || 'Error loading contra');
+      }
+    });
+  }
+
+  cancelEdit() {
+    this.editingVoucherId = null;
+    this.isReadOnly = false;
+    this.isLockedFinancialYear = false;
+    this.TrnNo = 'Assigned on save';
+    this.Lines = [];
+    this.Narration = '';
+    this.ChequeNo = '';
+    this.resetLine();
+    this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+    this.getContext();
   }
 
   displayNarration(narration: string): string {
