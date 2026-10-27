@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
@@ -15,6 +16,7 @@ export class TransferComponent implements OnInit, OnDestroy {
   showViewModal = false;
   viewLoading = false;
   selectedVoucher: any = null;
+  editingVoucherId: number | null = null;
   SocietyList: any[] = [];
   HeadList: any[] = [];
   headSearchText = '';
@@ -47,6 +49,12 @@ export class TransferComponent implements OnInit, OnDestroy {
   dataLoading = false;
   isSaving = false;
   CanCreate = false;
+  isReadOnly = false;
+  currentFinancialYear: any = null;
+  isLockedFinancialYear: boolean = false;
+  lockedFYName: string = '';
+  minVoucherDate: Date | null = null;
+  maxVoucherDate: Date | null = null;
   pendingTransaction: any = null;
   contextRequest = 0;
   memberRequest = 0;
@@ -62,7 +70,8 @@ export class TransferComponent implements OnInit, OnDestroy {
 
   constructor(private service: AppService, private localService: LocalService,
     private loadData: LoadDataService, private toastr: ToastrService,
-    private notificationService: NotificationService) { }
+    private notificationService: NotificationService,
+    private route: ActivatedRoute, private router: Router) { }
 
   ngOnInit() {
     this.resetLine(true);
@@ -74,7 +83,22 @@ export class TransferComponent implements OnInit, OnDestroy {
         else if (this.pendingTransaction.ExternalReference) this.TransactionNo = this.pendingTransaction.ExternalReference;
       }
     } catch { this.storageError = true; this.toastr.error('Unable to restore the pending transaction. Contact the administrator before posting.'); }
+    this.loadData.getCurrentFinancialYear(this.service, (fy: any) => {
+      this.currentFinancialYear = fy;
+      if (fy) {
+        this.minVoucherDate = new Date(fy.StartDate);
+        this.maxVoucherDate = new Date(fy.EndDate);
+        this.checkFinancialYearLock();
+      }
+    });
     this.getSetup();
+    this.route.queryParams.subscribe(params => {
+      if (params['viewVoucherId']) {
+        this.loadForEdit(Number(params['viewVoucherId']), true);
+      } else if (params['editVoucherId']) {
+        this.loadForEdit(Number(params['editVoucherId']), false);
+      }
+    });
   }
   ngOnDestroy() { this.contextRequest++; this.memberRequest++; }
   pendingKey() { return 'TRANSFERPending:' + this.localService.getEmployeeDetail().StaffLoginId; }
@@ -97,9 +121,25 @@ export class TransferComponent implements OnInit, OnDestroy {
       this.getContext();
     }, error => { this.dataLoading = false; this.toastr.error(error.error?.Message || 'Unable to load transfer'); });
   }
+  checkFinancialYearLock() {
+    if (!this.currentFinancialYear || !this.VoucherDate) return;
+    const isInside = this.loadData.isDateInCurrentFY(this.VoucherDate, this.currentFinancialYear);
+    if (!isInside) {
+      this.isReadOnly = true;
+      this.isLockedFinancialYear = true;
+      const d = new Date(this.VoucherDate);
+      const year = d.getFullYear();
+      this.lockedFYName = `${year}-${(year + 1).toString().slice(-2)}`;
+    } else if (this.isLockedFinancialYear) {
+      this.isLockedFinancialYear = false;
+      this.isReadOnly = false;
+    }
+  }
+
   getContext() {
     const current = ++this.contextRequest;
     this.BalanceList = []; this.MemberBalance = null; this.FinancialYearName = ''; this.VoucherList = [];
+    this.checkFinancialYearLock();
     if (!this.SocietyId || !this.VoucherDate) return;
     this.service.accounting('JournalContext', this.request({ SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), HeadId: this.Line.HeadId || 0, MemberId: this.Line.MemberId || null })).subscribe((response: any) => {
       if (current != this.contextRequest) return;
@@ -240,7 +280,10 @@ this.Line.DebitCredit = selectedDebitCredit;
     };
   }
   submit() {
-    if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate) return;
+    if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate || this.isReadOnly || this.isLockedFinancialYear) {
+      if (this.isLockedFinancialYear) this.toastr.warning(`Transactions in prior Financial Year (${this.lockedFYName}) are locked and cannot be submitted.`);
+      return;
+    }
     this.showBalanceModal = false;
     if (!this.TransactionNo || !this.TransactionNo.trim()) {
       this.toastr.error('Transaction no. is required');
@@ -252,6 +295,7 @@ this.Line.DebitCredit = selectedDebitCredit;
       if (!payload) return;
       this.pendingTransaction = {
         ...payload,
+        VoucherId: this.editingVoucherId,
         SocietyId: this.SocietyId,
         VoucherDate: this.loadData.loadDateYMD(this.VoucherDate),
         Narration: this.Narration ? this.Narration.trim() : '',
@@ -269,13 +313,20 @@ this.Line.DebitCredit = selectedDebitCredit;
       if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
       sessionStorage.removeItem(this.pendingKey());
       const savedVoucherNo = this.pendingTransaction?.VoucherNo || this.TransactionNo;
+      const wasEdit = !!this.editingVoucherId;
+      const assignedTrnNo = response.TrnNo || response.VoucherNumber || this.TrnNo;
       this.pendingTransaction = null;
       this.Lines = [];
       this.Narration = '';
-      const assignedTrnNo = response.TrnNo || response.VoucherNumber;
-      this.toastr.success(`Transfer submitted for verification. Trn No: ${assignedTrnNo}, Transaction No: ${savedVoucherNo}`);
+      if (wasEdit) {
+        this.toastr.success(`Transfer updated successfully on Trn No: ${assignedTrnNo}!`);
+        this.editingVoucherId = null;
+        this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+      } else {
+        this.toastr.success(`Transfer submitted for verification. Trn No: ${assignedTrnNo}, Transaction No: ${savedVoucherNo}`);
+      }
       this.notificationService.refresh();
-      if (this.autoIncrement && this.TransactionNo) {
+      if (!wasEdit && this.autoIncrement && this.TransactionNo) {
         const match = this.TransactionNo.match(/^([A-Za-z]*)(\d+)$/);
         if (match) {
           const prefix = match[1];
@@ -299,6 +350,91 @@ this.Line.DebitCredit = selectedDebitCredit;
       if ([400, 401, 403, 404, 409].includes(error.status)) { sessionStorage.removeItem(this.pendingKey()); this.pendingTransaction = null; }
       this.toastr.error(error.error?.Message || 'Confirmation unavailable. Retry this same transaction.');
     });
+  }
+
+  loadForEdit(voucherId: number, isView = false) {
+    this.dataLoading = true;
+    this.service.accounting('TransactionDetail', this.request({
+      SourceId: voucherId,
+      VoucherId: voucherId,
+      SourceType: 'TRANSFER'
+    })).subscribe({
+      next: (response: any) => {
+        this.dataLoading = false;
+        if (response.Message !== ConstantData.SuccessMessage || !response.Voucher) {
+          this.toastr.error(response.Message || 'Failed to load transfer');
+          return;
+        }
+        const v = response.Voucher;
+        const isPosted = v.Status === 'POSTED';
+        this.isReadOnly = isPosted || isView;
+        this.editingVoucherId = v.VoucherId;
+        this.TrnNo = v.VoucherNumber;
+        this.TransactionNo = v.VoucherNo || '';
+        this.SocietyId = v.SocietyId;
+        this.VoucherDate = this.loadData.loadDate(v.VoucherDate);
+        this.ChequeNo = v.ChequeNo || '';
+
+        let cleanNarration = v.Narration || '';
+        if (cleanNarration.startsWith('TRANSFER | ')) {
+          cleanNarration = cleanNarration.substring(11).trim();
+        }
+        const vNoIndex = cleanNarration.indexOf(' | VNo: ');
+        if (vNoIndex >= 0) {
+          cleanNarration = cleanNarration.substring(0, vNoIndex).trim();
+        }
+        const chqIndex = cleanNarration.indexOf(' | Cheque: ');
+        if (chqIndex >= 0) {
+          cleanNarration = cleanNarration.substring(0, chqIndex).trim();
+        }
+        this.Narration = cleanNarration;
+
+        this.Lines = (v.Lines || []).map((l: any) => ({
+          HeadId: l.HeadId,
+          HeadName: l.HeadName,
+          MemberId: l.MemberId,
+          MemberNo: l.MemberNo,
+          StaffNo: l.StaffNo,
+          MemberName: l.MemberName,
+          LoanId: l.LoanId,
+          DepositAccountId: l.DepositAccountId,
+          Component: l.Component,
+          Debit: l.Debit,
+          Credit: l.Credit,
+          Narration: l.Narration || '',
+          Issue: ''
+        }));
+
+        this.resetLine(true);
+        this.checkFinancialYearLock();
+        if (this.isLockedFinancialYear) {
+          this.toastr.warning(`This transaction belongs to prior Financial Year ${this.lockedFYName}. Opened in Read-Only mode.`);
+        }
+        this.getContext();
+        if (this.isReadOnly) {
+          this.toastr.info(`Loaded Transfer ${this.TrnNo} in Read-Only mode.`);
+        } else {
+          this.toastr.info(`Loaded Transfer ${this.TrnNo} for editing.`);
+        }
+      },
+      error: (err: any) => {
+        this.dataLoading = false;
+        this.toastr.error(err.error?.Message || 'Error loading transaction');
+      }
+    });
+  }
+
+  cancelEdit() {
+    this.editingVoucherId = null;
+    this.isReadOnly = false;
+    this.isLockedFinancialYear = false;
+    this.TrnNo = 'Assigned on save';
+    this.Lines = [];
+    this.Narration = '';
+    this.ChequeNo = '';
+    this.resetLine(true);
+    this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+    this.getContext();
   }
 
   viewVoucher(voucher: any) {
