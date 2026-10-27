@@ -12,17 +12,21 @@
   </div>
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title">{{ isReadOnly ? ('View Transfer (Read-Only) — ' + TrnNo) : (editingVoucherId ? ('Edit Transfer — ' + TrnNo) : 'New Transfer') }}</h5>
+      <h5 class="card-title">{{ isReadOnly ? ('View Transfer (Read-Only) — ' + TrnNo) : (editingVoucherId ? ('Edit
+        Transfer — ' + TrnNo) : 'New Transfer') }}</h5>
       <p>Enter both sides of the transfer. Select the correct member on each line; total debits must equal credits.</p>
-      
-      <div class="alert alert-secondary border border-dark d-flex align-items-center justify-content-between p-3 mb-3 shadow-sm" *ngIf="isLockedFinancialYear">
+
+      <div
+        class="alert alert-secondary border border-dark d-flex align-items-center justify-content-between p-3 mb-3 shadow-sm"
+        *ngIf="isLockedFinancialYear">
         <div class="d-flex align-items-center">
           <i class="bi bi-lock-fill fs-3 me-3 text-dark"></i>
           <div>
             <div class="fw-bold">
               <span class="badge bg-dark me-2">LOCKED</span> Prior Financial Year {{ lockedFYName }}
             </div>
-            <div class="small text-muted">This transaction is dated {{ VoucherDate | date:'dd-MM-yyyy' }}. Transactions outside current financial year ({{ currentFinancialYear?.FinancialYearName }}) are Read-Only.</div>
+            <div class="small text-muted">This transaction is dated {{ VoucherDate | date:'dd-MM-yyyy' }}. Transactions
+              outside current financial year ({{ currentFinancialYear?.FinancialYearName }}) are Read-Only.</div>
           </div>
         </div>
         <div class="d-flex gap-2">
@@ -35,21 +39,25 @@
         </div>
       </div>
 
-      <div class="alert alert-info border border-info d-flex align-items-center justify-content-between p-3 mb-3 shadow-sm" *ngIf="isReadOnly && !isLockedFinancialYear">
+      <div
+        class="alert alert-info border border-info d-flex align-items-center justify-content-between p-3 mb-3 shadow-sm"
+        *ngIf="isReadOnly && !isLockedFinancialYear">
         <div class="d-flex align-items-center">
           <i class="bi bi-eye-fill fs-4 me-3 text-primary"></i>
           <div>
             <div class="fw-bold">
               <span class="badge bg-secondary me-2">READ-ONLY</span> Viewing Transfer
               <span class="badge bg-primary fs-6 ms-1">{{ TrnNo }}</span>
-              <span class="ms-2 text-muted" *ngIf="TransactionNo">(User Txn No: {{ TransactionNo }})</span>
+              <span class="ms-2 text-muted" *ngIf="TransactionNo">(Transfer No: {{ TransferNo }})</span>
               <span class="badge bg-success ms-2">Verified</span>
             </div>
-            <div class="small text-muted mt-1">This transaction is locked in Read-Only mode. Edits and submissions are disabled. Unmark verification first if changes are needed.</div>
+            <div class="small text-muted mt-1">This transaction is locked in Read-Only mode. Edits and submissions are
+              disabled. Unmark verification first if changes are needed.</div>
           </div>
         </div>
         <div class="d-flex gap-2">
-          <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" routerLink="/admin/verify-transactions">
+          <button type="button" class="btn btn-sm btn-outline-primary shadow-sm"
+            routerLink="/admin/verify-transactions">
             <i class="bi bi-arrow-left me-1"></i> Verify Transactions
           </button>
           <button type="button" class="btn btn-sm btn-secondary shadow-sm" (click)="cancelEdit()">
@@ -58,12 +66,15 @@
         </div>
       </div>
 
-      <div class="alert alert-warning border border-warning d-flex align-items-center justify-content-between p-2 mb-3 shadow-sm" *ngIf="editingVoucherId && !isReadOnly">
+      <div
+        class="alert alert-warning border border-warning d-flex align-items-center justify-content-between p-2 mb-3 shadow-sm"
+        *ngIf="editingVoucherId && !isReadOnly">
         <div class="d-flex align-items-center">
           <i class="bi bi-pencil-square fs-5 me-2 text-warning-emphasis"></i>
           <div>
-            <strong>Editing Mode:</strong> Updating existing transfer <span class="badge bg-primary fs-6 ms-1">{{ TrnNo }}</span>
-            <span class="ms-2 text-muted">(User Txn No: {{ TransactionNo }})</span>
+            <strong>Editing Mode:</strong> Updating existing transfer <span class="badge bg-primary fs-6 ms-1">{{ TrnNo
+              }}</span>
+            <span class="ms-2 text-muted">(Transfer No: {{ TransferNo }})</span>
           </div>
         </div>
         <button type="button" class="btn btn-sm btn-outline-dark" (click)="cancelEdit()">
@@ -74,7 +85,8 @@
       <div class="alert alert-warning" *ngIf="pendingTransaction">A submitted transaction is awaiting confirmation.
         Retry the same saved transaction below. Date: {{pendingTransaction.VoucherDate | date:'dd-MM-yyyy'}} ·
         {{pendingTransaction.Lines?.length}} rows · {{pendingTransaction.Narration}}</div>
-      <fieldset [disabled]="isSaving || !!pendingTransaction || storageError || !CanCreate || isReadOnly || isLockedFinancialYear">
+      <fieldset
+        [disabled]="isSaving || !!pendingTransaction || storageError || !CanCreate || isReadOnly || isLockedFinancialYear">
         <div class="row">
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Society</mat-label><mat-select
               [(ngModel)]="SocietyId" (selectionChange)="getContext()"
@@ -82,16 +94,16 @@
                 *ngFor="let society of SocietyList"
                 [value]="society.SocietyId">{{society.SocietyName}}</mat-option></mat-select></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Date</mat-label><input matInput
-              [(ngModel)]="VoucherDate" [min]="minVoucherDate" [max]="maxVoucherDate" [matDatepicker]="datePicker" (dateChange)="getContext()"
-              required><mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle><mat-datepicker
-              #datePicker></mat-datepicker></mat-form-field>
+              [(ngModel)]="VoucherDate" [min]="minVoucherDate" [max]="maxVoucherDate" [matDatepicker]="datePicker"
+              (dateChange)="getContext()" required><mat-datepicker-toggle matIconSuffix
+              [for]="datePicker"></mat-datepicker-toggle><mat-datepicker #datePicker></mat-datepicker></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Financial year</mat-label><input matInput
               readonly [value]="FinancialYearName"></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4" readonly-field><mat-label>Trn No.</mat-label><input
               matInput readonly [value]="TrnNo || 'Assigned on save'"></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Transaction no. *</mat-label><input matInput
-              [(ngModel)]="TransactionNo" name="TransactionNo" maxlength="50" placeholder="e.g. 86" required><mat-error
-              *ngIf="!TransactionNo || !TransactionNo.trim()">Transaction no. is required</mat-error></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Transfer no. *</mat-label><input matInput
+              [(ngModel)]="TransferNo" name="TransferNo" maxlength="50" placeholder="e.g. 86" required><mat-error
+              *ngIf="!TransferNo || !TransferNo.trim()">Transfer no. is required</mat-error></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Cheque no. (optional)</mat-label><input
               matInput [(ngModel)]="ChequeNo" maxlength="50"></mat-form-field>
 
@@ -101,21 +113,11 @@
         </div>
         <div class="form-check mb-3">
           <input class="form-check-input" type="checkbox" id="autoIncTransfer" [(ngModel)]="autoIncrement">
-          <label class="form-check-label" for="autoIncTransfer">Auto increment transaction no. on next entry</label>
+          <label class="form-check-label" for="autoIncTransfer">Auto increment transfer no. on next entry</label>
         </div>
         <h5 class="card-title">Add entry</h5>
         <div class="row">
-          <mat-form-field appearance="outline" class="col-md-8"><mat-label>Head</mat-label><mat-select
-              [(ngModel)]="Line.HeadId" (selectionChange)="getContext()" (openedChange)="headSearchText = ''"
-              [disabled]="isSaving || !!pendingTransaction || !CanCreate">
-              <div class="p-2"
-                style="position: sticky; top: 0; background: white; z-index: 1000; border-bottom: 1px solid #e0e0e0;"
-                (click)="$event.stopPropagation()"><input type="text" class="form-control form-control-sm"
-                  placeholder="Search head..." [(ngModel)]="headSearchText" (keydown)="$event.stopPropagation()"></div>
-              <mat-option *ngFor="let head of filteredHeadList" [value]="head.HeadId">{{head.HeadName}}</mat-option>
-            </mat-select></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Head balance at selected
-              date</mat-label><input matInput readonly [value]="formatBalance(balance(Line.HeadId))"></mat-form-field>
+
           <mat-form-field appearance="outline" class="col-md-8">
             <mat-label>Search member by staff no., member no. or name</mat-label>
             <input matInput [(ngModel)]="MemberSearch" (input)="findMembers()" [matAutocomplete]="memberAuto">
@@ -132,6 +134,17 @@
           </mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Member balance at selected
               date</mat-label><input matInput readonly [value]="formatBalance(MemberBalance)"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-8"><mat-label>Head</mat-label><mat-select
+              [(ngModel)]="Line.HeadId" (selectionChange)="getContext()" (openedChange)="headSearchText = ''"
+              [disabled]="isSaving || !!pendingTransaction || !CanCreate">
+              <div class="p-2"
+                style="position: sticky; top: 0; background: white; z-index: 1000; border-bottom: 1px solid #e0e0e0;"
+                (click)="$event.stopPropagation()"><input type="text" class="form-control form-control-sm"
+                  placeholder="Search head..." [(ngModel)]="headSearchText" (keydown)="$event.stopPropagation()"></div>
+              <mat-option *ngFor="let head of filteredHeadList" [value]="head.HeadId">{{head.HeadName}}</mat-option>
+            </mat-select></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Head balance at selected
+              date</mat-label><input matInput readonly [value]="formatBalance(balance(Line.HeadId))"></mat-form-field>
           <ng-container *ngFor="let rule of RuleList"><ng-container *ngIf="rule.HeadId == Line.HeadId">
               <mat-form-field appearance="outline" class="col-md-4" *ngIf="rule.RequiresLoan"><mat-label>Loan
                   ID</mat-label><input matInput type="number" [(ngModel)]="Line.LoanId"></mat-form-field>
@@ -145,14 +158,14 @@
                     value="INTEREST">Interest</mat-option><mat-option
                     value="PENALTY">Penalty</mat-option></mat-select></mat-form-field>
             </ng-container></ng-container>
-          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Debit / Credit</mat-label><mat-select
-              [(ngModel)]="Line.DebitCredit" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
-                value="Debit">Debit</mat-option><mat-option
-                value="Credit">Credit</mat-option></mat-select></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-3"><mat-label>Amount</mat-label><input matInput
-              type="number" min="0.01" step="0.01" [(ngModel)]="Line.Amount"></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-6"><mat-label>Entry narration (optional)</mat-label><input
-              matInput [(ngModel)]="Line.Narration" maxlength="500"></mat-form-field>
+            <mat-form-field appearance="outline" class="col-md-3"><mat-label>Amount</mat-label><input matInput
+                type="number" min="0.01" step="0.01" [(ngModel)]="Line.Amount"></mat-form-field>
+                <mat-form-field appearance="outline" class="col-md-3"><mat-label>Debit / Credit</mat-label><mat-select
+                  [(ngModel)]="Line.DebitCredit" [disabled]="isSaving || !!pendingTransaction || !CanCreate"><mat-option
+                  value="Debit">Debit</mat-option><mat-option
+                  value="Credit">Credit</mat-option></mat-select></mat-form-field>
+                  <mat-form-field appearance="outline" class="col-md-6"><mat-label>Entry narration (optional)</mat-label><input
+                      matInput [(ngModel)]="Line.Narration" maxlength="500"></mat-form-field>
         </div>
         <button mat-raised-button color="primary" (click)="addLine()" *ngIf="!isReadOnly"
           [disabled]="isSaving || !!pendingTransaction || !CanCreate">Add entry</button>
@@ -192,13 +205,15 @@
             Difference: {{difference | number:'1.2-2'}}
           </span>
         </div>
-        <button mat-stroked-button (click)="clearRows()" *ngIf="!isReadOnly" [disabled]="isSaving || !!pendingTransaction">Clear
+        <button mat-stroked-button (click)="clearRows()" *ngIf="!isReadOnly"
+          [disabled]="isSaving || !!pendingTransaction">Clear
           rows</button>
       </fieldset>
       <div class="text-center mt-3" *ngIf="!isReadOnly && !isLockedFinancialYear">
         <button mat-raised-button color="primary" (click)="submit()"
           [disabled]="isSaving || dataLoading || storageError || !CanCreate">
-          {{ pendingTransaction ? 'Retry saved transaction' : (editingVoucherId ? ('Update Transfer (' + TrnNo + ')') : 'Submit') }}
+          {{ pendingTransaction ? 'Retry saved transaction' : (editingVoucherId ? ('Update Transfer (' + TrnNo + ')') :
+          'Submit') }}
         </button>
       </div>
       <div class="text-center mt-3 d-flex justify-content-center gap-2" *ngIf="isReadOnly">
@@ -221,7 +236,7 @@
           <thead class="table-light">
             <tr>
               <th>Trn No.</th>
-              <th>Transaction no.</th>
+              <th>Transfer no.</th>
               <th>Date</th>
               <th>Narration</th>
               <th class="text-end">Amount</th>
@@ -231,12 +246,13 @@
           <tbody>
             <tr *ngFor="let voucher of VoucherList">
               <td><strong class="text-primary">{{voucher.VoucherNumber}}</strong></td>
-              <td>{{voucher.VoucherNo || '—'}}</td>
+              <td>{{voucher.TransferNo || voucher.VoucherNo || '—'}}</td>
               <td>{{voucher.VoucherDate | date:'dd-MM-yyyy'}}</td>
               <td>{{voucher.Narration}}</td>
               <td class="text-end">{{voucher.Amount | number:'1.2-2'}}</td>
               <td class="text-center">
-                <button class="btn btn-sm btn-info text-white shadow-sm" (click)="viewVoucher(voucher)" title="View Read-Only Details">
+                <button class="btn btn-sm btn-info text-white shadow-sm" (click)="viewVoucher(voucher)"
+                  title="View Read-Only Details">
                   <i class="bi bi-eye"></i> View
                 </button>
               </td>
@@ -282,7 +298,8 @@
   </div>
 </main>
 <!-- VIEW TRANSFER DETAILS MODAL (READ-ONLY) -->
-<div class="modal fade" [class.show]="showViewModal" [style.display]="showViewModal ? 'block' : 'none'" tabindex="-1" role="dialog" aria-modal="true">
+<div class="modal fade" [class.show]="showViewModal" [style.display]="showViewModal ? 'block' : 'none'" tabindex="-1"
+  role="dialog" aria-modal="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
     <div class="modal-content shadow-lg border-0 rounded-3">
       <div class="modal-header bg-primary text-white">
@@ -306,8 +323,8 @@
             <div class="fw-bold text-primary fs-6">{{selectedVoucher.VoucherNumber}}</div>
           </div>
           <div class="col-sm-6 col-md-3">
-            <div class="text-muted small">Transaction No.</div>
-            <div class="fw-bold fs-6">{{selectedVoucher.VoucherNo || '—'}}</div>
+            <div class="text-muted small">Transfer No.</div>
+            <div class="fw-bold fs-6">{{selectedVoucher.TransferNo || selectedVoucher.VoucherNo || '—'}}</div>
           </div>
           <div class="col-sm-6 col-md-3">
             <div class="text-muted small">Date</div>
@@ -323,7 +340,8 @@
           </div>
         </div>
 
-        <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-list-columns me-1"></i> Account Entries Breakdown (Read-Only)</h6>
+        <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-list-columns me-1"></i> Account Entries Breakdown (Read-Only)
+        </h6>
         <div class="table-responsive">
           <table class="table table-bordered table-striped align-middle mb-0">
             <thead class="table-dark">
@@ -341,15 +359,18 @@
                 <td class="fw-semibold text-dark">{{line.HeadName}}</td>
                 <td>
                   <span *ngIf="line.MemberId || line.MemberName">
-                    <span class="badge bg-light text-dark border me-1" *ngIf="line.StaffNo">Staff: {{line.StaffNo}}</span>
+                    <span class="badge bg-light text-dark border me-1" *ngIf="line.StaffNo">Staff:
+                      {{line.StaffNo}}</span>
                     {{line.MemberName}}
                   </span>
                   <span *ngIf="!line.MemberId && !line.MemberName" class="text-muted">—</span>
                 </td>
-                <td class="text-end font-monospace" [class.fw-bold]="line.Debit > 0" [class.text-primary]="line.Debit > 0">
+                <td class="text-end font-monospace" [class.fw-bold]="line.Debit > 0"
+                  [class.text-primary]="line.Debit > 0">
                   {{line.Debit > 0 ? (line.Debit | number:'1.2-2') : '—'}}
                 </td>
-                <td class="text-end font-monospace" [class.fw-bold]="line.Credit > 0" [class.text-success]="line.Credit > 0">
+                <td class="text-end font-monospace" [class.fw-bold]="line.Credit > 0"
+                  [class.text-success]="line.Credit > 0">
                   {{line.Credit > 0 ? (line.Credit | number:'1.2-2') : '—'}}
                 </td>
               </tr>

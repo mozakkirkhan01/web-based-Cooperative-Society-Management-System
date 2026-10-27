@@ -35,7 +35,9 @@ export class TransferComponent implements OnInit, OnDestroy {
   VoucherDate: any = new Date();
   FinancialYearName = '';
   TrnNo = 'Assigned on save';
-  TransactionNo = '';
+  TransferNo = '';
+  get TransactionNo(): string { return this.TransferNo; }
+  set TransactionNo(val: string) { this.TransferNo = val; }
   Narration = '';
   ExternalReference = '';
   ChequeNo = '';
@@ -52,9 +54,12 @@ export class TransferComponent implements OnInit, OnDestroy {
   isReadOnly = false;
   currentFinancialYear: any = null;
   isLockedFinancialYear: boolean = false;
-  lockedFYName: string = '';
-  minVoucherDate: Date | null = null;
-  maxVoucherDate: Date | null = null;
+  lockedFYName: string = '';
+
+  minVoucherDate: Date | null = null;
+
+  maxVoucherDate: Date | null = null;
+
   pendingTransaction: any = null;
   contextRequest = 0;
   memberRequest = 0;
@@ -79,8 +84,9 @@ export class TransferComponent implements OnInit, OnDestroy {
       const pending = sessionStorage.getItem(this.pendingKey());
       if (pending) {
         this.pendingTransaction = JSON.parse(this.localService.decrypt(pending));
-        if (this.pendingTransaction.VoucherNo) this.TransactionNo = this.pendingTransaction.VoucherNo;
-        else if (this.pendingTransaction.ExternalReference) this.TransactionNo = this.pendingTransaction.ExternalReference;
+        if (this.pendingTransaction.TransferNo) this.TransferNo = this.pendingTransaction.TransferNo;
+        else if (this.pendingTransaction.VoucherNo) this.TransferNo = this.pendingTransaction.VoucherNo;
+        else if (this.pendingTransaction.ExternalReference) this.TransferNo = this.pendingTransaction.ExternalReference;
       }
     } catch { this.storageError = true; this.toastr.error('Unable to restore the pending transaction. Contact the administrator before posting.'); }
     this.loadData.getCurrentFinancialYear(this.service, (fy: any) => {
@@ -139,15 +145,17 @@ export class TransferComponent implements OnInit, OnDestroy {
   getContext() {
     const current = ++this.contextRequest;
     this.BalanceList = []; this.MemberBalance = null; this.FinancialYearName = ''; this.VoucherList = [];
-    this.checkFinancialYearLock();
+    this.checkFinancialYearLock();
+
     if (!this.SocietyId || !this.VoucherDate) return;
     this.service.accounting('JournalContext', this.request({ SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), HeadId: this.Line.HeadId || 0, MemberId: this.Line.MemberId || null })).subscribe((response: any) => {
       if (current != this.contextRequest) return;
       if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
       this.BalanceList = response.BalanceList; this.MemberBalance = response.MemberBalance;
       this.FinancialYearName = response.FinancialYearName; this.VoucherList = response.VoucherList;
-      if (!this.TransactionNo && response.NextVoucherNo) {
-        this.TransactionNo = String(response.NextVoucherNo);
+      const nextNo = response.NextTransferNo || response.NextVoucherNo;
+      if (!this.TransferNo && nextNo) {
+        this.TransferNo = String(nextNo);
       }
     }, error => { if (current == this.contextRequest) this.toastr.error(error.error?.Message || 'Unable to load balances'); });
   }
@@ -262,8 +270,8 @@ this.Line.DebitCredit = selectedDebitCredit;
   closeBalanceModal(complete: boolean) {
     this.showBalanceModal = false;
     if (complete) {
-      if (!this.TransactionNo || !this.TransactionNo.trim()) {
-        this.toastr.error('Transaction no. is required');
+      if (!this.TransferNo || !this.TransferNo.trim()) {
+        this.toastr.error('Transfer no. is required');
         return;
       }
       this.submit();
@@ -280,13 +288,16 @@ this.Line.DebitCredit = selectedDebitCredit;
     };
   }
   submit() {
-    if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate || this.isReadOnly || this.isLockedFinancialYear) {
-      if (this.isLockedFinancialYear) this.toastr.warning(`Transactions in prior Financial Year (${this.lockedFYName}) are locked and cannot be submitted.`);
-      return;
+    if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate || this.isReadOnly || this.isLockedFinancialYear) {
+
+      if (this.isLockedFinancialYear) this.toastr.warning(`Transactions in prior Financial Year (${this.lockedFYName}) are locked and cannot be submitted.`);
+
+      return;
+
     }
     this.showBalanceModal = false;
-    if (!this.TransactionNo || !this.TransactionNo.trim()) {
-      this.toastr.error('Transaction no. is required');
+    if (!this.TransferNo || !this.TransferNo.trim()) {
+      this.toastr.error('Transfer no. is required');
       return;
     }
     if (!this.pendingTransaction) {
@@ -300,8 +311,9 @@ this.Line.DebitCredit = selectedDebitCredit;
         VoucherDate: this.loadData.loadDateYMD(this.VoucherDate),
         Narration: this.Narration ? this.Narration.trim() : '',
         ChequeNo: this.ChequeNo ? this.ChequeNo.trim() : null,
-        ExternalReference: this.TransactionNo.trim(),
-        VoucherNo: this.TransactionNo.trim(),
+        ExternalReference: this.TransferNo.trim(),
+        VoucherNo: this.TransferNo.trim(),
+        TransferNo: this.TransferNo.trim(),
         RequestKey: crypto.randomUUID()
       };
       try { sessionStorage.setItem(this.pendingKey(), this.localService.encrypt(JSON.stringify(this.pendingTransaction)).toString()); }
@@ -312,7 +324,7 @@ this.Line.DebitCredit = selectedDebitCredit;
       this.isSaving = false;
       if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
       sessionStorage.removeItem(this.pendingKey());
-      const savedVoucherNo = this.pendingTransaction?.VoucherNo || this.TransactionNo;
+      const savedTransferNo = this.pendingTransaction?.TransferNo || this.pendingTransaction?.VoucherNo || this.TransferNo;
       const wasEdit = !!this.editingVoucherId;
       const assignedTrnNo = response.TrnNo || response.VoucherNumber || this.TrnNo;
       this.pendingTransaction = null;
@@ -323,23 +335,23 @@ this.Line.DebitCredit = selectedDebitCredit;
         this.editingVoucherId = null;
         this.router.navigate([], { relativeTo: this.route, queryParams: {} });
       } else {
-        this.toastr.success(`Transfer submitted for verification. Trn No: ${assignedTrnNo}, Transaction No: ${savedVoucherNo}`);
+        this.toastr.success(`Transfer submitted for verification. Trn No: ${assignedTrnNo}, Transfer No: ${savedTransferNo}`);
       }
       this.notificationService.refresh();
-      if (!wasEdit && this.autoIncrement && this.TransactionNo) {
-        const match = this.TransactionNo.match(/^([A-Za-z]*)(\d+)$/);
+      if (!wasEdit && this.autoIncrement && this.TransferNo) {
+        const match = this.TransferNo.match(/^([A-Za-z]*)(\d+)$/);
         if (match) {
           const prefix = match[1];
           const numStr = match[2];
           const nextNum = Number(numStr) + 1;
-          this.TransactionNo = prefix + String(nextNum).padStart(numStr.length, '0');
-        } else if (!isNaN(Number(this.TransactionNo))) {
-          this.TransactionNo = String(Number(this.TransactionNo) + 1);
+          this.TransferNo = prefix + String(nextNum).padStart(numStr.length, '0');
+        } else if (!isNaN(Number(this.TransferNo))) {
+          this.TransferNo = String(Number(this.TransferNo) + 1);
         } else {
-          this.TransactionNo = '';
+          this.TransferNo = '';
         }
       } else if (!this.autoIncrement) {
-        this.TransactionNo = '';
+        this.TransferNo = '';
       }
       this.TrnNo = 'Assigned on save';
       this.ChequeNo = '';
@@ -370,7 +382,7 @@ this.Line.DebitCredit = selectedDebitCredit;
         this.isReadOnly = isPosted || isView;
         this.editingVoucherId = v.VoucherId;
         this.TrnNo = v.VoucherNumber;
-        this.TransactionNo = v.VoucherNo || '';
+        this.TransferNo = v.TransferNo || v.VoucherNo || '';
         this.SocietyId = v.SocietyId;
         this.VoucherDate = this.loadData.loadDate(v.VoucherDate);
         this.ChequeNo = v.ChequeNo || '';
@@ -378,6 +390,10 @@ this.Line.DebitCredit = selectedDebitCredit;
         let cleanNarration = v.Narration || '';
         if (cleanNarration.startsWith('TRANSFER | ')) {
           cleanNarration = cleanNarration.substring(11).trim();
+        }
+        const trfNoIndex = cleanNarration.indexOf(' | TrfNo: ');
+        if (trfNoIndex >= 0) {
+          cleanNarration = cleanNarration.substring(0, trfNoIndex).trim();
         }
         const vNoIndex = cleanNarration.indexOf(' | VNo: ');
         if (vNoIndex >= 0) {
