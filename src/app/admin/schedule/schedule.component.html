@@ -12,12 +12,69 @@
   </div>
   <div class="card">
     <div class="card-body">
-      <h5 class="card-title">New Schedule</h5>
+      <h5 class="card-title">{{ isReadOnly ? ('View Schedule (Read-Only) — ' + TrnNo) : (editingVoucherId ? ('Edit Schedule — ' + TrnNo) : 'New Schedule') }}</h5>
       <p>Enter monthly member allocations manually or import Excel/recovery files. The total amount is cut from the selected Source Head (e.g. RECOVERY FROM BSP) and credited to each member's head.</p>
+
+      <div class="alert alert-secondary border border-dark d-flex align-items-center justify-content-between p-3 mb-3 shadow-sm" *ngIf="isLockedFinancialYear">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-lock-fill fs-3 me-3 text-dark"></i>
+          <div>
+            <div class="fw-bold">
+              <span class="badge bg-dark me-2">LOCKED</span> Prior Financial Year {{ lockedFYName }}
+            </div>
+            <div class="small text-muted">This transaction is dated {{ VoucherDate | date:'dd-MM-yyyy' }}. Transactions outside current financial year ({{ currentFinancialYear?.FinancialYearName }}) are Read-Only.</div>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button mat-stroked-button color="warn" (click)="cancelEdit()">
+            <i class="bi bi-x-circle me-1"></i> Close View
+          </button>
+          <button mat-raised-button color="primary" routerLink="/admin/verify-transactions">
+            <i class="bi bi-arrow-left me-1"></i> Verify Transactions
+          </button>
+        </div>
+      </div>
+
+      <div class="alert alert-info border border-info d-flex align-items-center justify-content-between p-3 mb-3 shadow-sm" *ngIf="isReadOnly && !isLockedFinancialYear">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-eye-fill fs-4 me-3 text-warning-emphasis"></i>
+          <div>
+            <div class="fw-bold">
+              <span class="badge bg-secondary me-2">READ-ONLY</span> Viewing Schedule
+              <span class="badge bg-warning text-dark fs-6 ms-1">{{ TrnNo }}</span>
+              <span class="ms-2 text-muted" *ngIf="ExternalReference">(Ref: {{ ExternalReference }})</span>
+              <span class="badge bg-success ms-2">Verified</span>
+            </div>
+            <div class="small text-muted mt-1">This transaction is locked in Read-Only mode. Edits and submissions are disabled. Unmark verification first if changes are needed.</div>
+          </div>
+        </div>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-sm btn-outline-primary shadow-sm" routerLink="/admin/verify-transactions">
+            <i class="bi bi-arrow-left me-1"></i> Verify Transactions
+          </button>
+          <button type="button" class="btn btn-sm btn-secondary shadow-sm" (click)="cancelEdit()">
+            <i class="bi bi-x-circle me-1"></i> Close View
+          </button>
+        </div>
+      </div>
+
+      <div class="alert alert-warning border border-warning d-flex align-items-center justify-content-between p-2 mb-3 shadow-sm" *ngIf="editingVoucherId && !isReadOnly">
+        <div class="d-flex align-items-center">
+          <i class="bi bi-pencil-square fs-5 me-2 text-warning-emphasis"></i>
+          <div>
+            <strong>Editing Mode:</strong> Updating existing schedule <span class="badge bg-warning text-dark fs-6 ms-1">{{ TrnNo }}</span>
+            <span class="ms-2 text-muted" *ngIf="ExternalReference">(Ref: {{ ExternalReference }})</span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-dark" (click)="cancelEdit()">
+          <i class="bi bi-x-circle me-1"></i> Cancel Edit
+        </button>
+      </div>
+
       <div class="alert alert-warning" *ngIf="pendingTransaction">A submitted transaction is awaiting confirmation.
         Retry the same saved transaction below. Date: {{pendingTransaction.VoucherDate | date:'dd-MM-yyyy'}} ·
         {{pendingTransaction.Lines?.length}} rows · {{pendingTransaction.Narration}}</div>
-      <fieldset [disabled]="isSaving || !!pendingTransaction || storageError || !CanCreate">
+      <fieldset [disabled]="isSaving || !!pendingTransaction || storageError || !CanCreate || isReadOnly || isLockedFinancialYear">
         <div class="row">
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Society</mat-label><mat-select
               [(ngModel)]="SocietyId" (selectionChange)="getContext()"
@@ -25,13 +82,13 @@
                 *ngFor="let society of SocietyList"
                 [value]="society.SocietyId">{{society.SocietyName}}</mat-option></mat-select></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Date</mat-label><input matInput
-              [(ngModel)]="VoucherDate" [matDatepicker]="datePicker" (dateChange)="onDateChange()"
+              [(ngModel)]="VoucherDate" [min]="minVoucherDate" [max]="maxVoucherDate" [matDatepicker]="datePicker" (dateChange)="onDateChange()"
               required><mat-datepicker-toggle matIconSuffix [for]="datePicker"></mat-datepicker-toggle><mat-datepicker
               #datePicker></mat-datepicker></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-4"><mat-label>Financial year</mat-label><input matInput
               readonly [value]="FinancialYearName"></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Transaction no.</mat-label><input matInput
-              readonly value="Assigned on submit"></mat-form-field>
+          <mat-form-field appearance="outline" class="col-md-4"><mat-label>Transaction no. (Trn No)</mat-label><input matInput
+              readonly [value]="TrnNo"></mat-form-field>
           <mat-form-field appearance="outline" class="col-md-8"><mat-label>Unique schedule reference
               (required)</mat-label><input matInput [(ngModel)]="ExternalReference" [readonly]="!!SourceMonth"
               maxlength="100"></mat-form-field>
@@ -167,7 +224,7 @@
                 <th class="text-end">Debit</th>
                 <th class="text-end">Credit</th>
                 <th>Narration</th>
-                <th>Action</th>
+                <th *ngIf="!isReadOnly">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -182,7 +239,7 @@
                 <td class="text-end">{{row.Credit | number:'1.2-2'}}</td>
                 <td><span *ngIf="!row.Debit && !row.Credit">No recovery — will not be posted.
                   </span>{{row.Narration}}<strong class="d-block text-danger">{{row.Issue}}</strong></td>
-                <td><button mat-button (click)="editLine(Lines.indexOf(row))"
+                <td *ngIf="!isReadOnly"><button mat-button (click)="editLine(Lines.indexOf(row))"
                     [disabled]="isSaving || !!pendingTransaction">Edit</button><button mat-button color="warn"
                     (click)="removeLine(Lines.indexOf(row))"
                     [disabled]="isSaving || !!pendingTransaction">Remove</button></td>
@@ -196,19 +253,30 @@
           <strong>{{total('Credit') | number:'1.2-2'}}</strong><br>Amount to cut from {{headName(SettlementHeadId)}}:
           <strong>{{formatBalance(total('Credit') - total('Debit'))}}</strong>
         </div>
-        <button mat-stroked-button (click)="clearImport()" [disabled]="isSaving || !!pendingTransaction">Clear import /
+        <button mat-stroked-button (click)="clearImport()" *ngIf="!isReadOnly" [disabled]="isSaving || !!pendingTransaction">Clear import /
           rows</button>
-        <div class="mt-3"><mat-checkbox [(ngModel)]="Reviewed"
+        <div class="mt-3" *ngIf="!isReadOnly"><mat-checkbox [(ngModel)]="Reviewed"
             [disabled]="dataLoading || isSaving || !!pendingTransaction">I have verified the members, heads, amounts,
             date and source head.</mat-checkbox></div>
       </fieldset>
-      <div class="alert alert-danger mt-3" *ngIf="isBalanceInsufficient">
+      <div class="alert alert-danger mt-3" *ngIf="isBalanceInsufficient && !isReadOnly">
         <i class="bi bi-shield-slash-fill me-2 fs-5"></i>
         <strong>Submission Blocked:</strong> {{balanceWarningMessage}}
       </div>
-      <div class="text-center mt-3"><button mat-raised-button color="primary" (click)="submit()"
-          [disabled]="isSaving || dataLoading || storageError || !CanCreate || isBalanceInsufficient">{{pendingTransaction ? 'Retry saved
-          transaction' : 'Submit'}}</button></div>
+      <div class="text-center mt-3" *ngIf="!isReadOnly && !isLockedFinancialYear">
+        <button mat-raised-button color="primary" (click)="submit()"
+          [disabled]="isSaving || dataLoading || storageError || !CanCreate || isBalanceInsufficient">
+          {{ pendingTransaction ? 'Retry saved transaction' : (editingVoucherId ? ('Update Schedule (' + TrnNo + ')') : 'Submit') }}
+        </button>
+      </div>
+      <div class="text-center mt-3 d-flex justify-content-center gap-2" *ngIf="isReadOnly">
+        <button mat-stroked-button color="warn" (click)="cancelEdit()">
+          <i class="bi bi-x-circle me-1"></i> Close Read-Only View
+        </button>
+        <button mat-raised-button color="primary" routerLink="/admin/verify-transactions">
+          <i class="bi bi-arrow-left me-1"></i> Back to Verify Transactions
+        </button>
+      </div>
     </div>
   </div>
   <div class="card">

@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
@@ -15,6 +16,14 @@ export class ScheduleComponent implements OnInit, OnDestroy {
   showViewModal = false;
   viewLoading = false;
   selectedVoucher: any = null;
+  editingVoucherId: number | null = null;
+  isReadOnly = false;
+  currentFinancialYear: any = null;
+  isLockedFinancialYear = false;
+  lockedFYName = '';
+  minVoucherDate: Date | null = null;
+  maxVoucherDate: Date | null = null;
+  TrnNo = 'Assigned on save';
   SocietyList: any[] = [];
   HeadList: any[] = [];
   headSearchText = '';
@@ -84,7 +93,8 @@ export class ScheduleComponent implements OnInit, OnDestroy {
     return (months[m - 1] || yyyymm.substring(4, 6)) + '-' + yyyymm.substring(0, 4);
   }
   constructor(private service: AppService, private localService: LocalService,
-    private loadData: LoadDataService, private toastr: ToastrService) { }
+    private loadData: LoadDataService, private toastr: ToastrService,
+    private route: ActivatedRoute, private router: Router) { }
 
   ngOnInit() {
     this.resetLine();
@@ -92,7 +102,22 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       const pending = sessionStorage.getItem(this.pendingKey());
       if (pending) this.pendingTransaction = JSON.parse(this.localService.decrypt(pending));
     } catch { this.storageError = true; this.toastr.error('Unable to restore the pending transaction. Contact the administrator before posting.'); }
+    this.loadData.getCurrentFinancialYear(this.service, (fy: any) => {
+      this.currentFinancialYear = fy;
+      if (fy) {
+        this.minVoucherDate = new Date(fy.StartDate);
+        this.maxVoucherDate = new Date(fy.EndDate);
+        this.checkFinancialYearLock();
+      }
+    });
     this.getSetup();
+    this.route.queryParams.subscribe(params => {
+      if (params['viewVoucherId']) {
+        this.loadForEdit(Number(params['viewVoucherId']), true);
+      } else if (params['editVoucherId']) {
+        this.loadForEdit(Number(params['editVoucherId']), false);
+      }
+    });
   }
   ngOnDestroy() { this.contextRequest++; this.memberRequest++; }
   pendingKey() { return 'SCHEDULEPending:' + this.localService.getEmployeeDetail().StaffLoginId; }
@@ -120,9 +145,26 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       this.getContext();
     }, error => { this.dataLoading = false; this.toastr.error(error.error?.Message || 'Unable to load schedule'); });
   }
+  checkFinancialYearLock() {
+    if (!this.currentFinancialYear || !this.VoucherDate) return;
+    const isInside = this.loadData.isDateInCurrentFY(this.VoucherDate, this.currentFinancialYear);
+    if (!isInside) {
+      this.isReadOnly = true;
+      this.isLockedFinancialYear = true;
+      const d = new Date(this.VoucherDate);
+      const year = d.getFullYear();
+      this.lockedFYName = `${year}-${(year + 1).toString().slice(-2)}`;
+    } else if (this.isLockedFinancialYear) {
+      this.isLockedFinancialYear = false;
+      this.isReadOnly = false;
+    }
+  }
+
   getContext() {
     const current = ++this.contextRequest;
     this.BalanceList = []; this.MemberBalance = null; this.FinancialYearName = ''; this.VoucherList = [];
+    this.checkFinancialYearLock();
+
     if (!this.SocietyId || !this.VoucherDate) return;
     this.service.accounting('JournalContext', this.request({ SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), HeadId: this.Line.HeadId || 0, MemberId: this.Line.MemberId || null })).subscribe((response: any) => {
       if (current != this.contextRequest) return;
@@ -386,7 +428,7 @@ export class ScheduleComponent implements OnInit, OnDestroy {
     XLSX.writeFile(book, 'schedule-template.xlsx');
   }
   submit() {
-    if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate) return;
+    if (this.dataLoading || this.isSaving || this.storageError || !this.CanCreate || this.isReadOnly) return;
     if (this.isBalanceInsufficient) {
       this.toastr.error(this.balanceWarningMessage);
       const headElem = document.getElementById('sourceHeadField');
@@ -399,7 +441,16 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       if (!payload) return;
       const defaultNarr = this.SourceMonth ? 'Payroll recovery ' + this.SourceMonth : 'Schedule entry';
       const narration = this.Narration && this.Narration.trim() ? this.Narration.trim() : defaultNarr;
-      this.pendingTransaction = { ...payload, SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), Narration: narration, ChequeNo: '', ExternalReference: this.ExternalReference, RequestKey: crypto.randomUUID() };
+      this.pendingTransaction = { 
+        ...payload, 
+        VoucherId: this.editingVoucherId,
+        SocietyId: this.SocietyId, 
+        VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), 
+        Narration: narration, 
+        ChequeNo: '', 
+        ExternalReference: this.ExternalReference, 
+        RequestKey: crypto.randomUUID() 
+      };
       try { sessionStorage.setItem(this.pendingKey(), this.localService.encrypt(JSON.stringify(this.pendingTransaction)).toString()); }
       catch { this.pendingTransaction = null; this.toastr.error('Enable session storage to retain a safe retry'); return; }
     }
@@ -407,14 +458,100 @@ export class ScheduleComponent implements OnInit, OnDestroy {
     this.service.accounting('SaveTransaction', this.request(this.pendingTransaction)).subscribe((response: any) => {
       this.isSaving = false;
       if (response.Message != ConstantData.SuccessMessage) { this.toastr.error(response.Message); return; }
-      sessionStorage.removeItem(this.pendingKey()); this.pendingTransaction = null; this.clearImport();
+      sessionStorage.removeItem(this.pendingKey());
+      const wasEdit = !!this.editingVoucherId;
+      const assignedTrnNo = response.VoucherNumber || this.TrnNo;
+      this.pendingTransaction = null; this.clearImport();
       this.Narration = ''; this.ExternalReference = ''; this.ChequeNo = ''; this.resetLine(); this.getContext();
-      this.toastr.success('Schedule posted: ' + response.VoucherNumber);
+      if (wasEdit) {
+        this.toastr.success('Schedule ' + assignedTrnNo + ' updated successfully!');
+        this.editingVoucherId = null;
+        this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+      } else {
+        this.toastr.success('Schedule submitted for verification: ' + assignedTrnNo);
+      }
     }, error => {
       this.isSaving = false;
       if ([400, 401, 403, 404, 409].includes(error.status)) { sessionStorage.removeItem(this.pendingKey()); this.pendingTransaction = null; }
       this.toastr.error(error.error?.Message || 'Confirmation unavailable. Retry this same transaction.');
     });
+  }
+
+  loadForEdit(voucherId: number, isView = false) {
+    this.dataLoading = true;
+    this.service.accounting('TransactionDetail', this.request({
+      SourceId: voucherId,
+      VoucherId: voucherId,
+      SourceType: 'SCHEDULE',
+      SocietyId: this.SocietyId || 0
+    })).subscribe({
+      next: (response: any) => {
+        this.dataLoading = false;
+        if (response.Message !== ConstantData.SuccessMessage || !response.Voucher) {
+          this.toastr.error(response.Message || 'Failed to load schedule');
+          return;
+        }
+        const v = response.Voucher;
+        const isPosted = v.Status === 'POSTED';
+        this.isReadOnly = isPosted || isView;
+        this.editingVoucherId = v.VoucherId;
+        this.TrnNo = v.VoucherNumber;
+        this.SocietyId = v.SocietyId;
+        this.VoucherDate = this.loadData.loadDate(v.VoucherDate);
+        this.ExternalReference = v.ExternalReference || v.VoucherNo || '';
+        this.Narration = v.Narration || '';
+
+        const settlementLine = (v.Lines || []).find((l: any) => !l.MemberId);
+        if (settlementLine) {
+          this.SettlementHeadId = settlementLine.HeadId;
+        }
+        const memberLines = (v.Lines || []).filter((l: any) => l.MemberId);
+        this.Lines = memberLines.map((l: any) => ({
+          HeadId: l.HeadId,
+          HeadName: l.HeadName,
+          MemberId: l.MemberId,
+          MemberNo: l.MemberNo,
+          StaffNo: l.StaffNo,
+          MemberName: l.MemberName,
+          LoanId: l.LoanId,
+          DepositAccountId: l.DepositAccountId,
+          Component: l.Component,
+          Debit: l.Debit,
+          Credit: l.Credit,
+          Narration: l.Narration || '',
+          Issue: ''
+        }));
+
+        this.resetLine();
+        this.checkFinancialYearLock();
+        if (this.isLockedFinancialYear) {
+          this.toastr.warning(`This transaction belongs to prior Financial Year ${this.lockedFYName}. Opened in Read-Only mode.`);
+        }
+        this.getContext();
+        if (this.isReadOnly) {
+          this.toastr.info(`Loaded Schedule ${this.TrnNo} in Read-Only mode.`);
+        } else {
+          this.toastr.info(`Loaded Schedule ${this.TrnNo} for editing.`);
+        }
+      },
+      error: (err: any) => {
+        this.dataLoading = false;
+        this.toastr.error(err.error?.Message || 'Error loading schedule');
+      }
+    });
+  }
+
+  cancelEdit() {
+    this.editingVoucherId = null;
+    this.isReadOnly = false;
+    this.isLockedFinancialYear = false;
+    this.TrnNo = 'Assigned on save';
+    this.Lines = [];
+    this.Narration = '';
+    this.ExternalReference = '';
+    this.resetLine();
+    this.router.navigate([], { relativeTo: this.route, queryParams: {} });
+    this.getContext();
   }
 
   viewVoucher(voucher: any) {
