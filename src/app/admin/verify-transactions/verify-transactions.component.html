@@ -195,9 +195,9 @@
                   {{ tx.TxnType }}
                 </span>
               </td>
-              <td class="font-monospace fw-bold text-dark">{{ tx.VoucherNumber }}</td>
-              <td class="font-monospace text-muted">{{ tx.RVNo || '-' }}</td>
-              <td class="text-end fw-bold text-dark font-monospace">
+              <td class=" fw-bold text-dark">{{ tx.VoucherNumber }}</td>
+              <td class=" text-muted">{{ tx.RVNo || '-' }}</td>
+              <td class="text-end fw-bold text-dark ">
                 ₹{{ tx.Amount | number:'1.2-2' }}
               </td>
               <td class="text-truncate" style="max-width: 280px;" [title]="tx.Narration">
@@ -255,7 +255,7 @@
         <h5 class="card-title m-0 py-0 fw-bold fs-6 text-dark">
           <i class="bi bi-receipt me-1 text-info"></i>
           Transaction Details
-          <span *ngIf="selectedTransaction" class="text-primary font-monospace ms-2">
+          <span *ngIf="selectedTransaction" class="text-primary  ms-2">
             · {{ selectedTransaction.VoucherNumber }} ({{ selectedTransaction.TxnType }})
           </span>
         </h5>
@@ -265,10 +265,10 @@
       </div>
 
       <div *ngIf="selectedTransaction" class="d-flex align-items-center gap-3">
-        <span class="badge bg-light text-dark border font-monospace">
+        <span class="badge bg-light text-dark border ">
           Debit: ₹{{ totalDebit | number:'1.2-2' }}
         </span>
-        <span class="badge bg-light text-dark border font-monospace">
+        <span class="badge bg-light text-dark border ">
           Credit: ₹{{ totalCredit | number:'1.2-2' }}
         </span>
         <span *ngIf="totalDebit === totalCredit && totalDebit > 0" class="badge bg-success text-white">
@@ -309,9 +309,9 @@
           </thead>
           <tbody>
             <tr *ngFor="let line of transactionLines">
-              <td class="text-center font-monospace text-muted">{{ line.LineNumber }}</td>
+              <td class="text-center  text-muted">{{ line.LineNumber }}</td>
               <td class="fw-semibold text-dark">{{ line.HeadName }}</td>
-              <td class="font-monospace">{{ line.StaffNo || '-' }}</td>
+              <td class="">{{ line.StaffNo || '-' }}</td>
               <td>
                 <span *ngIf="line.MemberId">
                   <span class="badge bg-light text-dark border me-1">M: {{ line.MemberNo }}</span>
@@ -319,10 +319,10 @@
                 </span>
                 <span *ngIf="!line.MemberId" class="text-muted">-</span>
               </td>
-              <td class="text-end font-monospace" [class.fw-bold]="line.Debit > 0" [class.text-primary]="line.Debit > 0">
+              <td class="text-end " [class.fw-bold]="line.Debit > 0" [class.text-primary]="line.Debit > 0">
                 {{ line.Debit > 0 ? (line.Debit | number:'1.2-2') : '-' }}
               </td>
-              <td class="text-end font-monospace" [class.fw-bold]="line.Credit > 0" [class.text-success]="line.Credit > 0">
+              <td class="text-end " [class.fw-bold]="line.Credit > 0" [class.text-success]="line.Credit > 0">
                 {{ line.Credit > 0 ? (line.Credit | number:'1.2-2') : '-' }}
               </td>
               <td class="small text-muted">{{ line.Narration || '-' }}</td>
@@ -337,8 +337,8 @@
           <tfoot *ngIf="transactionLines.length > 0" class="table-light fw-bold">
             <tr>
               <td colspan="4" class="text-end">Total:</td>
-              <td class="text-end font-monospace text-primary">₹{{ totalDebit | number:'1.2-2' }}</td>
-              <td class="text-end font-monospace text-success">₹{{ totalCredit | number:'1.2-2' }}</td>
+              <td class="text-end  text-primary">₹{{ totalDebit | number:'1.2-2' }}</td>
+              <td class="text-end  text-success">₹{{ totalCredit | number:'1.2-2' }}</td>
               <td></td>
             </tr>
           </tfoot>
