@@ -111,6 +111,10 @@ export class AppService {
     return this.http.post(this.apiUrl + 'Accounting/' + action, obj, { headers: this.headers });
   }
 
+  getCurrentFinancialYear(obj: any = {}) {
+    return this.http.post(this.apiUrl + "FinancialYear/GetCurrentFinancialYear", obj, { headers: this.headers });
+  }
+
   getFinancialYearList(obj: any) {
     return this.http.post(this.apiUrl + "FinancialYear/FinancialYearList", obj, { headers: this.headers })
   }
