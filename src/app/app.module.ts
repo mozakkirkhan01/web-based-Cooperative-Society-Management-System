@@ -55,6 +55,10 @@ import { ContraComponent } from './admin/contra/contra.component';
 import { TransferComponent } from './admin/transfer/transfer.component';
 import { ScheduleComponent } from './admin/schedule/schedule.component';
 import { MemberPassbookComponent } from './admin/member-passbook/member-passbook.component';
+import { TrialBalanceComponent } from './admin/trial-balance/trial-balance.component';
+import { VerifyTransactionsComponent } from './admin/verify-transactions/verify-transactions.component';
+import { LoanApplicationComponent } from './admin/loan-application/loan-application.component';
+import { LoanPurposeComponent } from './admin/loan-purpose/loan-purpose.component';
 
 @NgModule({
   declarations: [
@@ -95,7 +99,11 @@ import { MemberPassbookComponent } from './admin/member-passbook/member-passbook
     ContraComponent,
     TransferComponent,
     ScheduleComponent,
-    MemberPassbookComponent
+    MemberPassbookComponent,
+    TrialBalanceComponent,
+    VerifyTransactionsComponent,
+    LoanApplicationComponent,
+    LoanPurposeComponent
   ],
   imports: [
     BrowserModule,
