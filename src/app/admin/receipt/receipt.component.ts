@@ -7,7 +7,7 @@ import { LoadDataService } from '../../utils/load-data.service';
 import { Status, BankCashType, DebitCreditType, HeadType } from '../../utils/enum';
 import { ActionModel, RequestModel, StaffLoginModel } from '../../utils/interface';
 import { LocalService } from '../../utils/local.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 declare var $: any;
 @Component({
   selector: 'app-receipt',
@@ -16,6 +16,11 @@ declare var $: any;
 })
 export class ReceiptComponent {
   isReadOnly = false;
+  currentFinancialYear: any = null;
+  isLockedFinancialYear: boolean = false;
+  lockedFYName: string = '';
+  minReceiptDate: Date | null = null;
+  maxReceiptDate: Date | null = null;
   balanceRefresh = 0;
   SocietyList: any[] = [];
   AccountingBalance: any = {};
@@ -66,12 +71,14 @@ export class ReceiptComponent {
     private toastr: ToastrService,
     private loadData: LoadDataService,
     private localService: LocalService,
+    private route: ActivatedRoute,
     private router: Router
   ) { }
 
   ngOnInit(): void {
     this.staffLogin = this.localService.getEmployeeDetail();
     this.validiateMenu();
+    this.loadCurrentFinancialYear();
     // this.getReceiptList();
     this.getMemberList();
     this.getHeadList();
@@ -90,11 +97,19 @@ export class ReceiptComponent {
       this.isSaving = true;
       this.toastr.error("Unable to restore the pending receipt. Contact the administrator.");
     }
+    this.route.queryParams.subscribe(params => {
+      if (params['viewReceiptId']) {
+        this.loadReceiptForEdit(Number(params['viewReceiptId']), true);
+      } else if (params['editReceiptId']) {
+        this.loadReceiptForEdit(Number(params['editReceiptId']), false);
+      }
+    });
   }
 
   validiateMenu() {
+    const cleanUrl = (this.router.url || '').split('?')[0].split('#')[0];
     var obj: RequestModel = {
-      request: this.localService.encrypt(JSON.stringify({ Url: this.router.url, StaffLoginId: this.staffLogin.StaffLoginId })).toString()
+      request: this.localService.encrypt(JSON.stringify({ Url: cleanUrl, StaffLoginId: this.staffLogin.StaffLoginId })).toString()
     }
     this.dataLoading = true
     this.service.validiateMenu(obj).subscribe((response: any) => {
@@ -106,10 +121,42 @@ export class ReceiptComponent {
     }))
   }
 
+  loadCurrentFinancialYear() {
+    this.loadData.getCurrentFinancialYear(this.service, (fy: any) => {
+      this.currentFinancialYear = fy;
+      if (fy) {
+        this.minReceiptDate = new Date(fy.StartDate);
+        this.maxReceiptDate = new Date(fy.EndDate);
+        this.checkFinancialYearLock();
+      }
+    });
+  }
+
+  checkFinancialYearLock() {
+    if (!this.currentFinancialYear || !this.Receipt?.ReceiptDate) return;
+    const isInside = this.loadData.isDateInCurrentFY(this.Receipt.ReceiptDate, this.currentFinancialYear);
+    if (!isInside) {
+      this.isReadOnly = true;
+      this.isLockedFinancialYear = true;
+      const d = new Date(this.Receipt.ReceiptDate);
+      const year = d.getFullYear();
+      this.lockedFYName = `${year}-${(year + 1).toString().slice(-2)}`;
+    } else if (this.isLockedFinancialYear) {
+      this.isLockedFinancialYear = false;
+      this.isReadOnly = false;
+    }
+  }
+
+  onDateChange() {
+    this.checkFinancialYearLock();
+    this.getReceiptBalances();
+  }
+
   @ViewChild('formReceipt') formReceipt: NgForm;
   resetForm() {
     if (this.isSaving || this.pendingReceipt) return;
     this.isReadOnly = false;
+    this.isLockedFinancialYear = false;
     this.Receipt = {
       ReceiptId: 0,
       TrnNo: 'Assigned on save',
@@ -221,7 +268,7 @@ export class ReceiptComponent {
     } else {
       this.Receipt.HeadBalance = 0;
     }
-    if (!this.isMemberHeadSelected()) {
+    if (this.HeadList.length > 0 && !this.isMemberHeadSelected()) {
       this.clearMember();
     }
     this.getReceiptBalances();
@@ -364,6 +411,10 @@ onBankCashTypeChange() {
   }
   saveReceipt() {
     if (this.isSaving) return;
+    if (this.isLockedFinancialYear || !this.loadData.isDateInCurrentFY(this.Receipt.ReceiptDate, this.currentFinancialYear)) {
+      this.toastr.error(`Transactions outside the current financial year (${this.currentFinancialYear?.FinancialYearName || 'current'}) are locked in Read-Only mode and cannot be saved.`);
+      return;
+    }
     if (!this.action.ResponseReceived || !(this.Receipt.ReceiptId > 0 ? this.action.CanEdit : this.action.CanCreate)) {
       this.toastr.error("You do not have permission to save this receipt");
       return;
@@ -556,6 +607,10 @@ onBankCashTypeChange() {
     this.isReadOnly = true;
     this.transactionNoRequest++;
     this.Receipt = { ...obj, ReceiptDate: this.loadData.loadDate(obj.ReceiptDate), Balance: null };
+    if (!this.Receipt.SocietyId && this.SocietyList && this.SocietyList.length > 0) {
+      this.Receipt.SocietyId = this.SocietyList[0].SocietyId;
+    }
+    this.checkFinancialYearLock();
     if (this.formReceipt) this.formReceipt.resetForm(this.Receipt);
     this.isSubmitted = false;
     this.onHeadChange(this.Receipt.HeadId);
@@ -565,16 +620,50 @@ onBankCashTypeChange() {
 
   editReceipt(obj: any) {
     this.isReadOnly = false;
-    if (this.isSaving || this.pendingReceipt || !this.action.CanEdit) return;
+    this.isLockedFinancialYear = false;
+    if (this.isSaving || this.pendingReceipt || (this.action.ResponseReceived && !this.action.CanEdit)) return;
     // Edit a copy; the displayed row changes only after a successful save.
     this.transactionNoRequest++;
-    this.isReadOnly = false;
     this.Receipt = { ...obj, ReceiptDate: this.loadData.loadDate(obj.ReceiptDate), Balance: null };
+    if (!this.Receipt.SocietyId && this.SocietyList && this.SocietyList.length > 0) {
+      this.Receipt.SocietyId = this.SocietyList[0].SocietyId;
+    }
+    this.checkFinancialYearLock();
+    if (this.isLockedFinancialYear) {
+      this.toastr.warning(`This receipt belongs to prior Financial Year ${this.lockedFYName}. Opened in Read-Only mode.`);
+    }
     if (this.formReceipt) this.formReceipt.resetForm(this.Receipt);
     this.isSubmitted = false;
     this.onHeadChange(this.Receipt.HeadId);
     this.onBankChange(this.Receipt.BankId);
     this.onBankCashTypeChange();
+  }
 
+  loadReceiptForEdit(receiptId: number, isView = false) {
+    const obj: RequestModel = {
+      request: this.localService.encrypt(JSON.stringify({
+        ReceiptId: receiptId,
+        PageNumber: 1,
+        PageSize: 1,
+        StaffLoginId: this.staffLogin.StaffLoginId
+      })).toString()
+    };
+    this.service.getReceiptList(obj).subscribe((r1: any) => {
+      if (r1.Message === ConstantData.SuccessMessage && r1.ReceiptList && r1.ReceiptList.length > 0) {
+        const item = r1.ReceiptList[0];
+        if (isView) {
+          this.viewReceipt(item);
+          this.toastr.info(`Loaded Receipt ${item.TrnNo} in Read-Only mode.`);
+        } else {
+          this.editReceipt(item);
+          this.toastr.info(`Loaded Receipt ${item.TrnNo} for editing.`);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        this.toastr.warning(`Receipt with ID ${receiptId} could not be loaded.`);
+      }
+    }, (err: any) => {
+      this.toastr.error(err.error?.Message || "Error loading receipt record");
+    });
   }
 }
