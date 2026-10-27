@@ -745,6 +745,26 @@
 
 
 
+/* Toast Notification Positioning - positioned slightly below fixed header (46px) so top header menu remains clear */
+#toast-container.toast-top-right,
+.toast-top-right {
+  top: 60px !important;
+  right: 15px !important;
+}
+
+#toast-container.toast-top-left,
+.toast-top-left {
+  top: 60px !important;
+  left: 15px !important;
+}
+
+#toast-container.toast-top-center,
+.toast-top-center,
+#toast-container.toast-top-full-width,
+.toast-top-full-width {
+  top: 60px !important;
+}
+
 @media print {
   body:has(.member-passbook) #header,
   body:has(.member-passbook) #sidebar,
