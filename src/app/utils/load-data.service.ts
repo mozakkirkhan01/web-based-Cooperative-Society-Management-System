@@ -26,6 +26,30 @@ export class LoadDataService {
     return value;
   }
 
+  cachedCurrentFY: any = null;
+
+  getCurrentFinancialYear(service: any, callback?: (fy: any) => void) {
+    if (this.cachedCurrentFY) {
+      if (callback) callback(this.cachedCurrentFY);
+      return;
+    }
+    service.getCurrentFinancialYear({}).subscribe((res: any) => {
+      if (res && res.Message === ConstantData.SuccessMessage && res.CurrentFinancialYear) {
+        this.cachedCurrentFY = res.CurrentFinancialYear;
+        if (callback) callback(this.cachedCurrentFY);
+      }
+    }, () => {});
+  }
+
+  isDateInCurrentFY(date: any, fy?: any): boolean {
+    const current = fy || this.cachedCurrentFY;
+    if (!current || !date) return true;
+    const d = new Date(date).setHours(0,0,0,0);
+    const start = new Date(current.StartDate).setHours(0,0,0,0);
+    const end = new Date(current.EndDate).setHours(23,59,59,999);
+    return d >= start && d <= end;
+  }
+
   validiateMenu(response: any, toastr: any, router: Router): ActionModel {
     var action: ActionModel = {} as ActionModel;
     if (response.Message == ConstantData.SuccessMessage) {
