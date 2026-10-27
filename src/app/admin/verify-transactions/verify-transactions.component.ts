@@ -19,6 +19,9 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
 
   // Filter state
   txnType = 'ALL';
+  selectedFYId = 0;
+  financialYears: any[] = [];
+  currentFinancialYear: any = null;
   dateFrom: any = null;
   dateTo: any = null;
   searchText = '';
@@ -85,6 +88,7 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
 
     const payload = {
       TxnType: this.txnType,
+      FinancialYearId: this.selectedFYId,
       DateFrom: this.dateFrom ? this.loadData.loadDateYMD(this.dateFrom) : null,
       DateTo: this.dateTo ? this.loadData.loadDateYMD(this.dateTo) : null,
       Search: this.searchText ? this.searchText.trim() : '',
@@ -100,6 +104,8 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
         }
 
         this.transactions = response.Transactions || [];
+        this.financialYears = response.FinancialYears || [];
+        this.currentFinancialYear = response.CurrentFinancialYear || null;
 
         // If target voucher from query params or previously selected
         let toSelect = null;
@@ -172,7 +178,7 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
   toggleSelectAll(): void {
     this.selectAll = !this.selectAll;
     if (this.selectAll) {
-      this.transactions.forEach(x => this.selectedIds.add(x.VoucherId));
+      this.transactions.filter(x => !x.IsLockedFY).forEach(x => this.selectedIds.add(x.VoucherId));
     } else {
       this.selectedIds.clear();
     }
@@ -205,11 +211,97 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
     return [];
   }
 
+  // Action: View in Read-Only Mode
+  viewSelected(tx?: any): void {
+    const item = tx || this.selectedTransaction;
+    if (!item) {
+      this.toastr.warning('Please select a transaction to view.');
+      return;
+    }
+
+    const txnType = (item.TxnType || '').toUpperCase();
+    if (txnType === 'TRANSFER') {
+      this.router.navigate(['/admin/transfer'], {
+        queryParams: { viewVoucherId: item.VoucherId }
+      });
+    } else if (txnType === 'CONTRA') {
+      this.router.navigate(['/admin/contra'], {
+        queryParams: { viewVoucherId: item.VoucherId }
+      });
+    } else if (txnType === 'SCHEDULE') {
+      this.router.navigate(['/admin/schedule'], {
+        queryParams: { viewVoucherId: item.VoucherId }
+      });
+    } else if (txnType === 'PAYMENT') {
+      this.router.navigate(['/admin/payment'], {
+        queryParams: { viewPaymentId: item.PaymentId, viewVoucherId: item.VoucherId }
+      });
+    } else if (txnType === 'RECEIPT') {
+      this.router.navigate(['/admin/receipt'], {
+        queryParams: { viewReceiptId: item.ReceiptId, viewVoucherId: item.VoucherId }
+      });
+    } else {
+      this.toastr.info(`View for ${txnType} transactions is not configured.`);
+    }
+  }
+
+  // Action: Edit
+  editSelected(tx?: any): void {
+    const item = tx || this.selectedTransaction;
+    if (!item) {
+      this.toastr.warning('Please select a transaction to edit.');
+      return;
+    }
+
+    if (item.IsLockedFY) {
+      this.toastr.info(`Opening transaction in Read-Only mode (Locked to Financial Year ${item.FinancialYearName}).`);
+      this.viewSelected(item);
+      return;
+    }
+
+    if (item.Status === 'POSTED') {
+      this.toastr.info('Opening verified transaction in Read-Only mode. (Click Unmark Verification to unlock editing.)');
+      this.viewSelected(item);
+      return;
+    }
+
+    const txnType = (item.TxnType || '').toUpperCase();
+    if (txnType === 'TRANSFER') {
+      this.router.navigate(['/admin/transfer'], {
+        queryParams: { editVoucherId: item.VoucherId }
+      });
+    } else if (txnType === 'CONTRA') {
+      this.router.navigate(['/admin/contra'], {
+        queryParams: { editVoucherId: item.VoucherId }
+      });
+    } else if (txnType === 'SCHEDULE') {
+      this.router.navigate(['/admin/schedule'], {
+        queryParams: { editVoucherId: item.VoucherId }
+      });
+    } else if (txnType === 'PAYMENT') {
+      this.router.navigate(['/admin/payment'], {
+        queryParams: { editPaymentId: item.PaymentId, editVoucherId: item.VoucherId }
+      });
+    } else if (txnType === 'RECEIPT') {
+      this.router.navigate(['/admin/receipt'], {
+        queryParams: { editReceiptId: item.ReceiptId, editVoucherId: item.VoucherId }
+      });
+    } else {
+      this.toastr.info(`Direct editing for ${txnType} transactions is not configured.`);
+    }
+  }
+
   // Action: Verify
   verifySelected(): void {
     const ids = this.getEffectiveSelectedIds();
     if (ids.length === 0) {
       this.toastr.warning('Please select at least one transaction to verify.');
+      return;
+    }
+
+    const lockedSelected = this.transactions.filter(x => ids.includes(x.VoucherId) && x.IsLockedFY);
+    if (lockedSelected.length > 0) {
+      this.toastr.warning('Cannot verify transaction(s) from prior Financial Year (' + lockedSelected[0].FinancialYearName + '). They are locked in Read-Only mode.');
       return;
     }
 
@@ -236,12 +328,13 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
   }
 
   verifyAll(): void {
-    if (this.transactions.length === 0) {
-      this.toastr.warning('No pending transactions to verify.');
+    const eligible = this.transactions.filter(x => !x.IsLockedFY);
+    if (eligible.length === 0) {
+      this.toastr.warning('No current financial year transactions to verify.');
       return;
     }
 
-    const ids = this.transactions.map(x => x.VoucherId);
+    const ids = eligible.map(x => x.VoucherId);
     if (!confirm(`Are you sure you want to verify ALL ${ids.length} pending transaction(s)?`)) {
       return;
     }
@@ -272,6 +365,12 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const lockedSelected = this.transactions.filter(x => ids.includes(x.VoucherId) && x.IsLockedFY);
+    if (lockedSelected.length > 0) {
+      this.toastr.warning('Cannot delete transaction(s) from prior Financial Year (' + lockedSelected[0].FinancialYearName + '). They are locked in Read-Only mode.');
+      return;
+    }
+
     if (!confirm(`Are you sure you want to cancel and delete ${ids.length} selected unverified transaction(s)?`)) {
       return;
     }
@@ -295,12 +394,13 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
   }
 
   deleteAll(): void {
-    if (this.transactions.length === 0) {
-      this.toastr.warning('No unverified transactions to delete.');
+    const eligible = this.transactions.filter(x => !x.IsLockedFY);
+    if (eligible.length === 0) {
+      this.toastr.warning('No unverified transactions available in the current financial year to delete.');
       return;
     }
 
-    const ids = this.transactions.map(x => x.VoucherId);
+    const ids = eligible.map(x => x.VoucherId);
     if (!confirm(`CAUTION: Are you sure you want to DELETE ALL ${ids.length} unverified transaction(s)?`)) {
       return;
     }
@@ -353,6 +453,12 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
     const ids = this.getEffectiveSelectedIds();
     if (ids.length === 0) {
       this.toastr.warning('Please select at least one posted transaction to unmark.');
+      return;
+    }
+
+    const lockedSelected = this.transactions.filter(x => ids.includes(x.VoucherId) && x.IsLockedFY);
+    if (lockedSelected.length > 0) {
+      this.toastr.warning('Cannot unmark transaction(s) from prior Financial Year (' + lockedSelected[0].FinancialYearName + '). They are locked in Read-Only mode.');
       return;
     }
 

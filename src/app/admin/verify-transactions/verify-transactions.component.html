@@ -11,7 +11,7 @@
       </nav>
     </div>
     <div>
-      <span *ngIf="!isUnmarkMode" class="badge bg-primary-subtle text-primary border border-primary px-3 py-2 fs-6">
+      <span *ngIf="!isUnmarkMode" class="badge bg-light text-primary border border-primary px-3 py-2 fs-6">
         <i class="bi bi-clock-history me-1"></i> Pending Verification Mode
       </span>
       <span *ngIf="isUnmarkMode" class="badge bg-warning text-dark border border-warning px-3 py-2 fs-6">
@@ -38,7 +38,17 @@
   <div class="card mb-3 shadow-sm border-0">
     <div class="card-body p-3">
       <div class="row g-2 align-items-end">
-        <div class="col-md-3 col-sm-6">
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Financial Year</label>
+          <select class="form-select form-select-sm" [(ngModel)]="selectedFYId" (change)="onFilter()">
+            <option [value]="0">All Years</option>
+            <option *ngFor="let fy of financialYears" [value]="fy.FinancialYearId">
+              {{fy.FinancialYearName}} {{fy.IsCurrent ? '(Current)' : '(Locked)'}}
+            </option>
+          </select>
+        </div>
+
+        <div class="col-md-2 col-sm-6">
           <label class="form-label small fw-semibold text-muted mb-1">Transaction Type</label>
           <select class="form-select form-select-sm" [(ngModel)]="txnType" (change)="onFilter()">
             <option value="ALL">All Types</option>
@@ -61,7 +71,7 @@
           <input type="date" class="form-control form-control-sm" [(ngModel)]="dateTo" (change)="onFilter()">
         </div>
 
-        <div class="col-md-3 col-sm-6">
+        <div class="col-md-2 col-sm-6">
           <label class="form-label small fw-semibold text-muted mb-1">Search</label>
           <div class="input-group input-group-sm">
             <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
@@ -90,8 +100,8 @@
           {{ isUnmarkMode ? 'Verified Transactions' : 'Pending Transactions' }}
           <span class="badge bg-secondary ms-1">{{ transactions.length }}</span>
         </h5>
-        <span *ngIf="selectedIds.size > 0" class="badge bg-info-subtle text-info-emphasis border border-info">
-          {{ selectedIds.size }} selected
+        <span *ngIf="selectedIds.size > 0" class="badge selected-badge shadow-sm">
+          <i class="bi bi-check2-square me-1"></i> {{ selectedIds.size }} selected
         </span>
       </div>
 
@@ -104,6 +114,12 @@
           </button>
           <button class="btn btn-outline-success btn-sm px-2" (click)="verifyAll()" [disabled]="isProcessing || transactions.length === 0" title="Verify all listed transactions">
             <i class="bi bi-check-all me-1"></i> Verify All
+          </button>
+          <button class="btn btn-outline-secondary btn-sm px-3 shadow-sm" (click)="viewSelected()" [disabled]="isProcessing || !selectedTransaction" title="View transaction details in Read-Only mode">
+            <i class="bi bi-eye me-1"></i> View
+          </button>
+          <button class="btn btn-outline-primary btn-sm px-3 shadow-sm" (click)="editSelected()" [disabled]="isProcessing || !selectedTransaction" title="Edit selected transaction">
+            <i class="bi bi-pencil-square me-1"></i> Edit
           </button>
           <button class="btn btn-danger btn-sm px-3 shadow-sm" (click)="deleteSelected()" [disabled]="isProcessing || transactions.length === 0" title="Delete selected draft transaction(s)">
             <i class="bi bi-trash3 me-1"></i> Delete
@@ -118,6 +134,9 @@
 
         <!-- Unmark Mode Buttons -->
         <ng-container *ngIf="isUnmarkMode">
+          <button class="btn btn-outline-secondary btn-sm px-3 shadow-sm" (click)="viewSelected()" [disabled]="isProcessing || !selectedTransaction" title="View transaction details in Read-Only mode">
+            <i class="bi bi-eye me-1"></i> View
+          </button>
           <button class="btn btn-warning btn-sm px-3 shadow-sm text-dark fw-bold" (click)="unmarkSelected()" [disabled]="isProcessing || transactions.length === 0">
             <i class="bi bi-arrow-counterclockwise me-1"></i> Unmark Selected
           </button>
@@ -153,17 +172,24 @@
               <th>Narration</th>
               <th>Status</th>
               <th>Created By</th>
+              <th class="text-center" style="width: 85px;">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let tx of transactions"
                 [class.table-primary]="selectedTransaction?.VoucherId === tx.VoucherId"
                 (click)="selectTransaction(tx)"
+                (dblclick)="isUnmarkMode ? viewSelected(tx) : editSelected(tx)"
                 style="cursor: pointer;">
               <td class="text-center" (click)="$event.stopPropagation()">
-                <input type="checkbox" class="form-check-input" [checked]="isSelected(tx)" (click)="toggleSelect(tx, $event)">
+                <input type="checkbox" class="form-check-input" [checked]="isSelected(tx)" [disabled]="tx.IsLockedFY" [title]="tx.IsLockedFY ? 'Locked: Prior Financial Year (' + tx.FinancialYearName + ')' : 'Select transaction'" (click)="toggleSelect(tx, $event)">
               </td>
-              <td class="fw-semibold">{{ tx.VoucherDate | date:'dd-MM-yyyy' }}</td>
+              <td class="fw-semibold">
+                {{ tx.VoucherDate | date:'dd-MM-yyyy' }}
+                <span *ngIf="tx.IsLockedFY" class="badge bg-secondary text-white ms-1" [title]="'Locked: Financial Year ' + tx.FinancialYearName" style="font-size: 10px;">
+                  <i class="bi bi-lock-fill"></i> FY {{ tx.FinancialYearName }}
+                </span>
+              </td>
               <td>
                 <span class="badge {{ getTypeBadgeClass(tx.TxnType) }} px-2 py-1">
                   {{ tx.TxnType }}
@@ -178,10 +204,10 @@
                 {{ tx.Narration || '-' }}
               </td>
               <td>
-                <span *ngIf="tx.Status === 'DRAFT'" class="badge bg-warning-subtle text-warning-emphasis border border-warning">
+                <span *ngIf="tx.Status === 'DRAFT'" class="badge status-pending px-2 py-1">
                   <i class="bi bi-clock me-1"></i> Pending
                 </span>
-                <span *ngIf="tx.Status === 'POSTED'" class="badge bg-success-subtle text-success-emphasis border border-success">
+                <span *ngIf="tx.Status === 'POSTED'" class="badge status-verified px-2 py-1">
                   <i class="bi bi-check-circle me-1"></i> Verified
                 </span>
               </td>
@@ -191,10 +217,26 @@
                   {{ tx.CreatedOn | date:'dd-MM hh:mm a' }}
                 </span>
               </td>
+              <td class="text-center" (click)="$event.stopPropagation()">
+                <div class="d-flex justify-content-center align-items-center gap-1">
+                  <button class="btn btn-sm btn-outline-secondary py-0 px-2 shadow-sm" (click)="viewSelected(tx)" title="View in Read-Only mode">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button *ngIf="tx.Status === 'DRAFT' && !tx.IsLockedFY" class="btn btn-sm btn-outline-primary py-0 px-2 shadow-sm" (click)="editSelected(tx)" title="Edit Transaction">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                  <span *ngIf="tx.IsLockedFY" class="text-secondary small px-1" [title]="'Locked: Prior FY (' + tx.FinancialYearName + ') - Read Only'">
+                    <i class="bi bi-lock-fill"></i>
+                  </span>
+                  <span *ngIf="!tx.IsLockedFY && tx.Status === 'POSTED'" class="text-muted small px-1" title="Locked (Unmark to edit)">
+                    <i class="bi bi-lock-fill"></i>
+                  </span>
+                </div>
+              </td>
             </tr>
 
             <tr *ngIf="transactions.length === 0">
-              <td colspan="9" class="text-center py-5 text-muted">
+              <td colspan="10" class="text-center py-5 text-muted">
                 <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
                 <span *ngIf="!isUnmarkMode">No pending transactions found matching the filter criteria.</span>
                 <span *ngIf="isUnmarkMode">No posted transactions found matching the filter criteria.</span>
@@ -310,7 +352,7 @@
 <div *ngIf="showPasswordModal" class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5); z-index: 1050;" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content shadow-lg border-0">
-      <div class="modal-header bg-warning-subtle text-dark border-bottom py-3">
+      <div class="modal-header bg-warning text-dark border-bottom py-3">
         <h5 class="modal-title fw-bold d-flex align-items-center">
           <i class="bi bi-shield-lock-fill text-warning fs-4 me-2"></i>
           Authorization Required
