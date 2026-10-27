@@ -7,7 +7,7 @@ import { LoadDataService } from '../../utils/load-data.service';
 import { Status, BankCashType, DebitCreditType, HeadType } from '../../utils/enum';
 import { ActionModel, RequestModel, StaffLoginModel } from '../../utils/interface';
 import { LocalService } from '../../utils/local.service';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 declare var $: any;
 
 @Component({
@@ -17,6 +17,11 @@ declare var $: any;
 })
 export class PaymentComponent {
   isReadOnly = false;
+  currentFinancialYear: any = null;
+  isLockedFinancialYear: boolean = false;
+  lockedFYName: string = '';
+  minPaymentDate: Date | null = null;
+  maxPaymentDate: Date | null = null;
   balanceRefresh = 0;
   SocietyList: any[] = [];
   AccountingBalance: any = {};
@@ -66,12 +71,14 @@ export class PaymentComponent {
     private toastr: ToastrService,
     private loadData: LoadDataService,
     private localService: LocalService,
+    private route: ActivatedRoute,
     private router: Router
   ) { }
 
   ngOnInit(): void {
     this.staffLogin = this.localService.getEmployeeDetail();
     this.validiateMenu();
+    this.loadCurrentFinancialYear();
     // this.getPaymentList();
     this.getMemberList();
     this.getHeadList();
@@ -91,11 +98,19 @@ export class PaymentComponent {
         this.isSaving = true;
       }
     }
+    this.route.queryParams.subscribe(params => {
+      if (params['viewPaymentId']) {
+        this.loadPaymentForEdit(Number(params['viewPaymentId']), true);
+      } else if (params['editPaymentId']) {
+        this.loadPaymentForEdit(Number(params['editPaymentId']), false);
+      }
+    });
   }
 
   validiateMenu() {
+    const cleanUrl = (this.router.url || '').split('?')[0].split('#')[0];
     var obj: RequestModel = {
-      request: this.localService.encrypt(JSON.stringify({ Url: this.router.url, StaffLoginId: this.staffLogin.StaffLoginId })).toString()
+      request: this.localService.encrypt(JSON.stringify({ Url: cleanUrl, StaffLoginId: this.staffLogin.StaffLoginId })).toString()
     }
     this.dataLoading = true
     this.service.validiateMenu(obj).subscribe((response: any) => {
@@ -107,10 +122,42 @@ export class PaymentComponent {
     }))
   }
 
+  loadCurrentFinancialYear() {
+    this.loadData.getCurrentFinancialYear(this.service, (fy: any) => {
+      this.currentFinancialYear = fy;
+      if (fy) {
+        this.minPaymentDate = new Date(fy.StartDate);
+        this.maxPaymentDate = new Date(fy.EndDate);
+        this.checkFinancialYearLock();
+      }
+    });
+  }
+
+  checkFinancialYearLock() {
+    if (!this.currentFinancialYear || !this.Payment?.PaymentDate) return;
+    const isInside = this.loadData.isDateInCurrentFY(this.Payment.PaymentDate, this.currentFinancialYear);
+    if (!isInside) {
+      this.isReadOnly = true;
+      this.isLockedFinancialYear = true;
+      const d = new Date(this.Payment.PaymentDate);
+      const year = d.getFullYear();
+      this.lockedFYName = `${year}-${(year + 1).toString().slice(-2)}`;
+    } else if (this.isLockedFinancialYear) {
+      this.isLockedFinancialYear = false;
+      this.isReadOnly = false;
+    }
+  }
+
+  onDateChange() {
+    this.checkFinancialYearLock();
+    this.getPaymentBalances();
+  }
+
   @ViewChild('formPayment') formPayment: NgForm;
   resetForm() {
     if (this.isSaving || this.pendingPayment) return;
     this.isReadOnly = false;
+    this.isLockedFinancialYear = false;
     this.Payment = {
       PaymentId: 0,
       TrnNo: 'Assigned on save',
@@ -220,7 +267,7 @@ export class PaymentComponent {
     } else {
       this.Payment.HeadBalance = 0;
     }
-    if (!this.isMemberHeadSelected()) {
+    if (this.HeadList.length > 0 && !this.isMemberHeadSelected()) {
       this.clearMember();
     }
     this.getPaymentBalances();
@@ -348,6 +395,10 @@ export class PaymentComponent {
   }
   savePayment() {
     if (this.isSaving) return;
+    if (this.isLockedFinancialYear || !this.loadData.isDateInCurrentFY(this.Payment.PaymentDate, this.currentFinancialYear)) {
+      this.toastr.error(`Transactions outside the current financial year (${this.currentFinancialYear?.FinancialYearName || 'current'}) are locked in Read-Only mode and cannot be saved.`);
+      return;
+    }
     if (!this.action.ResponseReceived || !(this.Payment.PaymentId > 0 ? this.action.CanEdit : this.action.CanCreate)) {
       this.toastr.error("You do not have permission to save this payment");
       return;
@@ -540,6 +591,10 @@ export class PaymentComponent {
     this.isReadOnly = true;
     this.transactionNoRequest++;
     this.Payment = { ...obj, PaymentDate: this.loadData.loadDate(obj.PaymentDate), Balance: null };
+    if (!this.Payment.SocietyId && this.SocietyList && this.SocietyList.length > 0) {
+      this.Payment.SocietyId = this.SocietyList[0].SocietyId;
+    }
+    this.checkFinancialYearLock();
     if (this.formPayment) this.formPayment.resetForm(this.Payment);
     this.isSubmitted = false;
     this.onHeadChange(this.Payment.HeadId);
@@ -549,16 +604,50 @@ export class PaymentComponent {
 
   editPayment(obj: any) {
     this.isReadOnly = false;
-    if (this.isSaving || this.pendingPayment || !this.action.CanEdit) return;
+    this.isLockedFinancialYear = false;
+    if (this.isSaving || this.pendingPayment || (this.action.ResponseReceived && !this.action.CanEdit)) return;
     this.transactionNoRequest++;
-    this.isReadOnly = false;
     this.Payment = { ...obj, PaymentDate: this.loadData.loadDate(obj.PaymentDate), Balance: null };
+    if (!this.Payment.SocietyId && this.SocietyList && this.SocietyList.length > 0) {
+      this.Payment.SocietyId = this.SocietyList[0].SocietyId;
+    }
+    this.checkFinancialYearLock();
+    if (this.isLockedFinancialYear) {
+      this.toastr.warning(`This payment belongs to prior Financial Year ${this.lockedFYName}. Opened in Read-Only mode.`);
+    }
     if (this.formPayment) this.formPayment.resetForm(this.Payment);
     this.isSubmitted = false;
     this.onHeadChange(this.Payment.HeadId);
     this.onBankChange(this.Payment.BankId);
     this.onBankCashTypeChange();
+  }
 
+  loadPaymentForEdit(paymentId: number, isView = false) {
+    const obj: RequestModel = {
+      request: this.localService.encrypt(JSON.stringify({
+        PaymentId: paymentId,
+        PageNumber: 1,
+        PageSize: 1,
+        StaffLoginId: this.staffLogin.StaffLoginId
+      })).toString()
+    };
+    this.service.getPaymentList(obj).subscribe((r1: any) => {
+      if (r1.Message === ConstantData.SuccessMessage && r1.PaymentList && r1.PaymentList.length > 0) {
+        const item = r1.PaymentList[0];
+        if (isView) {
+          this.viewPayment(item);
+          this.toastr.info(`Loaded Payment ${item.TrnNo} in Read-Only mode.`);
+        } else {
+          this.editPayment(item);
+          this.toastr.info(`Loaded Payment ${item.TrnNo} for editing.`);
+        }
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        this.toastr.warning(`Payment with ID ${paymentId} could not be loaded.`);
+      }
+    }, (err: any) => {
+      this.toastr.error(err.error?.Message || "Error loading payment record");
+    });
   }
 
 }

@@ -27,17 +27,49 @@
                         <p class="mb-2">Member collection into the society's bank or cash account</p>
                     </div> -->
                                         <div class="card-body">
-                        <div *ngIf="isReadOnly" class="alert alert-info py-2 small d-flex align-items-center justify-content-between mb-2">
+                        <div *ngIf="isLockedFinancialYear" class="alert alert-secondary py-2 small d-flex align-items-center justify-content-between mb-2 shadow-sm border-start border-4 border-dark">
+                            <div>
+                                <i class="bi bi-lock-fill text-dark me-2"></i>
+                                <strong>Locked &middot; Financial Year {{lockedFYName}} (Read-Only)</strong>: 
+                                This transaction is dated {{Payment.PaymentDate | date:'dd-MMM-yyyy'}}. Transactions outside the current financial year ({{currentFinancialYear?.FinancialYearName}}) cannot be modified or deleted.
+                            </div>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-dark py-0" routerLink="/admin/verify-transactions">
+                                    <i class="bi bi-arrow-left me-1"></i> Verify Transactions
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0" (click)="resetForm()">New</button>
+                            </div>
+                        </div>
+
+                        <div *ngIf="isReadOnly && !isLockedFinancialYear" class="alert alert-info py-2 small d-flex align-items-center justify-content-between mb-2">
                             <div>
                                 <i class="bi bi-shield-lock-fill me-1 text-primary"></i>
-                                <strong>Verified · Read-Only</strong>: This payment is already posted to the General Ledger.
+                                <strong>Verified &middot; Read-Only</strong>: Viewing Payment {{Payment.TrnNo}}. Edits are disabled.
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline-primary py-0" (click)="resetForm()">New</button>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary py-0" routerLink="/admin/verify-transactions">
+                                    <i class="bi bi-arrow-left me-1"></i> Verify Transactions
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0" (click)="resetForm()">New</button>
+                            </div>
+                        </div>
+
+                        <div *ngIf="Payment.PaymentId > 0 && !isReadOnly && !isLockedFinancialYear" class="alert alert-warning py-2 small d-flex align-items-center justify-content-between mb-2">
+                            <div>
+                                <i class="bi bi-pencil-square me-1 text-warning"></i>
+                                <strong>Editing Payment</strong>: Updating {{Payment.TrnNo}} (Voucher #{{Payment.VoucherNo}}).
+                            </div>
+                            <div class="d-flex gap-1">
+                                <button type="button" class="btn btn-sm btn-outline-primary py-0" routerLink="/admin/verify-transactions">
+                                    <i class="bi bi-arrow-left me-1"></i> Back to Verify
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary py-0" (click)="resetForm()">Cancel</button>
+                            </div>
                         </div>
 
                         <form #formPayment="ngForm" class="d-flex justify-content-evenly flex-wrap">
-                            <div class="row mt-2" [attr.inert]="isSaving || pendingPayment || isReadOnly ? '' : null"
-                                [style.pointer-events]="isSaving || pendingPayment || isReadOnly ? 'none' : null">
+                            <div class="row mt-2" [attr.inert]="isSaving || pendingPayment || isReadOnly || isLockedFinancialYear ? '' : null"
+                                [style.pointer-events]="isSaving || pendingPayment || isReadOnly || isLockedFinancialYear ? 'none' : null">
 
                                 <mat-form-field appearance="outline" class="col-12">
                                     <mat-label>Society</mat-label>
@@ -63,7 +95,7 @@
                                 <mat-form-field appearance="outline" class="col-sm-4 form-group">
                                     <mat-label>Payment Date</mat-label>
                                     <input matInput #PaymentDate="ngModel" name="PaymentDate"
-                                        [(ngModel)]="Payment.PaymentDate" [matDatepicker]="PaymentDatePicker" (dateChange)="getPaymentBalances()" required>
+                                        [(ngModel)]="Payment.PaymentDate" [matDatepicker]="PaymentDatePicker" [min]="minPaymentDate" [max]="maxPaymentDate" (dateChange)="onDateChange()" required>
                                     <mat-datepicker-toggle matIconSuffix
                                         [for]="PaymentDatePicker"></mat-datepicker-toggle>
                                     <mat-datepicker #PaymentDatePicker></mat-datepicker>
@@ -185,7 +217,7 @@
                                 data-bs-dismiss="modal" [disabled]="isSaving || !!pendingPayment"
                                 (click)="resetForm()">Cancel</button>
                             <button type="button" mat-raised-button color="primary" (click)="savePayment()"
-                                *ngIf="Payment.PaymentId > 0 ? action.CanEdit : action.CanCreate" [disabled]="isSaving"
+                                *ngIf="!isReadOnly && (Payment.PaymentId > 0 ? action.CanEdit : action.CanCreate)" [disabled]="isSaving"
                                 class="col-sm-6">{{isSaving ? 'Saving...' : (pendingPayment ? 'Retry payment' :
                                 (Payment.PaymentId >
                                 0 ? 'Update':'Submit'))}}</button>
