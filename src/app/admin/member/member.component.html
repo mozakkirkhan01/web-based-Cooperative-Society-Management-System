@@ -87,14 +87,27 @@
 
 
                                         <mat-form-field appearance="outline" class="col-sm-3">
-                                            <mat-label>Father's Name</mat-label>
-                                            <input matInput #FatherName="ngModel" name="FatherName"
-                                                [(ngModel)]="Member.FatherName">
+                                            <mat-label>{{ Member.GuardianType == 2 ? "Husband's Name" : "Father's Name" }}</mat-label>
+                                            <input *ngIf="Member.GuardianType != 2" matInput #FatherName="ngModel" name="FatherName"
+                                                [(ngModel)]="Member.FatherName" placeholder="Enter Father's Name">
+                                            <input *ngIf="Member.GuardianType == 2" matInput #HusbandName="ngModel" name="HusbandName"
+                                                [(ngModel)]="Member.HusbandName" placeholder="Enter Husband's Name">
+                                            
+                                            <!-- Suffix chip button to toggle relation (for female members) -->
+                                            <button matSuffix type="button" class="btn p-0 border-0 bg-transparent"
+                                                    *ngIf="Member.Gender == 1 || !Member.Gender"
+                                                    (click)="setGuardianType(Member.GuardianType == 2 ? 1 : 2); $event.stopPropagation()"
+                                                    title="Click to toggle Father or Husband">
+                                                <span class="guardian-toggle-chip" [class.is-husband]="Member.GuardianType == 2">
+                                                    <i class="fa fa-refresh me-1" style="font-size: 10px;"></i>
+                                                    {{ Member.GuardianType == 2 ? 'Husband' : 'Father' }}
+                                                </span>
+                                            </button>
                                         </mat-form-field>
                                         <mat-form-field appearance="outline" class="col-sm-3">
                                             <mat-label>Gender</mat-label>
                                             <mat-select #Gender="ngModel" name="Gender" [(ngModel)]="Member.Gender"
-                                                required>
+                                                (selectionChange)="onGenderChange()" required>
                                                 <mat-option [value]="Gender.Key"
                                                     *ngFor="let Gender of GenderList">{{Gender.Value}}</mat-option>
                                             </mat-select>
@@ -432,7 +445,7 @@
                                         <th style="cursor:pointer;" (click)="sort('SailPersonalNo')">Sail Personal No.
                                         </th>
                                         <th style="cursor:pointer;" (click)="sort('MemberName')">Member Name</th>
-                                        <th style="cursor:pointer;" (click)="sort('FatherName')">Father's Name</th>
+                                        <th style="cursor:pointer;" (click)="sort('FatherName')">Father / Husband Name</th>
                                         <th style="cursor:pointer;" (click)="sort('MobileNo')">Mobile No.</th>
                                         <th style="cursor:pointer;" (click)="sort('PresentAddress')">Present Address
                                         </th>
@@ -476,7 +489,14 @@
                                         <td>{{item.MemberNo}}</td>
                                         <td>{{item.SailPersonalNo}}</td>
                                         <td>{{item.MemberName}}</td>
-                                        <td>{{item.FatherName}}</td>
+                                        <td>
+                                            <span *ngIf="item.GuardianType == 2 && item.HusbandName" title="Husband">
+                                                <span class="badge bg-info text-dark me-1" style="font-size: 10px;">H</span>{{item.HusbandName}}
+                                            </span>
+                                            <span *ngIf="item.GuardianType != 2 || !item.HusbandName" title="Father">
+                                                <span class="badge bg-light text-muted border me-1" style="font-size: 10px;" *ngIf="item.FatherName">F</span>{{item.FatherName}}
+                                            </span>
+                                        </td>
                                         <td>{{item.MobileNo}}</td>
                                         <td>{{item.PresentAddress}}</td>
                                         <td>{{item.DepartmentName}}</td>
@@ -604,9 +624,13 @@
                         <p>{{selectedMember.MemberName}}</p>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-3" *ngIf="selectedMember.GuardianType == 2 && selectedMember.HusbandName">
+                        <label>Husband Name</label>
+                        <p>{{selectedMember.HusbandName}}</p>
+                    </div>
+                    <div class="col-md-3" *ngIf="selectedMember.GuardianType != 2 || !selectedMember.HusbandName">
                         <label>Father Name</label>
-                        <p>{{selectedMember.FatherName}}</p>
+                        <p>{{selectedMember.FatherName || '-'}}</p>
                     </div>
 
                     <div class="col-md-3">

@@ -4,7 +4,7 @@ import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
 import { ConstantData } from '../../utils/constant-data';
 import { LoadDataService } from '../../utils/load-data.service';
-import { Status, MemberType, Gender, NomineeRelation, PsuUnit } from '../../utils/enum';
+import { Status, MemberType, Gender, NomineeRelation, PsuUnit, GuardianType } from '../../utils/enum';
 import { ActionModel, RequestModel, StaffLoginModel } from '../../utils/interface';
 import { LocalService } from '../../utils/local.service';
 import { Router } from '@angular/router';
@@ -42,6 +42,8 @@ export class MemberComponent {
   AllNomineeRelationList = NomineeRelation;
   AllGenderList = Gender;
   AllMemberTypeList = MemberType;
+  GuardianTypeList = this.loadData.GetEnumList(GuardianType);
+  AllGuardianTypeList = GuardianType;
   selectedMember: any = {};
   filterStatus: number = 0;        // 0 = All
 filterDepartmentId: number = 0;  // 0 = All
@@ -79,13 +81,25 @@ filterPsuUnit: number = 0;       // 0 = All
 
   @ViewChild('formMember') formMember: NgForm;
   resetForm() {
-    this.Member = {}
+    this.Member = {
+      GuardianType: 1
+    }
     if (this.formMember) {
       this.formMember.control.markAsPristine();
       this.formMember.control.markAsUntouched();
     }
     this.isSubmitted = false
     // this.Member.Status = 1
+  }
+
+  setGuardianType(type: number) {
+    this.Member.GuardianType = type;
+  }
+
+  onGenderChange() {
+    if (this.Member.Gender == 2) {
+      this.Member.GuardianType = 1;
+    }
   }
 
   sort(key: any) {
@@ -444,7 +458,9 @@ filterPsuUnit: number = 0;       // 0 = All
     drawSection("MEMBER INFORMATION", 37);
     drawRow("SAIL Personal No", item.SailPersonalNo, "Staff No", item.StaffNo, 45, 126);
     drawRow("Member No", item.MemberNo, "Name", item.MemberName, 36, 122);
-    drawRow("Father's Name", item.FatherName, "Member Type", this.AllMemberTypeList[item.MemberType], 38, 134);
+    const guardianLabel = item.GuardianType == 2 ? "Husband's Name" : "Father's Name";
+    const guardianValue = item.GuardianType == 2 ? (item.HusbandName || item.FatherName) : (item.FatherName || item.HusbandName);
+    drawRow(guardianLabel, guardianValue, "Member Type", this.AllMemberTypeList[item.MemberType], 38, 134);
     drawRow("Gender", this.AllGenderList[item.Gender], "Date of Birth", formatDate(item.DateofBirth), 30, 134);
     y += 2.5;
 
@@ -535,8 +551,10 @@ filterPsuUnit: number = 0;       // 0 = All
 
   editMember(obj: any) {
     this.resetForm()
-    this.Member = obj
-
+    this.Member = { ...obj }
+    if (!this.Member.GuardianType) {
+      this.Member.GuardianType = (this.Member.HusbandName && this.Member.HusbandName.trim().length > 0) ? 2 : 1;
+    }
   }
 filteredMemberList: any[] = [];
 
