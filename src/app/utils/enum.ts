@@ -70,6 +70,10 @@ export enum Gender {
     Female = 1,
     Other = 3
 }
+export enum GuardianType {
+    Father = 1,
+    Husband = 2
+}
 export enum StaffType {
     SuperAdmin = 1,
     Admin = 2,
