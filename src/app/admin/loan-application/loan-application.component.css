@@ -1,0 +1,87 @@
+/* Loan Application Styles */
+.top-banner {
+  background: #f8fafc;
+  border-left: 4px solid #0d6efd !important;
+}
+
+.member-info-box {
+  background-color: #f8f9fa;
+}
+
+.share-balance-card {
+  background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+  border: 1px solid #a5d6a7;
+}
+
+.loan-balance-card {
+  background: linear-gradient(135deg, #ffebee, #ffcdd2);
+  border: 1px solid #ef9a9a;
+}
+
+.installment-highlight-box {
+  background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+  border: 1px solid #90caf9 !important;
+}
+
+.tenor-chip {
+  cursor: pointer;
+  background-color: #e9ecef;
+  color: #495057;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 12px;
+  transition: all 0.2s ease-in-out;
+  user-select: none;
+}
+
+.tenor-chip:hover {
+  background-color: #dee2e6;
+  color: #212529;
+}
+
+.tenor-chip.active {
+  background-color: #0d6efd;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Autocomplete Dropdown */
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  z-index: 1050;
+  max-height: 250px;
+  overflow-y: auto;
+}
+
+.autocomplete-item {
+  cursor: pointer;
+  transition: background 0.15s ease-in-out;
+}
+
+.autocomplete-item:hover {
+  background-color: #e7f1ff;
+}
+
+/* Modal styling */
+.loanee-modal-banner {
+  background: #f1f5f9;
+}
+
+.guarantor-detail-card {
+  background: #f8fafc;
+}
+
+.surety-taken-card {
+  background: #f8fafc;
+}
+
+.my-pagination ::ng-deep .ngx-pagination .current {
+  background: #0d6efd !important;
+  border-radius: 4px;
+}
