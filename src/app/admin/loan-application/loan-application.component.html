@@ -144,6 +144,14 @@
                   <div class="small text-muted">Designation</div>
                   <div class="fw-semibold">{{selectedMember.Designation || 'N/A'}}</div>
                 </div>
+                <div class="col-sm-6" *ngIf="selectedMember.GuardianType == 2 && selectedMember.HusbandName">
+                  <div class="small text-muted">Husband's Name</div>
+                  <div class="fw-semibold">{{selectedMember.HusbandName}}</div>
+                </div>
+                <div class="col-sm-6" *ngIf="selectedMember.GuardianType != 2 && selectedMember.FatherName">
+                  <div class="small text-muted">Father's Name</div>
+                  <div class="fw-semibold">{{selectedMember.FatherName}}</div>
+                </div>
                 <div class="col-sm-6">
                   <div class="small text-muted">Mobile No</div>
                   <div class="fw-semibold">{{selectedMember.MobileNo || 'N/A'}}</div>
