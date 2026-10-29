@@ -1,0 +1,14 @@
+.table-container {
+  min-height: 300px;
+}
+.dataTable-top {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e9ecef;
+}
+.dataTable-search input {
+  min-width: 250px;
+}
+.my-pagination ::ng-deep .ngx-pagination .current {
+  background: #0d6efd !important;
+  border-radius: 4px;
+}
