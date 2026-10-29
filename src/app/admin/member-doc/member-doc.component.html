@@ -99,8 +99,8 @@
 
                             <div class="col-md-3 col-sm-6">
                                 <div class="info-box">
-                                    <span>Father Name</span>
-                                    <h6>{{selectedMember.FatherName}}</h6>
+                                    <span>{{ (selectedMember.GuardianType == 2 && selectedMember.HusbandName) ? "Husband's Name" : "Father's Name" }}</span>
+                                    <h6>{{ (selectedMember.GuardianType == 2 && selectedMember.HusbandName) ? selectedMember.HusbandName : (selectedMember.FatherName || '-') }}</h6>
                                 </div>
                             </div>
                             <div class="col-md-3 col-sm-6">
