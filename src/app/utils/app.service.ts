@@ -348,4 +348,8 @@ export class AppService {
   deleteCity(obj: any) {
     return this.http.post(this.apiUrl + "City/deleteCity", obj, { headers: this.headers })
   }
+  // Loan
+  loan(action: string, obj: any) {
+    return this.http.post(this.apiUrl + 'Loan/' + action, obj, { headers: this.headers });
+  }
 }
