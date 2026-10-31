@@ -16,9 +16,6 @@
     </div>
 
     <div class="d-flex align-items-center gap-2">
-      <button type="button" class="btn btn-outline-primary btn-sm px-3" (click)="loadApplicationsList()" title="Refresh List">
-        <i class="bi bi-arrow-clockwise me-1"></i> Refresh
-      </button>
       <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" (click)="newApplication()">
         <i class="bi bi-plus-lg me-1"></i> New Application
       </button>
@@ -36,17 +33,20 @@
   </div>
 
   <div class="card-body p-3">
-    <!-- Top Controls: Page Size and Search -->
-    <div class="dataTable-top d-flex justify-content-between align-items-center mb-3">
-      <div class="dataTable-dropdown d-flex align-items-center">
+        <!-- Top Controls: Page Size and Search (Right-most side) -->
+    <div class="d-flex justify-content-between align-items-center mb-3 w-100">
+      <div class="d-flex align-items-center">
         <select class="dataTable-selector form-select form-select-sm" [(ngModel)]="listPageSize" style="width: 80px;">
           <option *ngFor="let option of pageSizeOptions" [value]="option">{{option}}</option>
         </select>
         <span class="ms-2 text-muted small">Entries per page</span>
       </div>
-      <div class="dataTable-search">
-        <input class="dataTable-input form-control form-control-sm" [(ngModel)]="listSearch"
-               placeholder="Search application, staff, member..." type="text" style="width: 250px;">
+      <div class="ms-auto" style="width: 320px; max-width: 100%;">
+        <div class="input-group input-group-sm">
+          <span class="input-group-text bg-white text-muted border-end-0"><i class="bi bi-search"></i></span>
+          <input class="form-control form-control-sm border-start-0" [(ngModel)]="listSearch"
+                 placeholder="Search application, staff, member..." type="text">
+        </div>
       </div>
     </div>
 
@@ -66,7 +66,7 @@
             <th class="text-center" style="width: 75px;">Tenor</th>
             <th class="text-end" style="width: 95px;">Inst. (₹)</th>
             <th class="text-center" style="width: 65px;">View</th>
-            <th class="text-center" style="width: 65px;">Action</th>
+            <th class="text-center" style="width: 85px;">Action</th>
           </tr>
         </thead>
         <tbody>
@@ -92,11 +92,16 @@
               </button>
             </td>
 
-            <!-- Action Column (Edit Icon) -->
-            <td class="text-center">
+                        <!-- Action Column (Edit & Delete Icons) -->
+            <td class="text-center text-nowrap">
               <button type="button" class="btn btn-sm btn-outline-warning py-1 px-2"
                       (click)="editApplication(item)" title="Edit Application">
                 <i class="bi bi-pencil-square"></i>
+              </button>
+              <button type="button" class="btn btn-sm btn-outline-danger py-1 px-2 ms-1"
+                      *ngIf="action.CanDelete"
+                      (click)="confirmDelete(item)" title="Delete Application">
+                <i class="bi bi-trash3-fill"></i>
               </button>
             </td>
           </tr>
@@ -110,12 +115,14 @@
       </table>
     </div>
 
-    <!-- Bottom Pagination -->
-    <div class="dataTable-bottom d-flex justify-content-between align-items-center mt-3">
+        <!-- Bottom Pagination -->
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 w-100">
       <div class="text-muted small">
         Showing {{applicationsList.length}} total applications
       </div>
-      <pagination-controls (pageChange)="listPage=$event" class="my-pagination"></pagination-controls>
+      <div class="ms-auto">
+        <pagination-controls (pageChange)="listPage=$event" class="my-pagination mb-0"></pagination-controls>
+      </div>
     </div>
   </div>
 </div>
@@ -352,8 +359,13 @@
           <button type="button" class="btn btn-outline-primary btn-sm me-2" (click)="printModal()">
             <i class="bi bi-printer me-1"></i> Print Application
           </button>
-          <button type="button" class="btn btn-warning btn-sm shadow-sm" (click)="editApplication(selectedAppDetail)">
+                    <button type="button" class="btn btn-warning btn-sm shadow-sm" (click)="editApplication(selectedAppDetail)">
             <i class="bi bi-pencil-square me-1"></i> Edit Application
+          </button>
+          <button type="button" class="btn btn-outline-danger btn-sm shadow-sm ms-2"
+                  *ngIf="action.CanDelete"
+                  (click)="confirmDelete(selectedAppDetail)">
+            <i class="bi bi-trash3-fill me-1"></i> Delete
           </button>
         </div>
       </div>
@@ -362,5 +374,99 @@
   </div>
 </div>
 
+
+
+
+<!-- ========================================================================= -->
+<!-- MODAL: CONFIRM DELETE LOAN APPLICATION                                    -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="modal_delete_loan_application" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-danger text-white py-2">
+        <h5 class="modal-title fs-6 fw-bold" id="deleteModalLabel">
+          <i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Delete Loan Application
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4" *ngIf="appToDelete">
+        <p class="mb-3 text-secondary">
+          Are you sure you want to permanently delete this loan application?
+        </p>
+
+        <div class="p-3 bg-light rounded border mb-3">
+          <div class="row g-2 small">
+            <div class="col-sm-6">
+              <span class="text-muted d-block">Application No:</span>
+              <span class="fw-bold fs-6 text-primary">{{appToDelete.ApplicationNumber}}</span>
+            </div>
+            <div class="col-sm-6">
+              <span class="text-muted d-block">Applied Date:</span>
+              <span class="fw-semibold">{{appToDelete.AppliedDate | date:'dd/MM/yyyy'}}</span>
+            </div>
+            <div class="col-sm-6">
+              <span class="text-muted d-block">Staff / Member No:</span>
+              <span class="fw-bold">{{appToDelete.StaffNo}}</span> <span class="text-muted">({{appToDelete.MemberNo}})</span>
+            </div>
+            <div class="col-sm-6">
+              <span class="text-muted d-block">Member Name:</span>
+              <span class="fw-bold text-dark">{{appToDelete.MemberName}}</span>
+            </div>
+            <div class="col-sm-6">
+              <span class="text-muted d-block">Sanctioned Amount:</span>
+              <span class="fw-bold text-success">₹ {{appToDelete.SanctionedAmount | number:'1.2-2'}}</span>
+            </div>
+            <div class="col-sm-6">
+              <span class="text-muted d-block">Status:</span>
+              <span class="badge bg-warning text-dark">{{appToDelete.Status || 'Applied'}}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-warning py-2 px-3 small mb-0 d-flex align-items-center">
+          <i class="bi bi-shield-exclamation text-danger fs-5 me-2 flex-shrink-0"></i>
+          <div>
+            <strong>Safeguard Notice:</strong> Soft-deleting will remove the application from active registers and <strong>immediately release all linked guarantors / sureties</strong> for other loan requests.
+          </div>
+        </div>
+
+        <div class="mb-2 mt-3">
+          <label class="form-label small fw-bold text-dark">
+            <i class="bi bi-shield-lock-fill text-danger me-1"></i>Enter Your Login Password to Authorize <span class="text-danger">*</span>
+          </label>
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="bi bi-key text-muted"></i></span>
+            <input [type]="showDeletePassword ? 'text' : 'password'"
+                   class="form-control"
+                   placeholder="Enter your login password..."
+                   [(ngModel)]="deletePassword"
+                   [class.is-invalid]="deletePasswordError"
+                   (input)="deletePasswordError = ''"
+                   (keyup.enter)="executeDelete()"
+                   autocomplete="current-password">
+            <button class="btn btn-outline-secondary" type="button" (click)="showDeletePassword = !showDeletePassword" title="Show/Hide Password">
+              <i [class]="showDeletePassword ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+            </button>
+          </div>
+          <div *ngIf="deletePasswordError" class="text-danger small mt-1 fw-semibold">
+            <i class="bi bi-exclamation-circle me-1"></i>{{deletePasswordError}}
+          </div>
+          <!-- <small class="text-muted d-block mt-1">
+            Deletion is password-protected to prevent accidental or unauthorized cancellation.
+          </small> -->
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal" [disabled]="isDeleting">Cancel</button>
+        <button type="button" class="btn btn-danger btn-sm px-4 shadow-sm" [disabled]="isDeleting || !deletePassword || !deletePassword.trim()" (click)="executeDelete()">
+          <span *ngIf="isDeleting" class="spinner-border spinner-border-sm me-1"></span>
+          <i *ngIf="!isDeleting" class="bi bi-trash3-fill me-1"></i> Confirm Delete
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 </main>

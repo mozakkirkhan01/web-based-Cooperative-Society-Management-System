@@ -28,6 +28,13 @@ export class SavedLoanApplicationComponent implements OnInit {
   selectedMemberBalances: any = { ShareBalance: 0, LoanBalance: 0 };
   isLoadingDetail: boolean = false;
 
+  // Delete modal state
+  appToDelete: any = null;
+  isDeleting: boolean = false;
+  deletePassword: string = '';
+  deletePasswordError: string = '';
+  showDeletePassword: boolean = false;
+
   userDetail: any = {};
   action: ActionModel = {} as ActionModel;
 
@@ -172,5 +179,55 @@ export class SavedLoanApplicationComponent implements OnInit {
 
   printModal() {
     window.print();
+  }
+
+  confirmDelete(item: any) {
+    if (!item) return;
+    this.appToDelete = item;
+    this.deletePassword = '';
+    this.deletePasswordError = '';
+    this.showDeletePassword = false;
+    if ($('#modal_view_loan_application').length) {
+      $('#modal_view_loan_application').modal('hide');
+    }
+    $('#modal_delete_loan_application').modal('show');
+  }
+
+  executeDelete() {
+    if (!this.appToDelete) return;
+    if (!this.deletePassword || !this.deletePassword.trim()) {
+      this.deletePasswordError = 'Authorization password is required.';
+      return;
+    }
+    this.deletePasswordError = '';
+
+    const obj: RequestModel = {
+      request: this.localService.encrypt(JSON.stringify({
+        LoanApplicationId: this.appToDelete.LoanApplicationId,
+        StaffLoginId: this.userDetail?.StaffLoginId || 7,
+        Password: this.deletePassword.trim()
+      })).toString()
+    };
+    this.isDeleting = true;
+    this.service.loan('DeleteLoanApplication', obj).subscribe({
+      next: (res: any) => {
+        if (res.Message === ConstantData.SuccessMessage) {
+          this.toastr.success(`Loan Application #${this.appToDelete.ApplicationNumber} deleted successfully.`);
+          $('#modal_delete_loan_application').modal('hide');
+          this.appToDelete = null;
+          this.deletePassword = '';
+          this.deletePasswordError = '';
+          this.loadApplicationsList();
+        } else {
+          this.deletePasswordError = res.Message || 'Failed to delete loan application.';
+          this.toastr.error(res.Message || 'Failed to delete loan application.');
+        }
+        this.isDeleting = false;
+      },
+      error: () => {
+        this.toastr.error('Error occurred while deleting loan application.');
+        this.isDeleting = false;
+      }
+    });
   }
 }
