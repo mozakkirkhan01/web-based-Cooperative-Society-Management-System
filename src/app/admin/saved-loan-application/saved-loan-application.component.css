@@ -1,0 +1,58 @@
+.card {
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  border: 1px solid #e9ecef;
+  border-radius: 0.5rem;
+}
+
+.table th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+  white-space: nowrap;
+}
+
+.badge {
+  font-weight: 500;
+  letter-spacing: 0.3px;
+}
+
+.table-hover tbody tr:hover {
+  background-color: #f8faff;
+}
+
+.btn-outline-info {
+  color: #0dcaf0;
+  border-color: #0dcaf0;
+}
+.btn-outline-info:hover {
+  color: #fff;
+  background-color: #0dcaf0;
+}
+
+.modal-header {
+  border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+  border-top: 1px solid #dee2e6;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #modal_view_loan_application, #modal_view_loan_application * {
+    visibility: visible;
+  }
+  #modal_view_loan_application {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .modal-footer, .btn-close {
+    display: none !important;
+  }
+}
