@@ -58,7 +58,9 @@ import { MemberPassbookComponent } from './admin/member-passbook/member-passbook
 import { TrialBalanceComponent } from './admin/trial-balance/trial-balance.component';
 import { VerifyTransactionsComponent } from './admin/verify-transactions/verify-transactions.component';
 import { LoanApplicationComponent } from './admin/loan-application/loan-application.component';
+import { SavedLoanApplicationComponent } from './admin/saved-loan-application/saved-loan-application.component';
 import { LoanPurposeComponent } from './admin/loan-purpose/loan-purpose.component';
+import { MemberInfoComponent } from './admin/member-info/member-info.component';
 
 @NgModule({
   declarations: [
@@ -103,7 +105,9 @@ import { LoanPurposeComponent } from './admin/loan-purpose/loan-purpose.componen
     TrialBalanceComponent,
     VerifyTransactionsComponent,
     LoanApplicationComponent,
-    LoanPurposeComponent
+    SavedLoanApplicationComponent,
+    LoanPurposeComponent,
+    MemberInfoComponent
   ],
   imports: [
     BrowserModule,

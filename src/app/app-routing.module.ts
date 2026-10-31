@@ -1,3 +1,6 @@
+import { LoanApplicationComponent } from './admin/loan-application/loan-application.component';
+import { SavedLoanApplicationComponent } from './admin/saved-loan-application/saved-loan-application.component';
+import { LoanPurposeComponent } from './admin/loan-purpose/loan-purpose.component';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminLoginComponent } from './admin/admin-login/admin-login.component';
@@ -76,6 +79,9 @@ const routes: Routes = [
       { path: 'transfer', component: TransferComponent },
       { path: 'schedule', component: ScheduleComponent },
       { path: 'verify-transactions', component: VerifyTransactionsComponent },
+      { path: 'loan-application', component: LoanApplicationComponent },
+      { path: 'saved-loan-application', component: SavedLoanApplicationComponent },
+      { path: 'loan-purpose', component: LoanPurposeComponent },
 
     ]
   },
