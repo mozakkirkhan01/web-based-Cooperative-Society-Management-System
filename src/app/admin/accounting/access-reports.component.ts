@@ -9,6 +9,8 @@ import { LoadDataService } from '../../utils/load-data.service';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
+declare var $: any;
+
 @Component({
   selector: 'app-access-reports',
   templateUrl: './access-reports.component.html',
@@ -43,6 +45,11 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   IncludeDeleted = false;
   IncludeScheduleDetails = false;
   IncludeMonthSubTotal = true;
+
+  // Historical Loan Application View Modal State
+  selectedLoanApp: any = null;
+  loanAppSureties: any[] = [];
+  loadingSureties = false;
   get isMainLedger(): boolean { return this.Report === 'HeadLedger' || this.Report === 'MainLedger'; }
   get headDisplayName(): string {
     if (!this.HeadCode) return 'All Heads';
@@ -400,6 +407,38 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     const csv = columns.join(',') + '\r\n' + rows.map(row => columns.map(column => quote(row[column])).join(',')).join('\r\n');
     const url = URL.createObjectURL(new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' }));
     const link = document.createElement('a'); link.href = url; link.download = `${this.Report}-${this.YearId}-${this.FromDate}-${this.ToDate}.csv`; link.click(); URL.revokeObjectURL(url);
+  }
+
+  openLoanAppModal(row: any) {
+    this.selectedLoanApp = row;
+    this.loanAppSureties = [];
+    this.loadingSureties = true;
+    if (typeof $ !== 'undefined' && $('#modal_loan_app_details').length) {
+      $('#modal_loan_app_details').modal('show');
+    }
+    this.service.accessReport(this.request('Sureties', {
+      Search: row.ApplicationNumber,
+      MemberKey: row.StaffNo
+    })).subscribe({
+      next: (r: any) => {
+        this.loadingSureties = false;
+        if (r.Message === ConstantData.SuccessMessage) {
+          this.loanAppSureties = r.Rows || [];
+        }
+      },
+      error: () => {
+        this.loadingSureties = false;
+        this.loanAppSureties = [];
+      }
+    });
+  }
+
+  getTotalGuaranteedAmount(): number {
+    return (this.loanAppSureties || []).reduce((acc: number, s: any) => acc + (Number(s.SuretyAmount) || 0), 0);
+  }
+
+  printLoanAppModal() {
+    window.print();
   }
 
   formatDateDDMMMYYYY(dateInput: any): string {
