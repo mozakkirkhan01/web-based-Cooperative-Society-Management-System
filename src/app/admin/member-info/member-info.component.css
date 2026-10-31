@@ -1,0 +1,248 @@
+/* ==========================================================================
+   MEMBER INFO & FINAL SETTLEMENT STATEMENT STYLES
+   Replicates legacy Access UI & Printed Final Settlement Statement
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Screen Styles: Access-style UI
+   -------------------------------------------------------------------------- */
+.member-info-container {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #212529;
+}
+
+/* Access UI Yellow-Tinted Inputs */
+.bg-warning-subtle {
+  background-color: #fffde6 !important;
+  border-color: #cfc28b !important;
+  color: #1a1a1a !important;
+}
+
+.bg-warning-subtle:focus {
+  background-color: #ffffff !important;
+  border-color: #86b7fe !important;
+}
+
+/* Recoveries Matrix Yellow Columns */
+.bg-yellow {
+  background-color: #fff48f !important;
+  color: #1a1a1a !important;
+  font-weight: 500;
+}
+
+.bg-warning-light {
+  background-color: #faea9a !important;
+  color: #212529 !important;
+  font-weight: 600;
+}
+
+.recovery-matrix-table th,
+.recovery-matrix-table td {
+  padding: 4px 6px !important;
+  vertical-align: middle;
+  border: 1px solid #dee2e6;
+  white-space: nowrap;
+}
+
+.recovery-matrix-table thead th {
+  border-bottom: 2px solid #adb5bd;
+}
+
+.letter-spacing {
+  letter-spacing: 0.5px;
+}
+
+/* --------------------------------------------------------------------------
+   Print & Settlement Statement Styles (Matching Image 2)
+   -------------------------------------------------------------------------- */
+.settlement-print-sheet {
+  font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+  color: #000;
+  background-color: #fff;
+  line-height: 1.35;
+}
+
+.society-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #000;
+}
+
+.society-hindi-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111;
+}
+
+.society-address {
+  font-size: 0.85rem;
+  color: #222;
+}
+
+.statement-main-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  color: #000;
+}
+
+.settlement-table th,
+.settlement-table td {
+  border: 1px solid #444 !important;
+  padding: 5px 6px !important;
+}
+
+.settlement-table thead th {
+  border-bottom: 1.5px solid #000 !important;
+  color: #000;
+  font-weight: 700;
+}
+
+.surety-subtable th,
+.surety-subtable td {
+  padding: 3px 4px !important;
+  border-color: #555 !important;
+}
+
+/* ==========================================================================
+   PRINT MEDIA QUERY: Formats the settlement sheet to single A4 portrait
+   ========================================================================== */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm 10mm 12mm;
+  }
+
+  /* Hide navigation, admin chrome, actions, and non-printable elements */
+  header,
+  footer,
+  aside,
+  nav,
+  .sidebar,
+  .navbar,
+  .pagetitle,
+  .alert,
+  .no-print,
+  .btn,
+  .btn-close,
+  app-progress,
+  .back-to-top,
+  .modal-backdrop,
+  #main,
+  .main,
+  main,
+  .member-info-container {
+    display: none !important;
+  }
+
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    height: auto !important;
+    font-size: 10pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Unravel modal popup for clean static printing */
+  #modal_settlement_statement {
+    display: block !important;
+    position: static !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    overflow: visible !important;
+    width: 100% !important;
+    height: auto !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  #modal_settlement_statement .modal-dialog {
+    transform: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+
+  #modal_settlement_statement .modal-content {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  #printable_settlement_sheet {
+    display: block !important;
+    visibility: visible !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    color: #000000 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .society-title {
+    font-size: 14pt !important;
+    font-weight: 700 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .society-hindi-title {
+    font-size: 11pt !important;
+    font-weight: 600 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .society-address {
+    font-size: 8.5pt !important;
+    margin-bottom: 6px !important;
+  }
+
+  .statement-main-title {
+    font-size: 12pt !important;
+    font-weight: 700 !important;
+    margin-top: 6px !important;
+    margin-bottom: 10px !important;
+  }
+
+  .settlement-table {
+    font-size: 8.8pt !important;
+  }
+
+  .settlement-table th,
+  .settlement-table td {
+    padding: 3.5px 5px !important;
+    border: 1px solid #000 !important;
+  }
+
+  .settlement-table thead th {
+    background-color: #f2f2f2 !important;
+    border-bottom: 1.5px solid #000 !important;
+  }
+
+  .surety-subtable th,
+  .surety-subtable td {
+    font-size: 8pt !important;
+    padding: 2.5px 3px !important;
+  }
+
+  /* Prevent awkward page breaks */
+  #printable_settlement_sheet * {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+}
