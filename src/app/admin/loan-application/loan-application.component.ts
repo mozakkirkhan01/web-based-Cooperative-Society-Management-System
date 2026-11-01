@@ -6,7 +6,7 @@ import { NgForm } from '@angular/forms';
 import { LocalService } from '../../utils/local.service';
 import { LoadDataService } from '../../utils/load-data.service';
 import { ActionModel, RequestModel } from '../../utils/interface';
-import { Router } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 
 declare var $: any;
 
@@ -41,6 +41,8 @@ export class LoanApplicationComponent implements OnInit {
   banks: any[] = [];
 
   // Main Application Form Model
+  installmentError: string = '';
+
   loanApp: any = {
     LoanApplicationId: 0,
     ApplicationNumber: '',
@@ -123,7 +125,8 @@ export class LoanApplicationComponent implements OnInit {
     private toastr: ToastrService,
     private localService: LocalService,
     private loadData: LoadDataService,
-    private router: Router
+    private router: Router,
+    private route: ActivatedRoute
   ) { }
 
   ngOnInit(): void {
@@ -131,6 +134,13 @@ export class LoanApplicationComponent implements OnInit {
     this.validiateMenu();
     this.initDefaultDates();
     this.loadSetupData();
+    this.loadApplicationsList();
+    this.route.queryParams.subscribe(params => {
+      const editId = params['id'];
+      if (editId) {
+        this.editApplication({ LoanApplicationId: Number(editId) });
+      }
+    });
   }
 
   validiateMenu() {
@@ -372,9 +382,19 @@ export class LoanApplicationComponent implements OnInit {
     this.calculateInstallment();
   }
 
+  getRepayablePrincipal(): number {
+    const sanctioned = Number(this.loanApp.SanctionedAmount) || 0;
+    const applied = Number(this.loanApp.AppliedAmount) || 0;
+    const payable = Number(this.loanApp.PayableAmount) || 0;
+    return sanctioned > 0 ? sanctioned : (applied > 0 ? applied : payable);
+  }
+
   onTenorChange() {
     let tenor = parseInt(this.loanApp.TenorMonths, 10) || 84;
-    if (tenor > 84) tenor = 84;
+    if (tenor > 84) {
+      tenor = 84;
+      this.toastr.warning('Maximum loan tenor allowed is 84 months.');
+    }
     if (tenor < 1) tenor = 1;
     this.loanApp.TenorMonths = tenor;
     this.calculateInstallment();
@@ -384,24 +404,41 @@ export class LoanApplicationComponent implements OnInit {
     const inst = Math.round(Number(this.loanApp.InstallmentAmount) || 0);
     this.loanApp.InstallmentAmount = inst;
 
-    const payable = Number(this.loanApp.PayableAmount) || 0;
-    if (inst > 0 && payable > 0) {
-      const computedTenor = Math.ceil(payable / inst);
-      this.loanApp.TenorMonths = Math.min(84, Math.max(1, computedTenor));
+    const principal = this.getRepayablePrincipal();
+    if (principal <= 0) {
+      this.installmentError = '';
+      return;
+    }
+
+    if (inst <= 0) {
+      this.installmentError = 'Please enter a valid monthly installment greater than ₹0.';
+      return;
+    }
+
+    const requiredMonths = Math.ceil(principal / inst);
+    const minInstallmentFor84m = Math.ceil(principal / 84);
+
+    if (requiredMonths > 84) {
+      this.installmentError = `₹${inst.toLocaleString('en-IN')}/month is too low! Repaying ₹${principal.toLocaleString('en-IN')} would take ${requiredMonths.toLocaleString('en-IN')} months (maximum allowed is 84 months). Minimum installment is ₹${minInstallmentFor84m.toLocaleString('en-IN')}/month.`;
+    } else {
+      this.installmentError = '';
+      this.loanApp.TenorMonths = requiredMonths;
     }
   }
 
   calculateInstallment() {
-    const payable = Number(this.loanApp.PayableAmount) || 0;
+    const principal = this.getRepayablePrincipal();
     let tenor = parseInt(this.loanApp.TenorMonths, 10) || 84;
     if (tenor > 84) tenor = 84;
     if (tenor < 1) tenor = 1;
+    this.loanApp.TenorMonths = tenor;
 
-    if (payable > 0 && tenor > 0) {
-      this.loanApp.InstallmentAmount = Math.ceil(payable / tenor);
+    if (principal > 0 && tenor > 0) {
+      this.loanApp.InstallmentAmount = Math.ceil(principal / tenor);
     } else {
       this.loanApp.InstallmentAmount = 0;
     }
+    this.installmentError = '';
   }
 
   // --------------------------------------------------------------------------
@@ -631,6 +668,25 @@ export class LoanApplicationComponent implements OnInit {
       this.toastr.error('Application Number is required.');
       return;
     }
+    if (this.installmentError) {
+      this.toastr.error(this.installmentError, 'Cannot Save Application');
+      return;
+    }
+    const principal = this.getRepayablePrincipal();
+    const inst = Number(this.loanApp.InstallmentAmount) || 0;
+    if (principal > 0) {
+      if (inst <= 0) {
+        this.toastr.error('Please enter a valid monthly installment amount.');
+        return;
+      }
+      const requiredMonths = Math.ceil(principal / inst);
+      const minInst = Math.ceil(principal / 84);
+      if (requiredMonths > 84) {
+        this.installmentError = `₹${inst.toLocaleString('en-IN')}/month is too low! Repaying ₹${principal.toLocaleString('en-IN')} would take ${requiredMonths.toLocaleString('en-IN')} months (maximum allowed is 84 months). Minimum installment is ₹${minInst.toLocaleString('en-IN')}/month.`;
+        this.toastr.error(this.installmentError, 'Invalid Installment');
+        return;
+      }
+    }
     if (Number(this.loanApp.AppliedAmount) <= 0) {
       this.toastr.error('Applied Amount must be greater than zero.');
       return;
@@ -685,6 +741,10 @@ export class LoanApplicationComponent implements OnInit {
           this.toastr.success(isUpdate ? 'Loan application updated successfully!' : `Loan application #${res.ApplicationNumber} saved successfully!`);
           this.resetForm();
           this.loadSetupData();
+          this.loadApplicationsList();
+          if (isUpdate) {
+            this.router.navigate(['/admin/saved-loan-application']);
+          }
         } else {
           this.toastr.error(res.Message);
         }
@@ -698,6 +758,7 @@ export class LoanApplicationComponent implements OnInit {
   }
 
   resetForm() {
+    this.installmentError = '';
     this.loanApp = {
       LoanApplicationId: 0,
       ApplicationNumber: '',
@@ -721,6 +782,7 @@ export class LoanApplicationComponent implements OnInit {
     this.clearMember();
     this.sureties = [];
     this.isSubmitted = false;
+    this.router.navigate([], { queryParams: {} });
   }
 
   // --------------------------------------------------------------------------
@@ -741,7 +803,7 @@ export class LoanApplicationComponent implements OnInit {
     this.service.loan('LoanApplicationList', obj).subscribe({
       next: (res: any) => {
         if (res.Message === ConstantData.SuccessMessage) {
-          this.applicationsList = res.Applications || [];
+          this.applicationsList = res.Applications || res.Rows || [];
         } else {
           this.toastr.error(res.Message);
         }
@@ -802,6 +864,19 @@ export class LoanApplicationComponent implements OnInit {
             MemberNo: app.MemberNo,
             MemberName: app.MemberName
           });
+
+          // Check if loaded installment requires > 84 months
+          const editPrincipal = Number(this.loanApp.SanctionedAmount) || Number(this.loanApp.AppliedAmount) || 0;
+          const editInst = Number(this.loanApp.InstallmentAmount) || 0;
+          if (editPrincipal > 0 && editInst > 0) {
+            const reqMonths = Math.ceil(editPrincipal / editInst);
+            if (reqMonths > 84) {
+              const minInst = Math.ceil(editPrincipal / 84);
+              this.installmentError = `Current installment ₹${editInst.toLocaleString('en-IN')}/month takes ${reqMonths.toLocaleString('en-IN')} months (exceeds 84 months). Minimum required is ₹${minInst.toLocaleString('en-IN')}/month.`;
+            } else {
+              this.installmentError = '';
+            }
+          }
 
           this.switchView('form');
         } else {
