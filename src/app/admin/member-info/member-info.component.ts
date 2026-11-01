@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
@@ -11,11 +11,16 @@ declare var $: any;
 @Component({
   selector: 'app-member-info',
   templateUrl: './member-info.component.html',
-  styleUrls: ['./member-info.component.css']
+  styleUrls: ['./member-info.component.css'],
+  encapsulation: ViewEncapsulation.None
 })
 export class MemberInfoComponent implements OnInit {
-  searchQuery: string = '807042';
+  searchQuery: string = '';
   isLoading: boolean = false;
+
+  // Member Autocomplete Search
+  memberSearchResults: any[] = [];
+  isSearchingMember: boolean = false;
 
   member: any = null;
   balances: any[] = [];
@@ -36,26 +41,105 @@ export class MemberInfoComponent implements OnInit {
 
   ngOnInit(): void {
     const qStaff = this.route.snapshot.queryParams['staffNo'] || this.route.snapshot.queryParams['id'];
-    if (qStaff) {
-      this.searchQuery = qStaff;
-    }
-    if (this.searchQuery) {
+    if (qStaff && qStaff.trim()) {
+      this.searchQuery = qStaff.trim();
       this.fetchMemberInfo();
     }
   }
 
-  fetchMemberInfo(): void {
-    if (!this.searchQuery || !this.searchQuery.trim()) {
+  onSearchInput(): void {
+    const q = (this.searchQuery || '').trim();
+    if (q.length < 2) {
+      this.memberSearchResults = [];
+      return;
+    }
+
+    this.isSearchingMember = true;
+    const obj: RequestModel = {
+      request: this.localService.encrypt(JSON.stringify({ Search: q, Query: q, Limit: 15 })).toString()
+    };
+
+    this.service.loan('SearchMembers', obj).subscribe({
+      next: (res: any) => {
+        if (res.Message === ConstantData.SuccessMessage) {
+          this.memberSearchResults = res.Members || res.MemberList || [];
+        } else {
+          this.memberSearchResults = [];
+        }
+        this.isSearchingMember = false;
+      },
+      error: () => {
+        this.isSearchingMember = false;
+        this.memberSearchResults = [];
+      }
+    });
+  }
+
+  selectMemberSuggestion(m: any, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.memberSearchResults = [];
+    this.searchQuery = `${m.StaffNo} - ${m.MemberName}`;
+    this.fetchMemberInfo(m.MemberId);
+  }
+
+  onSearchButtonClick(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+    }
+    this.memberSearchResults = [];
+    this.fetchMemberInfo();
+  }
+
+  clearSearch(event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    this.searchQuery = '';
+    this.member = null;
+    this.balances = [];
+    this.lastLoan = null;
+    this.recoveries = null;
+    this.settlement = null;
+    this.memberSearchResults = [];
+  }
+
+  onBlur(): void {
+    setTimeout(() => {
+      this.memberSearchResults = [];
+    }, 250);
+  }
+
+  fetchMemberInfo(memberId?: number): void {
+    this.memberSearchResults = [];
+
+    // If searching by text query, strip extra labels like '805129 - SUMITRA KUMARI' -> '805129'
+    let cleanQuery = (this.searchQuery || '').trim();
+    if (cleanQuery.includes(' - ')) {
+      cleanQuery = cleanQuery.split(' - ')[0].trim();
+    }
+
+    if (!memberId && (!cleanQuery || !cleanQuery.trim())) {
       this.toastr.warning('Please enter a Staff No, Member No, or Member Name.');
       return;
     }
 
     this.isLoading = true;
+    const payload: any = {
+      YearId: 2025
+    };
+
+    if (memberId && memberId > 0) {
+      payload.MemberId = memberId;
+    } else {
+      payload.Query = cleanQuery;
+    }
+
     const obj: RequestModel = {
-      request: this.localService.encrypt(JSON.stringify({
-        Query: this.searchQuery.trim(),
-        YearId: 2025
-      })).toString()
+      request: this.localService.encrypt(JSON.stringify(payload)).toString()
     };
 
     this.service.getMemberInfoDetails(obj).subscribe({
@@ -67,6 +151,9 @@ export class MemberInfoComponent implements OnInit {
           this.lastLoan = res.LastLoan;
           this.recoveries = res.Recoveries;
           this.settlement = res.Settlement;
+          if (this.member) {
+            this.searchQuery = `${this.member.StaffNo} - ${this.member.MemberName}`;
+          }
         } else {
           this.toastr.error(res.Message || 'Member information not found.');
         }
@@ -80,7 +167,14 @@ export class MemberInfoComponent implements OnInit {
 
   onSearchKey(event: KeyboardEvent): void {
     if (event.key === 'Enter') {
-      this.fetchMemberInfo();
+      if (this.memberSearchResults && this.memberSearchResults.length === 1) {
+        this.selectMemberSuggestion(this.memberSearchResults[0]);
+      } else {
+        this.memberSearchResults = [];
+        this.fetchMemberInfo();
+      }
+    } else if (event.key === 'Escape') {
+      this.memberSearchResults = [];
     }
   }
 
