@@ -1,59 +1,86 @@
 /* ==========================================================================
    MEMBER INFO & FINAL SETTLEMENT STATEMENT STYLES
-   Replicates legacy Access UI & Printed Final Settlement Statement
+   Modern Admin Interface & Professional Print Layout
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   Screen Styles: Access-style UI
+   Modern Screen Styles
    -------------------------------------------------------------------------- */
-.member-info-container {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+.main {
+  font-family: "Open Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: #212529;
 }
 
-/* Access UI Yellow-Tinted Inputs */
-.bg-warning-subtle {
-  background-color: #fffde6 !important;
-  border-color: #cfc28b !important;
-  color: #1a1a1a !important;
+/* Subtle, clean form controls */
+.form-control[readonly] {
+  background-color: #f8f9fa !important;
+  border-color: #e9ecef;
+  cursor: default;
 }
 
-.bg-warning-subtle:focus {
-  background-color: #ffffff !important;
-  border-color: #86b7fe !important;
+/* Autocomplete Dropdown */
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  z-index: 2000;
+  max-height: 280px;
+  overflow-y: auto;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
 }
 
-/* Recoveries Matrix Yellow Columns */
-.bg-yellow {
-  background-color: #fff48f !important;
-  color: #1a1a1a !important;
-  font-weight: 500;
+.autocomplete-item {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease-in-out;
 }
 
-.bg-warning-light {
-  background-color: #faea9a !important;
-  color: #212529 !important;
-  font-weight: 600;
+.autocomplete-item * {
+  pointer-events: none;
 }
 
+.autocomplete-item:hover {
+  background-color: #e7f1ff !important;
+}
+
+/* Clear Search Button */
+.clear-search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.clear-search-btn:hover i {
+  color: #dc3545 !important;
+}
+
+/* Recovery Matrix Table */
 .recovery-matrix-table th,
 .recovery-matrix-table td {
-  padding: 4px 6px !important;
+  padding: 6px 8px !important;
   vertical-align: middle;
-  border: 1px solid #dee2e6;
+  border: 1px solid #e9ecef;
   white-space: nowrap;
 }
 
 .recovery-matrix-table thead th {
-  border-bottom: 2px solid #adb5bd;
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
 }
 
-.letter-spacing {
-  letter-spacing: 0.5px;
+.recovery-matrix-table tbody tr:hover {
+  background-color: #f1f5f9;
 }
 
 /* --------------------------------------------------------------------------
-   Print & Settlement Statement Styles (Matching Image 2)
+   Print & Settlement Statement Styles
    -------------------------------------------------------------------------- */
 .settlement-print-sheet {
   font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
@@ -100,10 +127,18 @@
   font-weight: 700;
 }
 
-.surety-subtable th,
-.surety-subtable td {
-  padding: 3px 4px !important;
-  border-color: #555 !important;
+/* Dual Column Layout for Settlement Statement */
+.settlement-surety-row {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  gap: 12px !important;
+}
+
+.settlement-surety-col {
+  flex: 0 0 50% !important;
+  width: 50% !important;
+  max-width: 50% !important;
 }
 
 /* ==========================================================================
@@ -112,10 +147,13 @@
 @media print {
   @page {
     size: A4 portrait;
-    margin: 10mm 12mm 10mm 12mm;
+    margin: 8mm 10mm 8mm 10mm;
   }
 
   /* Hide navigation, admin chrome, actions, and non-printable elements */
+  #header,
+  #sidebar,
+  #footer,
   header,
   footer,
   aside,
@@ -130,11 +168,13 @@
   app-progress,
   .back-to-top,
   .modal-backdrop,
+  .modal-header,
+  .modal-footer,
   #main,
   .main,
-  main,
-  .member-info-container {
+  main {
     display: none !important;
+    visibility: hidden !important;
   }
 
   html, body {
@@ -181,7 +221,13 @@
     box-shadow: none !important;
     padding: 0 !important;
     margin: 0 !important;
-    background: transparent !important;
+    background: #ffffff !important;
+  }
+
+  #modal_settlement_statement .modal-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
   }
 
   #printable_settlement_sheet {
@@ -195,38 +241,64 @@
     break-inside: avoid !important;
   }
 
+  .table-responsive {
+    overflow: visible !important;
+    display: block !important;
+  }
+
+  .settlement-surety-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    gap: 10px !important;
+  }
+
+  .settlement-surety-col {
+    flex: 0 0 50% !important;
+    width: 50% !important;
+    max-width: 50% !important;
+  }
+
   .society-title {
-    font-size: 14pt !important;
+    font-size: 13.5pt !important;
     font-weight: 700 !important;
-    margin-bottom: 2px !important;
+    margin-bottom: 1px !important;
+    color: #000 !important;
   }
 
   .society-hindi-title {
-    font-size: 11pt !important;
+    font-size: 10.5pt !important;
     font-weight: 600 !important;
     margin-bottom: 2px !important;
+    color: #111 !important;
   }
 
   .society-address {
     font-size: 8.5pt !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 4px !important;
+    color: #222 !important;
   }
 
   .statement-main-title {
-    font-size: 12pt !important;
+    font-size: 11.5pt !important;
     font-weight: 700 !important;
-    margin-top: 6px !important;
-    margin-bottom: 10px !important;
+    text-decoration: underline !important;
+    text-underline-offset: 3px !important;
+    margin-top: 4px !important;
+    margin-bottom: 8px !important;
+    color: #000 !important;
   }
 
   .settlement-table {
     font-size: 8.8pt !important;
+    width: 100% !important;
   }
 
   .settlement-table th,
   .settlement-table td {
     padding: 3.5px 5px !important;
     border: 1px solid #000 !important;
+    color: #000 !important;
   }
 
   .settlement-table thead th {
@@ -234,10 +306,14 @@
     border-bottom: 1.5px solid #000 !important;
   }
 
-  .surety-subtable th,
-  .surety-subtable td {
-    font-size: 8pt !important;
-    padding: 2.5px 3px !important;
+  .settlement-subtable {
+    width: 100% !important;
+    font-size: 7.8pt !important;
+  }
+
+  .settlement-subtable th,
+  .settlement-subtable td {
+    padding: 2px 3px !important;
   }
 
   /* Prevent awkward page breaks */
