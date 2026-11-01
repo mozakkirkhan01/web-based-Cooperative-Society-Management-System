@@ -766,6 +766,19 @@
 }
 
 @media print {
+  /* Globally hide navigation, admin chrome, sidebars, backdrops, and footers */
+  #header,
+  #sidebar,
+  #footer,
+  .sidebar,
+  .navbar,
+  .back-to-top,
+  .modal-backdrop,
+  .no-print {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
   body:has(.member-passbook) #header,
   body:has(.member-passbook) #sidebar,
   body:has(.member-passbook) #footer,
@@ -779,4 +792,61 @@
   .member-passbook table { width: 100%; font-size: 9px; }
   .member-passbook th, .member-passbook td { padding: 3px !important; }
   .member-passbook tr { break-inside: avoid; }
+
+  /* Member Info & Final Settlement Statement Print Rules */
+  body:has(#printable_settlement_sheet),
+  body:has(.settlement-print-sheet) {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  body:has(#printable_settlement_sheet) #main {
+    display: none !important;
+  }
+
+  body:has(#printable_settlement_sheet) .modal {
+    position: static !important;
+    display: block !important;
+    overflow: visible !important;
+    width: 100% !important;
+    height: auto !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+
+  body:has(#printable_settlement_sheet) .modal-dialog {
+    transform: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  body:has(#printable_settlement_sheet) .modal-content {
+    border: none !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  body:has(#printable_settlement_sheet) .modal-header,
+  body:has(#printable_settlement_sheet) .modal-footer {
+    display: none !important;
+  }
+
+  body:has(#printable_settlement_sheet) .modal-body {
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+  }
+
+  body:has(#printable_settlement_sheet) .table-responsive {
+    overflow: visible !important;
+    display: block !important;
+  }
 }
