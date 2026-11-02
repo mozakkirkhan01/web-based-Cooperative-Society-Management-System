@@ -581,7 +581,13 @@ export class LoanApplicationComponent implements OnInit {
     this.sureties.push(row);
     this.redistributeSuretyAmounts();
 
-    $('#modal_add_surety').modal('hide');
+    this.selectedSuretyGuarantor = null;
+    this.suretySearchQuery = '';
+    this.suretySearchResults = [];
+    this.suretyContext = {
+      ForThisMember: { Count: 0, TotalAmount: 0 },
+      ForOther: { Count: 0, TotalAmount: 0 }
+    };
     this.toastr.success(`Guarantor ${row.Name} added to sureties.`);
   }
 
