@@ -31,6 +31,11 @@ export class MemberInfoComponent implements OnInit {
   selectedDetailView: string = 'Loan Recoveries';
   detailViewOptions: string[] = ['Surety List', 'Loan Recoveries', 'CD Recoveries', 'RD Recoveries'];
 
+  // Financial Year Selection
+  selectedYearId: number = 2026;
+  financialYearName: string = '2026-27';
+  financialYears: any[] = [];
+
   constructor(
     private service: AppService,
     private localService: LocalService,
@@ -129,7 +134,7 @@ export class MemberInfoComponent implements OnInit {
 
     this.isLoading = true;
     const payload: any = {
-      YearId: 2025
+      YearId: this.selectedYearId || 2026
     };
 
     if (memberId && memberId > 0) {
@@ -151,6 +156,15 @@ export class MemberInfoComponent implements OnInit {
           this.lastLoan = res.LastLoan;
           this.recoveries = res.Recoveries;
           this.settlement = res.Settlement;
+          if (res.FinancialYears && res.FinancialYears.length > 0) {
+            this.financialYears = res.FinancialYears;
+          }
+          if (res.FinancialYearName) {
+            this.financialYearName = res.FinancialYearName;
+          }
+          if (res.YearId) {
+            this.selectedYearId = res.YearId;
+          }
           if (this.member) {
             this.searchQuery = `${this.member.StaffNo} - ${this.member.MemberName}`;
           }
@@ -163,6 +177,14 @@ export class MemberInfoComponent implements OnInit {
         this.toastr.error(err?.error?.Message || 'An error occurred while retrieving member details.');
       }
     });
+  }
+
+    onYearChange(): void {
+    if (this.member) {
+      this.fetchMemberInfo(this.member.MemberId);
+    } else {
+      this.fetchMemberInfo();
+    }
   }
 
   onSearchKey(event: KeyboardEvent): void {
