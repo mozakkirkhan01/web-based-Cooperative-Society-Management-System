@@ -1,0 +1,577 @@
+<main id="main" class="main">
+
+  <!-- ========================================================================= -->
+  <!-- PAGE TITLE & BREADCRUMB                                                   -->
+  <!-- ========================================================================= -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom no-print">
+    <div class="pagetitle mb-2 mb-md-0">
+      <h1 class="h3 fw-bold text-dark mb-0">Head Book</h1>
+      <nav>
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+          <li class="breadcrumb-item">Reports</li>
+          <li class="breadcrumb-item active">Head Book</li>
+        </ol>
+      </nav>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" (click)="fetchHeadBook()" [disabled]="dataLoading">
+        <span *ngIf="dataLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+        <i *ngIf="!dataLoading" class="bi bi-play-fill me-1"></i> Show
+      </button>
+      <button type="button" class="btn btn-outline-primary btn-sm px-3 shadow-sm btn-print" (click)="printReport()" [disabled]="dataLoading || rows.length === 0">
+        <i class="bi bi-printer me-1"></i> Print
+      </button>
+      <button type="button" class="btn btn-outline-success btn-sm px-3 shadow-sm" (click)="exportCsv()" [disabled]="dataLoading || filteredRows.length === 0">
+        <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
+      </button>
+      <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" (click)="resetFilters()" [disabled]="dataLoading">
+        <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
+      </button>
+      <button type="button" class="btn btn-outline-danger btn-sm px-3 shadow-sm" (click)="closePage()">
+        <i class="bi bi-x-circle me-1"></i> Close
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- FILTER CARD: CRITERIA                                                     -->
+  <!-- ========================================================================= -->
+  <div class="card shadow-sm border-0 mb-3 filter-card no-print">
+    <div class="card-body p-3">
+      <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+        <span class="fw-bold text-primary fs-6">
+          <i class="bi bi-sliders me-1"></i> Filter Criteria
+        </span>
+        <span class="badge bg-light text-dark border" *ngIf="selectedHeadName">
+          Selected Head: <strong class="text-primary">{{selectedHeadName}}</strong>
+        </span>
+      </div>
+
+      <div class="row g-3 align-items-end">
+        <!-- Financial Year -->
+        <div class="col-lg-2 col-md-3 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Financial Year</label>
+          <select class="form-select form-select-sm" [(ngModel)]="selectedYearId" (change)="onYearChange()">
+            <option *ngFor="let y of years" [ngValue]="y.YearId">{{y.YearName}}</option>
+          </select>
+        </div>
+
+        <!-- Head -->
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Head</label>
+          <select class="form-select form-select-sm" [(ngModel)]="selectedHeadCode" (change)="onHeadChange()">
+            <option *ngFor="let h of heads" [value]="h.HeadCode">{{h.HeadName}}</option>
+          </select>
+        </div>
+
+        <!-- Include Interest Checkbox -->
+        <div class="col-lg-2 col-md-3 col-sm-6 d-flex align-items-center pb-1">
+          <div class="form-check form-switch pt-2" *ngIf="hasInterestOption">
+            <input class="form-check-input" type="checkbox" id="chkIncludeInterest" [(ngModel)]="includeInterest" (change)="onInterestCheckboxChange()">
+            <label class="form-check-label small fw-semibold text-dark ms-1 cursor-pointer" for="chkIncludeInterest">
+              Include Interest
+            </label>
+          </div>
+        </div>
+
+        <!-- For (Period) -->
+        <div class="col-lg-2 col-md-3 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">For (Period)</label>
+          <select class="form-select form-select-sm" [(ngModel)]="periodOption" (change)="onPeriodChange()">
+            <option *ngFor="let p of periodOptions" [value]="p">{{p}}</option>
+          </select>
+        </div>
+
+        <!-- From Date -->
+        <div class="col-lg-1-5 col-md-3 col-sm-6" style="flex: 1 1 12%;">
+          <label class="form-label small fw-semibold text-muted mb-1">From Date</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="fromDate">
+        </div>
+
+        <!-- To Date -->
+        <div class="col-lg-1-5 col-md-3 col-sm-6" style="flex: 1 1 12%;">
+          <label class="form-label small fw-semibold text-muted mb-1">To Date</label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="toDate">
+        </div>
+      </div>
+
+      <!-- Second Filter Row: Record Range -->
+      <div class="row g-3 align-items-end mt-1 pt-2 border-top">
+        <div class="col-md-2 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Records</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterType" (change)="onFilterTypeChange()">
+            <option value="All">(All)</option>
+            <option value="StaffNo">Staff No Range</option>
+            <option value="MemberNo">Member No Range</option>
+          </select>
+        </div>
+
+        <div class="col-md-2 col-sm-6" *ngIf="filterType !== 'All'">
+          <label class="form-label small fw-semibold text-muted mb-1">
+            From {{filterType === 'StaffNo' ? 'Staff No' : 'Member No'}}
+          </label>
+          <input type="text" class="form-control form-control-sm" [(ngModel)]="fromNumber" placeholder="Start value" (keyup.enter)="fetchHeadBook()">
+        </div>
+
+        <div class="col-md-2 col-sm-6" *ngIf="filterType !== 'All'">
+          <label class="form-label small fw-semibold text-muted mb-1">
+            To {{filterType === 'StaffNo' ? 'Staff No' : 'Member No'}}
+          </label>
+          <input type="text" class="form-control form-control-sm" [(ngModel)]="toNumber" placeholder="End value" (keyup.enter)="fetchHeadBook()">
+        </div>
+
+        <div class="col-md-auto ms-auto d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-primary btn-sm px-4" (click)="fetchHeadBook()" [disabled]="dataLoading">
+            <span *ngIf="dataLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+            <i *ngIf="!dataLoading" class="bi bi-search me-1"></i> Apply & Show
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- EXECUTIVE STATS CARDS                                                     -->
+  <!-- ========================================================================= -->
+  <div class="row g-2 mb-3 no-print" *ngIf="!isInitialLoad">
+    <!-- Members Count -->
+    <div class="col-xl-2 col-md-4 col-sm-6 col-12">
+      <div class="card stat-card shadow-sm border-0 h-100">
+        <div class="card-body p-2 d-flex align-items-center">
+          <div class="stat-icon bg-primary-subtle text-primary rounded p-2 me-2">
+            <i class="bi bi-people-fill fs-5"></i>
+          </div>
+          <div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Total Members</div>
+            <div class="fs-6 fw-bold text-dark">{{filteredRows.length}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Opening Balance -->
+    <div class="col-xl-2-5 col-md-4 col-sm-6 col-12" style="flex: 1 1 19%;">
+      <div class="card stat-card shadow-sm border-0 h-100">
+        <div class="card-body p-2 d-flex align-items-center">
+          <div class="stat-icon bg-info-subtle text-info rounded p-2 me-2">
+            <i class="bi bi-wallet2 fs-5"></i>
+          </div>
+          <div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Total Opening</div>
+            <div class="fs-6 fw-bold text-dark">₹{{totals.Opening | number:'1.2-2'}} {{totals.OpeningType}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Debits -->
+    <div class="col-xl-2-5 col-md-4 col-sm-6 col-12" style="flex: 1 1 19%;">
+      <div class="card stat-card shadow-sm border-0 h-100">
+        <div class="card-body p-2 d-flex align-items-center">
+          <div class="stat-icon bg-danger-subtle text-danger rounded p-2 me-2">
+            <i class="bi bi-arrow-up-right-circle fs-5"></i>
+          </div>
+          <div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Total Debits</div>
+            <div class="fs-6 fw-bold text-danger">₹{{totals.Debits | number:'1.2-2'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Credits -->
+    <div class="col-xl-2-5 col-md-4 col-sm-6 col-12" style="flex: 1 1 19%;">
+      <div class="card stat-card shadow-sm border-0 h-100">
+        <div class="card-body p-2 d-flex align-items-center">
+          <div class="stat-icon bg-success-subtle text-success rounded p-2 me-2">
+            <i class="bi bi-arrow-down-left-circle fs-5"></i>
+          </div>
+          <div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Total Credits</div>
+            <div class="fs-6 fw-bold text-success">₹{{totals.Credits | number:'1.2-2'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Closing Balance -->
+    <div class="col-xl-2-5 col-md-4 col-sm-6 col-12" style="flex: 1 1 19%;">
+      <div class="card stat-card shadow-sm border-0 h-100">
+        <div class="card-body p-2 d-flex align-items-center">
+          <div class="stat-icon bg-primary-subtle text-primary rounded p-2 me-2">
+            <i class="bi bi-safe2-fill fs-5"></i>
+          </div>
+          <div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Total Closing</div>
+            <div class="fs-6 fw-bold text-primary">₹{{totals.Closing | number:'1.2-2'}} {{totals.ClosingType}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- DATA CARD: RESULTS TABLE & PAGINATION                                     -->
+  <!-- ========================================================================= -->
+  <div class="card shadow-sm border-0 mb-4 no-print" *ngIf="!isInitialLoad">
+    <!-- Card Toolbar -->
+    <div class="card-header bg-white py-2 px-3 border-bottom d-flex flex-wrap align-items-center justify-content-between gap-2">
+      <div class="d-flex align-items-center flex-wrap gap-2">
+        <span class="fw-bold text-dark fs-6">{{selectedHeadName}}</span>
+        <span class="badge bg-secondary-subtle text-secondary border">
+          {{formatDateDisplay(fromDate)}} &mdash; {{formatDateDisplay(toDate)}}
+        </span>
+        <span class="badge bg-primary-subtle text-primary border" *ngIf="includeInterest && hasInterestOption">
+          Interest Breakdown
+        </span>
+        <span class="badge bg-light text-muted border">
+          {{recordsDisplay}}
+        </span>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <!-- Quick In-Table Search -->
+        <div class="input-group input-group-sm" style="max-width: 280px;">
+          <span class="input-group-text bg-white text-muted border-end-0">
+            <i class="bi bi-search"></i>
+          </span>
+          <input type="text" class="form-control border-start-0" placeholder="Filter in results..." [(ngModel)]="searchText" (input)="onSearchChange()">
+          <button class="btn btn-outline-secondary border-start-0" type="button" *ngIf="searchText" (click)="searchText=''; onSearchChange()">
+            <i class="bi bi-x"></i>
+          </button>
+        </div>
+
+        <!-- Page Size Selector -->
+        <div class="d-flex align-items-center text-nowrap gap-1">
+          <span class="small text-muted">Page Size:</span>
+          <select class="form-select form-select-sm" [(ngModel)]="pageSize" (change)="onPageSizeChange()" style="width: auto;">
+            <option *ngFor="let opt of pageSizeOptions" [ngValue]="opt.value">{{opt.label}}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="card-body p-0">
+      <!-- In-table Loading Indicator -->
+      <div *ngIf="dataLoading" class="text-center py-5 bg-white">
+        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="mt-2 text-muted small fw-semibold">Loading Head Book records...</div>
+      </div>
+
+      <div class="table-responsive head-book-table-container" *ngIf="!dataLoading">
+
+        <!-- 1. STANDARD 7-COLUMN TABLE (includeInterest === false) -->
+        <table class="table table-hover table-striped align-middle head-book-table mb-0" *ngIf="!includeInterest">
+          <thead class="table-light text-nowrap sticky-top">
+            <tr>
+              <th class="text-center" style="width: 50px;">#</th>
+              <th class="cursor-pointer" style="width: 100px;" (click)="setSort('StaffNo')">
+                Staff No
+                <i class="bi" [ngClass]="sortColumn === 'StaffNo' ? (sortDirection === 'asc' ? 'bi-sort-numeric-down text-primary' : 'bi-sort-numeric-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+              <th class="cursor-pointer" style="width: 90px;" (click)="setSort('MemberNo')">
+                Mem No
+                <i class="bi" [ngClass]="sortColumn === 'MemberNo' ? (sortDirection === 'asc' ? 'bi-sort-numeric-down text-primary' : 'bi-sort-numeric-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+              <th class="cursor-pointer" (click)="setSort('MemberName')">
+                Member Name
+                <i class="bi" [ngClass]="sortColumn === 'MemberName' ? (sortDirection === 'asc' ? 'bi-sort-alpha-down text-primary' : 'bi-sort-alpha-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+              <th class="text-end cursor-pointer" style="width: 150px;" (click)="setSort('Opening')">
+                Opening
+                <i class="bi" [ngClass]="sortColumn === 'Opening' ? (sortDirection === 'asc' ? 'bi-sort-numeric-down text-primary' : 'bi-sort-numeric-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+              <th class="text-end cursor-pointer" style="width: 140px;" (click)="setSort('Debits')">
+                Debits
+                <i class="bi" [ngClass]="sortColumn === 'Debits' ? (sortDirection === 'asc' ? 'bi-sort-numeric-down text-primary' : 'bi-sort-numeric-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+              <th class="text-end cursor-pointer" style="width: 140px;" (click)="setSort('Credits')">
+                Credits
+                <i class="bi" [ngClass]="sortColumn === 'Credits' ? (sortDirection === 'asc' ? 'bi-sort-numeric-down text-primary' : 'bi-sort-numeric-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+              <th class="text-end cursor-pointer" style="width: 150px;" (click)="setSort('Closing')">
+                Closing
+                <i class="bi" [ngClass]="sortColumn === 'Closing' ? (sortDirection === 'asc' ? 'bi-sort-numeric-down text-primary' : 'bi-sort-numeric-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of pagedRows; let i = index">
+              <td class="text-center text-muted small">{{(currentPage - 1) * (pageSize === -1 ? 0 : pageSize) + i + 1}}</td>
+              <td class="fw-semibold text-dark">{{row.StaffNo}}</td>
+              <td class="text-secondary">{{row.MemberNo}}</td>
+              <td class="fw-semibold text-primary">{{row.MemberName}}</td>
+              <td class="text-end font-monospace">
+                {{row.Opening | number:'1.2-2'}}
+                <span class="badge ms-1" [ngClass]="row.OpeningType === 'Dr' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'">{{row.OpeningType}}</span>
+              </td>
+              <td class="text-end font-monospace text-danger">{{row.Debits | number:'1.2-2'}}</td>
+              <td class="text-end font-monospace text-success">{{row.Credits | number:'1.2-2'}}</td>
+              <td class="text-end font-monospace fw-bold">
+                {{row.Closing | number:'1.2-2'}}
+                <span class="badge ms-1" [ngClass]="row.ClosingType === 'Dr' ? 'bg-danger' : 'bg-primary'">{{row.ClosingType}}</span>
+              </td>
+            </tr>
+            <tr *ngIf="filteredRows.length === 0">
+              <td colspan="8" class="text-center text-muted py-5">
+                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                No records found matching the filter criteria.
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="table-light border-top border-2 border-dark text-nowrap sticky-bottom">
+            <tr class="fw-bold">
+              <td colspan="4" class="text-end">Total: ({{filteredRows.length}} Members)</td>
+              <td class="text-end font-monospace text-primary">
+                {{totals.Opening | number:'1.2-2'}} {{totals.OpeningType}}
+              </td>
+              <td class="text-end font-monospace text-danger">
+                {{totals.Debits | number:'1.2-2'}}
+              </td>
+              <td class="text-end font-monospace text-success">
+                {{totals.Credits | number:'1.2-2'}}
+              </td>
+              <td class="text-end font-monospace text-primary">
+                {{totals.Closing | number:'1.2-2'}} {{totals.ClosingType}}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- 2. DETAILED INTEREST 11-COLUMN TABLE (includeInterest === true) -->
+        <table class="table table-hover table-striped align-middle head-book-table mb-0" *ngIf="includeInterest">
+          <thead class="table-light text-nowrap sticky-top">
+            <tr>
+              <th class="text-center" style="width: 45px;">#</th>
+              <th class="cursor-pointer" style="width: 85px;" (click)="setSort('StaffNo')">
+                Staff No
+                <i class="bi" [ngClass]="sortColumn === 'StaffNo' ? (sortDirection === 'asc' ? 'bi-sort-numeric-down text-primary' : 'bi-sort-numeric-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+              <th class="cursor-pointer" style="width: 75px;" (click)="setSort('MemberNo')">
+                Mem No
+                <i class="bi" [ngClass]="sortColumn === 'MemberNo' ? (sortDirection === 'asc' ? 'bi-sort-numeric-down text-primary' : 'bi-sort-numeric-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+              <th class="cursor-pointer" (click)="setSort('MemberName')">
+                Member Name
+                <i class="bi" [ngClass]="sortColumn === 'MemberName' ? (sortDirection === 'asc' ? 'bi-sort-alpha-down text-primary' : 'bi-sort-alpha-up text-primary') : 'bi-arrow-down-up text-muted'"></i>
+              </th>
+              <th class="text-end" style="width: 110px;">Opng.(Prn)</th>
+              <th class="text-end" style="width: 110px;">Opng.(Int)</th>
+              <th class="text-end" style="width: 95px;">Dr.(Prn)</th>
+              <th class="text-end" style="width: 95px;">Cr.(Prn)</th>
+              <th class="text-end" style="width: 95px;">Dr.(Int)</th>
+              <th class="text-end" style="width: 95px;">Cr.(Int)</th>
+              <th class="text-end" style="width: 115px;">Clos.(Prn)</th>
+              <th class="text-end" style="width: 115px;">Clos.(Int)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of pagedRows; let i = index">
+              <td class="text-center text-muted small">{{(currentPage - 1) * (pageSize === -1 ? 0 : pageSize) + i + 1}}</td>
+              <td class="fw-semibold text-dark">{{row.StaffNo}}</td>
+              <td class="text-secondary">{{row.MemberNo}}</td>
+              <td class="fw-semibold text-primary">{{row.MemberName}}</td>
+              <td class="text-end font-monospace small">
+                {{(row.OpeningPrn || 0) | number:'1.2-2'}} {{row.OpeningPrnType || 'Cr'}}
+              </td>
+              <td class="text-end font-monospace small">
+                {{(row.OpeningInt || 0) | number:'1.2-2'}} {{row.OpeningIntType || 'Cr'}}
+              </td>
+              <td class="text-end font-monospace small text-danger">{{(row.DebitsPrn || 0) | number:'1.2-2'}}</td>
+              <td class="text-end font-monospace small text-success">{{(row.CreditsPrn || 0) | number:'1.2-2'}}</td>
+              <td class="text-end font-monospace small text-danger">{{(row.DebitsInt || 0) | number:'1.2-2'}}</td>
+              <td class="text-end font-monospace small text-success">{{(row.CreditsInt || 0) | number:'1.2-2'}}</td>
+              <td class="text-end font-monospace small fw-bold">
+                {{(row.ClosingPrn || 0) | number:'1.2-2'}} {{row.ClosingPrnType || 'Cr'}}
+              </td>
+              <td class="text-end font-monospace small fw-bold">
+                {{(row.ClosingInt || 0) | number:'1.2-2'}} {{row.ClosingIntType || 'Cr'}}
+              </td>
+            </tr>
+            <tr *ngIf="filteredRows.length === 0">
+              <td colspan="12" class="text-center text-muted py-5">
+                <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+                No records found matching the filter criteria.
+              </td>
+            </tr>
+          </tbody>
+          <tfoot class="table-light border-top border-2 border-dark text-nowrap sticky-bottom">
+            <tr class="fw-bold">
+              <td colspan="4" class="text-end">Total: ({{filteredRows.length}} Members)</td>
+              <td class="text-end font-monospace text-primary small">
+                {{(totals.OpeningPrn || 0) | number:'1.2-2'}} {{totals.OpeningPrnType || 'Cr'}}
+              </td>
+              <td class="text-end font-monospace text-primary small">
+                {{(totals.OpeningInt || 0) | number:'1.2-2'}} {{totals.OpeningIntType || 'Cr'}}
+              </td>
+              <td class="text-end font-monospace text-danger small">
+                {{(totals.DebitsPrn || 0) | number:'1.2-2'}}
+              </td>
+              <td class="text-end font-monospace text-success small">
+                {{(totals.CreditsPrn || 0) | number:'1.2-2'}}
+              </td>
+              <td class="text-end font-monospace text-danger small">
+                {{(totals.DebitsInt || 0) | number:'1.2-2'}}
+              </td>
+              <td class="text-end font-monospace text-success small">
+                {{(totals.CreditsInt || 0) | number:'1.2-2'}}
+              </td>
+              <td class="text-end font-monospace text-primary small">
+                {{(totals.ClosingPrn || 0) | number:'1.2-2'}} {{totals.ClosingPrnType || 'Cr'}}
+              </td>
+              <td class="text-end font-monospace text-primary small">
+                {{(totals.ClosingInt || 0) | number:'1.2-2'}} {{totals.ClosingIntType || 'Cr'}}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination Footer -->
+    <div class="card-footer bg-white py-2 px-3 border-top d-flex flex-wrap justify-content-between align-items-center gap-2" *ngIf="pageSize !== -1 && filteredRows.length > 0">
+      <div class="text-muted small">
+        Showing <strong>{{(currentPage - 1) * pageSize + 1}}</strong> to <strong>{{Math.min(currentPage * pageSize, filteredRows.length)}}</strong> of <strong>{{filteredRows.length}}</strong> members
+      </div>
+      <ul class="pagination pagination-sm mb-0">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="goToPage(1)" href="javascript:void(0)">&laquo; First</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="goToPage(currentPage - 1)" href="javascript:void(0)">&lsaquo; Prev</a>
+        </li>
+        <ng-container *ngFor="let p of visiblePages">
+          <li class="page-item disabled" *ngIf="p < 0">
+            <span class="page-link">&hellip;</span>
+          </li>
+          <li class="page-item" *ngIf="p > 0" [class.active]="p === currentPage">
+            <a class="page-link" (click)="goToPage(p)" href="javascript:void(0)">{{p}}</a>
+          </li>
+        </ng-container>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a class="page-link" (click)="goToPage(currentPage + 1)" href="javascript:void(0)">Next &rsaquo;</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a class="page-link" (click)="goToPage(totalPages)" href="javascript:void(0)">Last &raquo;</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- EXACT PDF PRINT VIEW (Hidden on screen, displayed only during print)      -->
+  <!-- ========================================================================= -->
+  <div class="print-sheet print-only">
+    <!-- Header matching PDF -->
+    <div class="print-header text-center">
+      <div class="print-company-name-en">{{company?.CompanyName || 'Bokaro Steel Employees (TA/Med./Mat.) Co-op. Cr. Soc. Ltd.'}}</div>
+      <div class="print-company-name-hi" *ngIf="company?.CompanyNameHindi">{{company.CompanyNameHindi}}</div>
+      <div class="print-company-sub">
+        (Regd. No.- {{company?.RegistrationNo || 'BAGH-6/78'}}) &nbsp;&nbsp; {{company?.CompanyAddress || 'Old Admn. Bldg., Bokaro Steel City-827001'}}
+      </div>
+      <div class="print-report-title">
+        Head Book : {{selectedHeadName}}
+      </div>
+    </div>
+
+    <!-- Meta row: Date range, report date, records -->
+    <div class="print-meta-row mt-2">
+      <div class="print-meta-left">
+        <div><strong>From:</strong> {{formatDateDisplay(fromDate)}} &nbsp; <strong>To:</strong> {{formatDateDisplay(toDate)}}</div>
+        <div class="mt-1"><strong>Records:</strong> {{recordsDisplay}}</div>
+      </div>
+      <div class="print-meta-right">
+        <div><strong>Report Date:</strong> {{reportDate}}</div>
+      </div>
+    </div>
+
+    <!-- 1. PRINT TABLE: STANDARD 7 COLUMNS -->
+    <table class="print-table w-100" *ngIf="!includeInterest">
+      <thead>
+        <tr>
+          <th class="th-staff">StaffNo</th>
+          <th class="th-mem">Mem</th>
+          <th class="th-name">Name</th>
+          <th class="th-amount text-end">Opening</th>
+          <th class="th-amount text-end">Debits</th>
+          <th class="th-amount text-end">Credits</th>
+          <th class="th-amount text-end">Closing</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of filteredRows">
+          <td class="td-staff">{{row.StaffNo}}</td>
+          <td class="td-mem">{{row.MemberNo}}</td>
+          <td class="td-name">{{row.MemberName}}</td>
+          <td class="td-amount text-end">{{row.Opening | number:'1.2-2'}} {{row.OpeningType}}</td>
+          <td class="td-amount text-end">{{row.Debits | number:'1.2-2'}}</td>
+          <td class="td-amount text-end">{{row.Credits | number:'1.2-2'}}</td>
+          <td class="td-amount text-end">{{row.Closing | number:'1.2-2'}} {{row.ClosingType}}</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="tr-totals">
+          <td colspan="3" class="td-total-label">Total: &nbsp; {{filteredRows.length}}</td>
+          <td class="td-amount text-end">{{totals.Opening | number:'1.2-2'}} {{totals.OpeningType}}</td>
+          <td class="td-amount text-end">{{totals.Debits | number:'1.2-2'}}</td>
+          <td class="td-amount text-end">{{totals.Credits | number:'1.2-2'}}</td>
+          <td class="td-amount text-end">{{totals.Closing | number:'1.2-2'}} {{totals.ClosingType}}</td>
+        </tr>
+      </tfoot>
+    </table>
+
+    <!-- 2. PRINT TABLE: DETAILED INTEREST 11 COLUMNS -->
+    <table class="print-table print-table-interest w-100" *ngIf="includeInterest">
+      <thead>
+        <tr>
+          <th class="th-staff">StaffNo</th>
+          <th class="th-mem">Mem</th>
+          <th class="th-name">Name</th>
+          <th class="text-end">Opng.(Prn)</th>
+          <th class="text-end">Opng.(Int)</th>
+          <th class="text-end">Dr.(Prn)</th>
+          <th class="text-end">Cr.(Prn)</th>
+          <th class="text-end">Dr.(Int)</th>
+          <th class="text-end">Cr.(Int)</th>
+          <th class="text-end">Clos.(Prn)</th>
+          <th class="text-end">Clos.(Int)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let row of filteredRows">
+          <td class="td-staff">{{row.StaffNo}}</td>
+          <td class="td-mem">{{row.MemberNo}}</td>
+          <td class="td-name">{{row.MemberName}}</td>
+          <td class="text-end">{{(row.OpeningPrn || 0) | number:'1.2-2'}} {{row.OpeningPrnType || 'Cr'}}</td>
+          <td class="text-end">{{(row.OpeningInt || 0) | number:'1.2-2'}} {{row.OpeningIntType || 'Cr'}}</td>
+          <td class="text-end">{{(row.DebitsPrn || 0) | number:'1.2-2'}}</td>
+          <td class="text-end">{{(row.CreditsPrn || 0) | number:'1.2-2'}}</td>
+          <td class="text-end">{{(row.DebitsInt || 0) | number:'1.2-2'}}</td>
+          <td class="text-end">{{(row.CreditsInt || 0) | number:'1.2-2'}}</td>
+          <td class="text-end">{{(row.ClosingPrn || 0) | number:'1.2-2'}} {{row.ClosingPrnType || 'Cr'}}</td>
+          <td class="text-end">{{(row.ClosingInt || 0) | number:'1.2-2'}} {{row.ClosingIntType || 'Cr'}}</td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr class="tr-totals">
+          <td colspan="3" class="td-total-label">Total: &nbsp; {{filteredRows.length}}</td>
+          <td class="text-end">{{(totals.OpeningPrn || 0) | number:'1.2-2'}} {{totals.OpeningPrnType || 'Cr'}}</td>
+          <td class="text-end">{{(totals.OpeningInt || 0) | number:'1.2-2'}} {{totals.OpeningIntType || 'Cr'}}</td>
+          <td class="text-end">{{(totals.DebitsPrn || 0) | number:'1.2-2'}}</td>
+          <td class="text-end">{{(totals.CreditsPrn || 0) | number:'1.2-2'}}</td>
+          <td class="text-end">{{(totals.DebitsInt || 0) | number:'1.2-2'}}</td>
+          <td class="text-end">{{(totals.CreditsInt || 0) | number:'1.2-2'}}</td>
+          <td class="text-end">{{(totals.ClosingPrn || 0) | number:'1.2-2'}} {{totals.ClosingPrnType || 'Cr'}}</td>
+          <td class="text-end">{{(totals.ClosingInt || 0) | number:'1.2-2'}} {{totals.ClosingIntType || 'Cr'}}</td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+</main>

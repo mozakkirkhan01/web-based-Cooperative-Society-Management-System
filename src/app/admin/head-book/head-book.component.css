@@ -1,0 +1,257 @@
+/* ==========================================================================
+   HEAD BOOK STYLES (Screen & Print)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Screen Styles
+   -------------------------------------------------------------------------- */
+.filter-card {
+  border-top: 3px solid #0d6efd;
+  background-color: #ffffff;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+  user-select: none;
+}
+
+.stat-card {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  border-left: 3px solid transparent !important;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08) !important;
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.head-book-table-container {
+  max-height: 68vh;
+  overflow-y: auto;
+}
+
+.head-book-table {
+  font-size: 0.86rem;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.head-book-table thead th {
+  background-color: #f8fafc;
+  color: #334155;
+  font-weight: 600;
+  border-bottom: 2px solid #cbd5e1;
+  padding: 8px 10px;
+  z-index: 5;
+}
+
+.head-book-table tbody td {
+  padding: 6px 10px;
+  vertical-align: middle;
+}
+
+.head-book-table tbody tr:hover {
+  background-color: #f1f5f9;
+}
+
+.head-book-table tfoot td {
+  background-color: #f8fafc;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+  z-index: 4;
+}
+
+.font-monospace {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+  letter-spacing: 0.2px;
+}
+
+.print-only {
+  display: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   Print Styles: Exact Match for Legacy PDF Report
+   -------------------------------------------------------------------------- */
+@media print {
+  @page {
+    size: portrait;
+    margin: 8mm 8mm 8mm 8mm;
+  }
+
+  /* Hide screen chrome & controls */
+  .no-print,
+  #header,
+  header,
+  #sidebar,
+  .sidebar,
+  .pagetitle,
+  footer,
+  .footer,
+  .filter-card,
+  .stat-card,
+  .head-book-table-container,
+  .card-footer,
+  .card-header,
+  app-progress {
+    display: none !important;
+  }
+
+  body, html, main#main {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: Arial, "Helvetica Neue", Helvetica, sans-serif !important;
+    width: 100% !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .print-sheet {
+    width: 100% !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Society Header in PDF */
+  .print-header {
+    text-align: center !important;
+    margin-bottom: 6px !important;
+  }
+
+  .print-company-name-en {
+    font-size: 13.5pt !important;
+    font-weight: 700 !important;
+    text-decoration: underline !important;
+    line-height: 1.2 !important;
+    color: #000000 !important;
+  }
+
+  .print-company-name-hi {
+    font-size: 10.5pt !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    color: #000000 !important;
+    margin-top: 1px !important;
+  }
+
+  .print-company-sub {
+    font-size: 8.5pt !important;
+    line-height: 1.2 !important;
+    color: #000000 !important;
+    margin-top: 2px !important;
+  }
+
+  .print-report-title {
+    font-size: 12pt !important;
+    font-weight: 700 !important;
+    text-decoration: underline !important;
+    margin-top: 6px !important;
+    margin-bottom: 4px !important;
+    color: #000000 !important;
+  }
+
+  /* Metadata row (From - To & Report Date) */
+  .print-meta-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    font-size: 9pt !important;
+    font-weight: 600 !important;
+    line-height: 1.3 !important;
+    margin-bottom: 4px !important;
+    color: #000000 !important;
+  }
+
+  .print-meta-left {
+    text-align: left !important;
+  }
+
+  .print-meta-right {
+    text-align: right !important;
+  }
+
+  /* Print Table */
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8.5pt !important;
+    color: #000000 !important;
+    margin-top: 2px !important;
+  }
+
+  .print-table thead {
+    display: table-header-group !important;
+  }
+
+  .print-table thead tr th {
+    border-top: 1px solid #000000 !important;
+    border-bottom: 1px solid #000000 !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 3px 4px !important;
+    font-weight: bold !important;
+    color: #000000 !important;
+    background: transparent !important;
+    text-align: left !important;
+  }
+
+  .print-table thead tr th.text-end {
+    text-align: right !important;
+  }
+
+  .print-table tbody tr {
+    page-break-inside: avoid !important;
+  }
+
+  .print-table tbody tr td {
+    border: none !important;
+    padding: 1.5px 4px !important;
+    color: #000000 !important;
+    background: transparent !important;
+    white-space: nowrap !important;
+  }
+
+  .print-table tfoot {
+    display: table-footer-group !important;
+  }
+
+  .print-table tfoot tr.tr-totals td {
+    border-top: 1px solid #000000 !important;
+    border-bottom: 1px solid #000000 !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 3px 4px !important;
+    font-weight: bold !important;
+    color: #000000 !important;
+    background: transparent !important;
+  }
+
+  /* Specific column widths for standard table */
+  .th-staff, .td-staff { width: 75px !important; }
+  .th-mem, .td-mem { width: 60px !important; }
+  .th-name, .td-name { width: auto !important; }
+  .th-amount, .td-amount { width: 110px !important; text-align: right !important; }
+
+  /* Interest Breakdown mode: 11 columns */
+  .print-table-interest {
+    font-size: 7.5pt !important;
+  }
+
+  .print-table-interest thead tr th,
+  .print-table-interest tbody tr td,
+  .print-table-interest tfoot tr td {
+    padding: 1.5px 2px !important;
+  }
+}
