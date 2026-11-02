@@ -385,6 +385,12 @@
                        placeholder="e.g. State Bank of India">
               </div>
               <div class="col-sm-6">
+                <label class="form-label small text-muted fw-bold mb-1">BRANCH NAME</label>
+                <input type="text" class="form-control form-control-sm"
+                       [(ngModel)]="loanApp.BranchName"
+                       placeholder="e.g. Main Branch / Sector 4">
+              </div>
+              <div class="col-sm-6">
                 <label class="form-label small text-muted fw-bold mb-1">ACCOUNT NO</label>
                 <input type="text" class="form-control form-control-sm"
                        [(ngModel)]="loanApp.BankAccountNo"
@@ -396,7 +402,7 @@
                        [(ngModel)]="loanApp.IFSCCode"
                        placeholder="e.g. SBIN0001234">
               </div>
-              <div class="col-sm-6">
+              <div class="col-12">
                 <label class="form-label small text-muted fw-bold mb-1">REMARKS / PURPOSE NOTE</label>
                 <input type="text" class="form-control form-control-sm"
                        [(ngModel)]="loanApp.Remarks"

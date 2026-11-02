@@ -58,6 +58,7 @@ export class LoanApplicationComponent implements OnInit {
     TenorMonths: 84,
     InstallmentAmount: 0,
     BankName: '',
+    BranchName: '',
     BankAccountNo: '',
     IFSCCode: '',
     Remarks: '',
@@ -318,6 +319,9 @@ export class LoanApplicationComponent implements OnInit {
           // Populate loanee bank details if available
           if (this.selectedMember.BankName && !this.loanApp.BankName) {
             this.loanApp.BankName = this.selectedMember.BankName;
+          }
+          if (this.selectedMember.BranchName && !this.loanApp.BranchName) {
+            this.loanApp.BranchName = this.selectedMember.BranchName;
           }
           if (this.selectedMember.AccountNo && !this.loanApp.BankAccountNo) {
             this.loanApp.BankAccountNo = this.selectedMember.AccountNo;
@@ -716,6 +720,7 @@ export class LoanApplicationComponent implements OnInit {
       TenorMonths: parseInt(this.loanApp.TenorMonths, 10) || 84,
       InstallmentAmount: Number(this.loanApp.InstallmentAmount) || 0,
       BankName: this.loanApp.BankName || null,
+      BranchName: this.loanApp.BranchName || null,
       BankAccountNo: this.loanApp.BankAccountNo || null,
       IFSCCode: this.loanApp.IFSCCode || null,
       Remarks: this.loanApp.Remarks || null,
@@ -774,6 +779,7 @@ export class LoanApplicationComponent implements OnInit {
       TenorMonths: 84,
       InstallmentAmount: 0,
       BankName: '',
+      BranchName: '',
       BankAccountNo: '',
       IFSCCode: '',
       Remarks: '',
@@ -840,6 +846,7 @@ export class LoanApplicationComponent implements OnInit {
             TenorMonths: app.TenorMonths || 84,
             InstallmentAmount: app.InstallmentAmount,
             BankName: app.BankName,
+            BranchName: app.BranchName,
             BankAccountNo: app.BankAccountNo,
             IFSCCode: app.IFSCCode,
             Remarks: app.Remarks,
