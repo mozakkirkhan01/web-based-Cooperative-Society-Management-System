@@ -307,13 +307,13 @@
               <td class="fw-semibold text-dark">{{row.StaffNo}}</td>
               <td class="text-secondary">{{row.MemberNo}}</td>
               <td class="fw-semibold text-primary">{{row.MemberName}}</td>
-              <td class="text-end font-monospace">
+              <td class="text-end">
                 {{row.Opening | number:'1.2-2'}}
                 <span class="badge ms-1" [ngClass]="row.OpeningType === 'Dr' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'">{{row.OpeningType}}</span>
               </td>
-              <td class="text-end font-monospace text-danger">{{row.Debits | number:'1.2-2'}}</td>
-              <td class="text-end font-monospace text-success">{{row.Credits | number:'1.2-2'}}</td>
-              <td class="text-end font-monospace fw-bold">
+              <td class="text-end text-danger">{{row.Debits | number:'1.2-2'}}</td>
+              <td class="text-end text-success">{{row.Credits | number:'1.2-2'}}</td>
+              <td class="text-end fw-bold">
                 {{row.Closing | number:'1.2-2'}}
                 <span class="badge ms-1" [ngClass]="row.ClosingType === 'Dr' ? 'bg-danger' : 'bg-primary'">{{row.ClosingType}}</span>
               </td>
@@ -328,16 +328,16 @@
           <tfoot class="table-light border-top border-2 border-dark text-nowrap sticky-bottom">
             <tr class="fw-bold">
               <td colspan="4" class="text-end">Total: ({{filteredRows.length}} Members)</td>
-              <td class="text-end font-monospace text-primary">
+              <td class="text-end text-primary">
                 {{totals.Opening | number:'1.2-2'}} {{totals.OpeningType}}
               </td>
-              <td class="text-end font-monospace text-danger">
+              <td class="text-end text-danger">
                 {{totals.Debits | number:'1.2-2'}}
               </td>
-              <td class="text-end font-monospace text-success">
+              <td class="text-end text-success">
                 {{totals.Credits | number:'1.2-2'}}
               </td>
-              <td class="text-end font-monospace text-primary">
+              <td class="text-end text-primary">
                 {{totals.Closing | number:'1.2-2'}} {{totals.ClosingType}}
               </td>
             </tr>
@@ -377,20 +377,20 @@
               <td class="fw-semibold text-dark">{{row.StaffNo}}</td>
               <td class="text-secondary">{{row.MemberNo}}</td>
               <td class="fw-semibold text-primary">{{row.MemberName}}</td>
-              <td class="text-end font-monospace small">
+              <td class="text-end small">
                 {{(row.OpeningPrn || 0) | number:'1.2-2'}} {{row.OpeningPrnType || 'Cr'}}
               </td>
-              <td class="text-end font-monospace small">
+              <td class="text-end small">
                 {{(row.OpeningInt || 0) | number:'1.2-2'}} {{row.OpeningIntType || 'Cr'}}
               </td>
-              <td class="text-end font-monospace small text-danger">{{(row.DebitsPrn || 0) | number:'1.2-2'}}</td>
-              <td class="text-end font-monospace small text-success">{{(row.CreditsPrn || 0) | number:'1.2-2'}}</td>
-              <td class="text-end font-monospace small text-danger">{{(row.DebitsInt || 0) | number:'1.2-2'}}</td>
-              <td class="text-end font-monospace small text-success">{{(row.CreditsInt || 0) | number:'1.2-2'}}</td>
-              <td class="text-end font-monospace small fw-bold">
+              <td class="text-end small text-danger">{{(row.DebitsPrn || 0) | number:'1.2-2'}}</td>
+              <td class="text-end small text-success">{{(row.CreditsPrn || 0) | number:'1.2-2'}}</td>
+              <td class="text-end small text-danger">{{(row.DebitsInt || 0) | number:'1.2-2'}}</td>
+              <td class="text-end small text-success">{{(row.CreditsInt || 0) | number:'1.2-2'}}</td>
+              <td class="text-end small fw-bold">
                 {{(row.ClosingPrn || 0) | number:'1.2-2'}} {{row.ClosingPrnType || 'Cr'}}
               </td>
-              <td class="text-end font-monospace small fw-bold">
+              <td class="text-end small fw-bold">
                 {{(row.ClosingInt || 0) | number:'1.2-2'}} {{row.ClosingIntType || 'Cr'}}
               </td>
             </tr>
@@ -404,28 +404,28 @@
           <tfoot class="table-light border-top border-2 border-dark text-nowrap sticky-bottom">
             <tr class="fw-bold">
               <td colspan="4" class="text-end">Total: ({{filteredRows.length}} Members)</td>
-              <td class="text-end font-monospace text-primary small">
+              <td class="text-end text-primary small">
                 {{(totals.OpeningPrn || 0) | number:'1.2-2'}} {{totals.OpeningPrnType || 'Cr'}}
               </td>
-              <td class="text-end font-monospace text-primary small">
+              <td class="text-end text-primary small">
                 {{(totals.OpeningInt || 0) | number:'1.2-2'}} {{totals.OpeningIntType || 'Cr'}}
               </td>
-              <td class="text-end font-monospace text-danger small">
+              <td class="text-end text-danger small">
                 {{(totals.DebitsPrn || 0) | number:'1.2-2'}}
               </td>
-              <td class="text-end font-monospace text-success small">
+              <td class="text-end text-success small">
                 {{(totals.CreditsPrn || 0) | number:'1.2-2'}}
               </td>
-              <td class="text-end font-monospace text-danger small">
+              <td class="text-end text-danger small">
                 {{(totals.DebitsInt || 0) | number:'1.2-2'}}
               </td>
-              <td class="text-end font-monospace text-success small">
+              <td class="text-end text-success small">
                 {{(totals.CreditsInt || 0) | number:'1.2-2'}}
               </td>
-              <td class="text-end font-monospace text-primary small">
+              <td class="text-end text-primary small">
                 {{(totals.ClosingPrn || 0) | number:'1.2-2'}} {{totals.ClosingPrnType || 'Cr'}}
               </td>
-              <td class="text-end font-monospace text-primary small">
+              <td class="text-end text-primary small">
                 {{(totals.ClosingInt || 0) | number:'1.2-2'}} {{totals.ClosingIntType || 'Cr'}}
               </td>
             </tr>

@@ -69,11 +69,6 @@
   z-index: 4;
 }
 
-.font-monospace {
-  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
-  letter-spacing: 0.2px;
-}
-
 .print-only {
   display: none !important;
 }
