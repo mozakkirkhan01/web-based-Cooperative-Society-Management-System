@@ -23,9 +23,17 @@
   justify-content: center;
 }
 
+.filter-card .form-label {
+  height: 20px;
+  line-height: 20px;
+  margin-bottom: 0.25rem;
+}
+
 .filter-card .form-control-sm,
-.filter-card .form-select-sm {
+.filter-card .form-select-sm,
+.filter-card .btn-sm {
   font-size: 0.82rem;
+  height: 31px;
 }
 
 .table th {
