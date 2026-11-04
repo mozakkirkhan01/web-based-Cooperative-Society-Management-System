@@ -106,6 +106,10 @@ export class AppService {
   deleteMember(obj: any) {
     return this.http.post(this.apiUrl + "Member/deleteMember", obj, { headers: this.headers })
   }
+
+  getMemberInfoDetails(obj: any) {
+    return this.http.post(this.apiUrl + "Member/GetMemberInfoDetails", obj, { headers: this.headers });
+  }
   //FinancialYear
   accounting(action: string, obj: any) {
     return this.http.post(this.apiUrl + 'Accounting/' + action, obj, { headers: this.headers });
@@ -351,5 +355,15 @@ export class AppService {
   // Loan
   loan(action: string, obj: any) {
     return this.http.post(this.apiUrl + 'Loan/' + action, obj, { headers: this.headers });
+  }
+
+  // Head Book
+  headBook(action: string, obj: any) {
+    return this.http.post(this.apiUrl + 'HeadBook/' + action, obj, { headers: this.headers });
+  }
+
+  // EDP Advice
+  edpAdvice(action: string, obj: any) {
+    return this.http.post(this.apiUrl + 'EDPAdvice/' + action, obj, { headers: this.headers });
   }
 }
