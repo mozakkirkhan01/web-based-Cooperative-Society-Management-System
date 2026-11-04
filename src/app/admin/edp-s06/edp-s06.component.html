@@ -31,6 +31,10 @@
         <i class="bi bi-printer me-1"></i> Print Official
       </button>
 
+      <button type="button" class="btn btn-outline-danger btn-sm px-3 shadow-sm" (click)="downloadPdf()" [disabled]="dataLoading || rows.length === 0">
+        <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+      </button>
+
       <button type="button" class="btn btn-outline-dark btn-sm px-3 shadow-sm" (click)="downloadEdpTextFile()" [disabled]="dataLoading || rows.length === 0" title="Generate ASCII text file for SAIL/BSL EDP">
         <i class="bi bi-file-earmark-arrow-down me-1"></i> Export .TXT (SAIL)
       </button>
@@ -68,8 +72,18 @@
   <div class="card shadow-sm border-0 mb-3 filter-card no-print">
     <div class="card-body p-3">
       <div class="row g-3 align-items-start">
-        <!-- Month Selector -->
-        <div class="col-lg-4 col-md-5 col-sm-6">
+        <!-- Financial Year Selector -->
+        <div class="col-lg-3 col-md-4 col-sm-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Financial Year</label>
+          <select class="form-select form-select-sm" [(ngModel)]="selectedFinancialYear" (change)="onFinancialYearChange()">
+            <option *ngFor="let fy of financialYears" [value]="fy.FinancialYearName">
+              {{fy.FinancialYearName}} {{fy.IsCurrent ? '(Current)' : ''}}
+            </option>
+          </select>
+        </div>
+
+        <!-- Month Selector (Current Financial Year) -->
+        <div class="col-lg-4 col-md-4 col-sm-6">
           <label class="form-label small fw-semibold text-muted mb-1">
             Month: <code class="text-primary fw-bold">{{selectedMonthCode}}</code>
           </label>
@@ -83,6 +97,7 @@
           </div>
         </div>
 
+        <!-- Apply Button -->
         <div class="col-lg-3 col-md-4 col-sm-6 ms-auto d-flex flex-column align-items-end justify-content-start">
           <label class="form-label small fw-semibold mb-1 invisible d-none d-sm-block">&nbsp;</label>
           <button type="button" class="btn btn-primary btn-sm px-4" (click)="fetchAdviceData()" [disabled]="dataLoading">
@@ -179,7 +194,7 @@
             <div class="row g-2 mb-2">
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">VR No.</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrNo" name="vrNo" placeholder="033746">
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrNo" name="vrNo" placeholder="057730">
               </div>
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">VR Date (DDMMYY)</label>
@@ -191,7 +206,7 @@
             <div class="row g-2 mb-3">
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">Code</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.Code" name="code" placeholder="03">
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.Code" name="code" placeholder="05">
               </div>
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">Acc No</label>
@@ -261,7 +276,7 @@
               <!-- Data Rows -->
               <tr *ngFor="let row of pagedRows; let i = index">
                 <td class="text-muted">{{row.SlNo}}</td>
-                <td><span class="badge bg-light text-dark border">003/{{row.PageNo || '001'}}</span></td>
+                <td><span class="badge bg-light text-dark border">005/{{row.PageNo || '001'}}</span></td>
                 <td>
                   <span class="fw-bold text-primary">{{row.StaffNo}}</span>
                   <div class="text-muted" style="font-size: 0.72rem;" *ngIf="row.MemberNo">Mem: {{row.MemberNo}}</div>
@@ -273,9 +288,9 @@
                 <td class="text-end fw-semibold text-success">
                   {{row.Installment > 0 ? (row.Installment | number:'1.2-2') : '0.00'}}
                 </td>
-                <td><code>{{row.VrNo || '-'}}</code></td>
+                <td><code>{{row.VrNo ? formatVrNo(row.VrNo) : '-'}}</code></td>
                 <td>{{row.VrDate || '-'}}</td>
-                <td><span class="badge bg-secondary">{{row.Code || '03'}}</span></td>
+                <td><span class="badge bg-secondary">{{row.Code || '05'}}</span></td>
                 <td><span class="badge bg-light text-dark border">{{row.AccNo || '000048'}}</span></td>
                 <td class="text-center">
                   <div class="btn-group btn-group-sm">
@@ -323,56 +338,69 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- OFFICIAL PRINT REPORT VIEW (MATCHING EDP - S06 OFFICIAL LAYOUT)            -->
+  <!-- OFFICIAL PRINT REPORT VIEW (MATCHING S06 OFFICIAL PRINT LAYOUT)           -->
   <!-- ========================================================================= -->
   <div class="print-container d-none d-print-block">
     <!-- Header -->
-    <div class="print-header text-center mb-3">
-      <h4 class="company-name mb-0 text-decoration-underline fw-bold">{{company.CompanyName}}</h4>
-      <h5 class="company-hindi mb-0 fw-bold">{{company.CompanyNameHindi}}</h5>
-      <div class="company-sub text-muted small">
-        <span>(Regd. No.- {{company.RegistrationNo}})</span>
-        <span class="ms-2">{{company.CompanyAddress}}</span>
+    <div class="print-header text-center">
+      <div class="company-name fw-bold">
+        Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd.
       </div>
-
-      <div class="report-title-box mt-2">
-        <h4 class="report-title fw-bold mb-0">EDP - S06 (Loan and Master Changes Advice)</h4>
-        <div class="d-flex justify-content-between align-items-center px-2 mt-1 small">
-          <span><strong>Month:</strong> {{selectedMonthCode}}</span>
-          <span><strong>Report Date:</strong> {{reportDate}}</span>
-        </div>
+      <div class="company-hindi fw-bold">
+        बोकारो इस्पात कर्मचारी (टी०ए०/मेड०/मैट०) सहकारी साख समिति लिमिटेड
+      </div>
+      <div class="company-sub">
+        <span>(Regd. No.- BAGH-6/78)</span>
+        <span class="ms-3">Old Admn. Bldg., Bokaro Steel City-827001</span>
       </div>
     </div>
 
+    <div class="print-report-title">
+      EDP - S06 (Loan and Master Changes Advice)
+    </div>
+
+    <div class="print-sub-header">
+      <span><strong>Month: {{selectedMonthCode}}</strong></span>
+      <span>Report Date: {{reportDate}}</span>
+    </div>
+
     <!-- Official Monospace Print Table -->
-    <table class="table print-table table-bordered mb-2">
+    <table class="official-print-table">
       <thead>
         <tr>
-          <th>Type</th>
-          <th>MmYy</th>
-          <th>File/Page</th>
-          <th>StaffNo</th>
-          <th>Code</th>
+          <th class="text-start">Type</th>
+          <th class="text-start">MmYy</th>
+          <th class="text-start">File/Page</th>
+          <th class="text-start">StaffNo</th>
+          <th class="text-start">Code</th>
           <th class="text-end">Installment</th>
-          <th>AccNo</th>
+          <th class="text-start">AccNo</th>
         </tr>
       </thead>
       <tbody>
         <tr *ngFor="let r of rows">
-          <td>S06</td>
-          <td>{{selectedMonthCode}}</td>
-          <td>003/{{r.PageNo || '001'}}</td>
-          <td>{{r.StaffNo}}</td>
-          <td>{{r.Code || '03'}}</td>
+          <td class="text-start">S06</td>
+          <td class="text-start">{{selectedMonthCode}}</td>
+          <td class="text-start">005/{{r.PageNo || '001'}}</td>
+          <td class="text-start">{{r.StaffNo}}</td>
+          <td class="text-start">{{r.Code || '05'}}</td>
           <td class="text-end">{{formatFixedDigits(r.Installment, 7)}}</td>
-          <td>{{r.AccNo || '000048'}}</td>
+          <td class="text-start">{{r.AccNo || '000048'}}</td>
         </tr>
       </tbody>
+      <tfoot>
+        <tr class="total-records-row">
+          <td colspan="7" class="text-start">
+            Total Records:&nbsp;&nbsp;&nbsp;&nbsp;{{rows.length}}
+          </td>
+        </tr>
+      </tfoot>
     </table>
 
-    <div class="print-footer-summary d-flex justify-content-between align-items-center mt-2 px-1">
-      <div>Total Records: {{rows.length}}</div>
-      <div>Total Installment: ₹{{totals.TotalInstallment | number:'1.2-2'}}</div>
+    <!-- Page Footer (Fixed at page bottom) -->
+    <div class="print-page-footer">
+      <div class="print-footer-rule"></div>
+      <div class="print-footer-page-text">Page - 1 of 1</div>
     </div>
   </div>
 

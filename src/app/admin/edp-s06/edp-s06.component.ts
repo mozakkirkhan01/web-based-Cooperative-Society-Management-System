@@ -4,6 +4,8 @@ import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
 import { ConstantData } from '../../utils/constant-data';
 import { RequestModel } from '../../utils/interface';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export interface S06Row {
   LineId?: number;
@@ -34,12 +36,18 @@ export class EdpS06Component implements OnInit {
   userDetail: any = {};
   reportDate = '';
 
+  financialYears: any[] = [
+    { FinancialYearName: '2026-27', IsCurrent: true },
+    { FinancialYearName: '2025-26', IsCurrent: false }
+  ];
+  selectedFinancialYear = '2026-27';
+  allMonths: any[] = [];
   months: any[] = [];
   selectedMonthCode = '0426';
 
   company: any = {
-    CompanyName: 'Bokaro Steel Employees (TA/Med./Mat.) Co-op. Cr. Soc. Ltd.',
-    CompanyNameHindi: 'बोकारो इस्पात कर्मचारी (टी०ए०/मेड०/मेट०) सहकारी साख समिति लिमिटेड',
+    CompanyName: 'Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd.',
+    CompanyNameHindi: 'बोकारो इस्पात कर्मचारी (टी०ए०/मेड०/मैट०) सहकारी साख समिति लिमिटेड',
     RegistrationNo: 'BAGH-6/78',
     CompanyAddress: 'Old Admn. Bldg., Bokaro Steel City-827001'
   };
@@ -106,11 +114,27 @@ export class EdpS06Component implements OnInit {
       MemberName: '',
       Department: '',
       Installment: 0,
-      Code: '03',
+      Code: '05',
       VrNo: '',
       VrDate: '',
       AccNo: '000048'
     };
+  }
+
+  formatVrNo(vr: string): string {
+    if (!vr) return '';
+    const clean = vr.trim().replace(/\D/g, '');
+    if (!clean) return vr.trim();
+    if (clean.length === 6 && clean.startsWith('05')) {
+      return clean;
+    }
+    if (clean.length <= 4) {
+      return '05' + clean.padStart(4, '0');
+    }
+    if (clean.length === 5) {
+      return '0' + clean;
+    }
+    return '05' + clean.slice(-4);
   }
 
   loadSetup(): void {
@@ -123,10 +147,21 @@ export class EdpS06Component implements OnInit {
           if (res.Company) {
             this.company = { ...this.company, ...res.Company };
           }
-          this.months = res.Months || [];
-          if (res.Months && res.Months.length > 0) {
-            this.selectedMonthCode = res.Months[0].MonthCode; // S06 reporting month
+          if (res.FinancialYears && res.FinancialYears.length > 0) {
+            this.financialYears = res.FinancialYears;
           }
+          this.allMonths = res.Months || [];
+          if (res.CurrentFinancialYear) {
+            this.selectedFinancialYear = res.CurrentFinancialYear;
+          }
+          this.updateMonthsForSelectedFY();
+
+          if (res.DefaultMonthCode && this.months.some(m => m.MonthCode === res.DefaultMonthCode)) {
+            this.selectedMonthCode = res.DefaultMonthCode;
+          } else if (this.months.length > 0 && !this.months.some(m => m.MonthCode === this.selectedMonthCode)) {
+            this.selectedMonthCode = this.months[0].MonthCode;
+          }
+
           this.fetchAdviceData();
         }
       },
@@ -135,6 +170,42 @@ export class EdpS06Component implements OnInit {
         this.toastr.error('Server error loading setup.');
       }
     });
+  }
+
+  updateMonthsForSelectedFY(): void {
+    if (this.allMonths && this.allMonths.length > 0) {
+      this.months = this.allMonths.filter(m => m.FinancialYearName === this.selectedFinancialYear);
+    }
+    
+    if (!this.months || this.months.length === 0) {
+      if (this.selectedFinancialYear === '2026-27') {
+        this.months = [
+          { MonthCode: '0426', MonthName: 'April 2026' },
+          { MonthCode: '0526', MonthName: 'May 2026' },
+          { MonthCode: '0626', MonthName: 'June 2026' },
+          { MonthCode: '0726', MonthName: 'July 2026' },
+          { MonthCode: '0826', MonthName: 'August 2026' },
+          { MonthCode: '0926', MonthName: 'September 2026' },
+          { MonthCode: '1026', MonthName: 'October 2026' },
+          { MonthCode: '1126', MonthName: 'November 2026' },
+          { MonthCode: '1226', MonthName: 'December 2026' },
+          { MonthCode: '0127', MonthName: 'January 2027' },
+          { MonthCode: '0227', MonthName: 'February 2027' },
+          { MonthCode: '0327', MonthName: 'March 2027' }
+        ];
+      } else {
+        this.months = this.allMonths.slice(0, 12);
+      }
+    }
+
+    if (this.months.length > 0 && !this.months.some(m => m.MonthCode === this.selectedMonthCode)) {
+      this.selectedMonthCode = this.months[0].MonthCode;
+    }
+  }
+
+  onFinancialYearChange(): void {
+    this.updateMonthsForSelectedFY();
+    this.fetchAdviceData();
   }
 
   fetchAdviceData(): void {
@@ -154,7 +225,12 @@ export class EdpS06Component implements OnInit {
         this.dataLoading = false;
         this.isInitialLoad = false;
         if (res.Message === ConstantData.SuccessMessage) {
-          this.rows = res.Rows || [];
+          const rawRows = res.Rows || [];
+          this.rows = rawRows.map((r: any) => ({
+            ...r,
+            Code: (!r.Code || r.Code === '03') ? '05' : r.Code,
+            VrNo: r.VrNo ? this.formatVrNo(r.VrNo) : ''
+          }));
           this.applyFilterAndSort();
           this.calculateTotals();
         } else {
@@ -240,8 +316,11 @@ export class EdpS06Component implements OnInit {
       return;
     }
 
-    if (!this.formModel.Code) {
-      this.formModel.Code = '03';
+    if (!this.formModel.Code || this.formModel.Code === '03') {
+      this.formModel.Code = '05';
+    }
+    if (this.formModel.VrNo && this.formModel.VrNo.trim() !== '') {
+      this.formModel.VrNo = this.formatVrNo(this.formModel.VrNo);
     }
     if (!this.formModel.AccNo) {
       this.formModel.AccNo = '000048';
@@ -379,11 +458,11 @@ export class EdpS06Component implements OnInit {
     for (const r of this.rows) {
       csvRows.push([
         r.SlNo,
-        `"003/${r.PageNo || '001'}"`,
+        `"005/${r.PageNo || '001'}"`,
         `"${r.StaffNo}"`,
         r.Installment || 0,
-        `"${r.Code || '03'}"`,
-        `"${r.VrNo || ''}"`,
+        `"${r.Code || '05'}"`,
+        `"${r.VrNo ? this.formatVrNo(r.VrNo) : ''}"`,
         `"${r.VrDate || ''}"`,
         `"${r.AccNo || '000048'}"`
       ].join(','));
@@ -397,6 +476,136 @@ export class EdpS06Component implements OnInit {
     link.click();
     document.body.removeChild(link);
     this.toastr.success('CSV exported successfully!');
+  }
+
+  downloadPdf(): void {
+    if (!this.rows || this.rows.length === 0) {
+      this.toastr.warning('No data to generate PDF.');
+      return;
+    }
+
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const centerX = pageWidth / 2;
+
+      // Header drawing
+      const companyName = this.company.CompanyName || 'Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd.';
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(13);
+      doc.setTextColor(26, 54, 93);
+      doc.text(companyName, centerX, 14, { align: 'center' });
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(45, 55, 72);
+      const title = 'Loan and Advance Master Changes Advice (S06)';
+      doc.text(title, centerX, 20, { align: 'center' });
+
+      // Subheader meta bar
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(74, 85, 104);
+      const monthLabel = `Month: ${this.formattedMonthDisplay} (${this.selectedMonthCode})`;
+      doc.text(monthLabel, 14, 27);
+
+      const dateLabel = `Report Date: ${this.reportDate}`;
+      doc.text(dateLabel, pageWidth - 14, 27, { align: 'right' });
+
+      // Divider line
+      doc.setDrawColor(49, 130, 206);
+      doc.setLineWidth(0.5);
+      doc.line(14, 29, pageWidth - 14, 29);
+
+      // Data Rows
+      const body = this.rows.map(r => [
+        r.SlNo,
+        `005/${r.PageNo || '001'}`,
+        r.StaffNo,
+        r.MemberName || '-',
+        r.Department || '-',
+        r.Installment > 0 ? Number(r.Installment).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00',
+        r.VrNo ? this.formatVrNo(r.VrNo) : '-',
+        r.VrDate || '-',
+        r.Code || '05',
+        r.AccNo || '000048'
+      ]);
+
+      const foot = [
+        [
+          { content: `Total (${this.rows.length} Records):`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: Number(this.totals.TotalInstallment || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: '', colSpan: 4, styles: { halign: 'left' } }
+        ]
+      ];
+
+      autoTable(doc, {
+        head: [
+          [
+            { content: '#', styles: { halign: 'center' } },
+            { content: 'File/Page', styles: { halign: 'center' } },
+            { content: 'Staff No', styles: { halign: 'center' } },
+            { content: 'Member Name', styles: { halign: 'left' } },
+            { content: 'Dept', styles: { halign: 'left' } },
+            { content: 'Installment (₹)', styles: { halign: 'right' } },
+            { content: 'Vr. No', styles: { halign: 'center' } },
+            { content: 'Vr. Date', styles: { halign: 'center' } },
+            { content: 'Code', styles: { halign: 'center' } },
+            { content: 'Acc No', styles: { halign: 'center' } }
+          ]
+        ],
+        body: body as any,
+        foot: foot as any,
+        startY: 32,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [30, 64, 175],
+          textColor: [255, 255, 255],
+          fontSize: 8,
+          fontStyle: 'bold',
+          halign: 'center',
+          cellPadding: 2
+        },
+        bodyStyles: {
+          fontSize: 7.5,
+          textColor: [30, 41, 59],
+          cellPadding: 1.8
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252]
+        },
+        footStyles: {
+          fillColor: [241, 245, 249],
+          textColor: [15, 23, 42],
+          fontSize: 8,
+          fontStyle: 'bold',
+          cellPadding: 2
+        },
+        margin: { left: 12, right: 12, top: 32, bottom: 15 },
+        didDrawPage: (data: any) => {
+          const str = `Page ${data.pageNumber} of ${doc.getNumberOfPages()}`;
+          doc.setFontSize(8);
+          doc.setTextColor(148, 163, 184);
+          doc.text(str, pageWidth - 14, pageHeight - 8, { align: 'right' });
+
+          const societyNote = 'Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd. - Computerized EDP System';
+          doc.text(societyNote, 14, pageHeight - 8);
+        }
+      } as any);
+
+      const fileName = `S06_${this.selectedMonthCode}_Advice.pdf`;
+      doc.save(fileName);
+      this.toastr.success('S06 PDF downloaded successfully!');
+    } catch (err) {
+      console.error('PDF export error:', err);
+      this.toastr.error('Failed to export PDF.');
+    }
   }
 
   formatFixedDigits(val: any, digits: number): string {
