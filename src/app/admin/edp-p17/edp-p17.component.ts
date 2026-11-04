@@ -4,6 +4,8 @@ import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
 import { ConstantData } from '../../utils/constant-data';
 import { RequestModel } from '../../utils/interface';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export interface P17Row {
   LineId?: number;
@@ -13,14 +15,18 @@ export interface P17Row {
   MemberNo?: string;
   MemberName?: string;
   Department?: string;
-  VrNo: string;
-  VrDate: string; // "020326"
-  LoanPaid: number;
-  LoanRefund: number;
-  LoanReceived: number;
-  InterestRefund: number;
-  InterestReceived: number;
-  Installment: number;
+  LoanCode?: string;       // Default '09'
+  VrNo: string;            // 6-digit voucher number
+  VrDate: string;          // DDMMYY or DD-MM-YYYY
+  LoanPaid: number;        // Loan Amount Paid
+  LoanRefund: number;      // Loan Refunded
+  LoanDeposited?: number;  // Loan Deposited
+  LoanReceived: number;    // Compatibility with existing field
+  InterestRefund: number;  // Pro-rata interest refund
+  InterestRecovered?: number; // Interest Recovered on foreclosure
+  InterestReceived: number;// Compatibility with existing field
+  Installment: number;     // Monthly deduction
+  Remarks?: string;        // PNB, SBI, JSCB, BY JE, 00 CODE, etc.
   ActInstt?: string;
   Err?: string;
   IsRepeatedStaff?: boolean;
@@ -42,14 +48,20 @@ export class EdpP17Component implements OnInit {
   userDetail: any = {};
   reportDate = '';
 
+  financialYears: any[] = [
+    { FinancialYearName: '2026-27', IsCurrent: true },
+    { FinancialYearName: '2025-26', IsCurrent: false }
+  ];
+  selectedFinancialYear = '2026-27';
+  allMonths: any[] = [];
   months: any[] = [];
-  selectedMonthCode = '0326';
+  selectedMonthCode = '0426';
   selectedCategory = 'BSL';
   selectedSortBy = 'Date';
 
   company: any = {
-    CompanyName: 'Bokaro Steel Employees (TA/Med./Mat.) Co-op. Cr. Soc. Ltd.',
-    CompanyNameHindi: 'बोकारो इस्पात कर्मचारी (टी०ए०/मेड०/मेट०) सहकारी साख समिति लिमिटेड',
+    CompanyName: 'Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd.',
+    CompanyNameHindi: 'बोकारो इस्पात कर्मचारी (कॉन० सिविल/इलेक्ट०) सहकारी साख समिति लिमिटेड',
     RegistrationNo: 'BAGH-6/78',
     CompanyAddress: 'Old Admn. Bldg., Bokaro Steel City-827001'
   };
@@ -127,14 +139,18 @@ export class EdpP17Component implements OnInit {
       MemberNo: '',
       MemberName: '',
       Department: '',
+      LoanCode: '09',
       VrNo: '',
       VrDate: '',
       LoanPaid: 0,
       LoanRefund: 0,
+      LoanDeposited: 0,
       LoanReceived: 0,
       InterestRefund: 0,
+      InterestRecovered: 0,
       InterestReceived: 0,
-      Installment: 0
+      Installment: 0,
+      Remarks: 'PNB'
     };
   }
 
@@ -149,10 +165,21 @@ export class EdpP17Component implements OnInit {
           if (res.Company) {
             this.company = { ...this.company, ...res.Company };
           }
-          this.months = res.Months || [];
-          if (res.DefaultMonthCode) {
-            this.selectedMonthCode = res.DefaultMonthCode;
+          if (res.FinancialYears && res.FinancialYears.length > 0) {
+            this.financialYears = res.FinancialYears;
           }
+          this.allMonths = res.Months || [];
+          if (res.CurrentFinancialYear) {
+            this.selectedFinancialYear = res.CurrentFinancialYear;
+          }
+          this.updateMonthsForSelectedFY();
+
+          if (res.DefaultMonthCode && this.months.some(m => m.MonthCode === res.DefaultMonthCode)) {
+            this.selectedMonthCode = res.DefaultMonthCode;
+          } else if (this.months.length > 0 && !this.months.some(m => m.MonthCode === this.selectedMonthCode)) {
+            this.selectedMonthCode = this.months[0].MonthCode;
+          }
+
           this.fetchAdviceData();
         } else {
           this.toastr.error(res.Message || 'Failed to load EDP setup.');
@@ -163,6 +190,42 @@ export class EdpP17Component implements OnInit {
         this.toastr.error('Server error loading setup.');
       }
     });
+  }
+
+  updateMonthsForSelectedFY(): void {
+    if (this.allMonths && this.allMonths.length > 0) {
+      this.months = this.allMonths.filter(m => m.FinancialYearName === this.selectedFinancialYear);
+    }
+
+    if (!this.months || this.months.length === 0) {
+      if (this.selectedFinancialYear === '2026-27') {
+        this.months = [
+          { MonthCode: '0426', MonthName: 'April 2026' },
+          { MonthCode: '0526', MonthName: 'May 2026' },
+          { MonthCode: '0626', MonthName: 'June 2026' },
+          { MonthCode: '0726', MonthName: 'July 2026' },
+          { MonthCode: '0826', MonthName: 'August 2026' },
+          { MonthCode: '0926', MonthName: 'September 2026' },
+          { MonthCode: '1026', MonthName: 'October 2026' },
+          { MonthCode: '1126', MonthName: 'November 2026' },
+          { MonthCode: '1226', MonthName: 'December 2026' },
+          { MonthCode: '0127', MonthName: 'January 2027' },
+          { MonthCode: '0227', MonthName: 'February 2027' },
+          { MonthCode: '0327', MonthName: 'March 2027' }
+        ];
+      } else {
+        this.months = this.allMonths.slice(0, 12);
+      }
+    }
+
+    if (this.months.length > 0 && !this.months.some(m => m.MonthCode === this.selectedMonthCode)) {
+      this.selectedMonthCode = this.months[0].MonthCode;
+    }
+  }
+
+  onFinancialYearChange(): void {
+    this.updateMonthsForSelectedFY();
+    this.fetchAdviceData();
   }
 
   // 2. Fetch Advice Data
@@ -390,13 +453,238 @@ export class EdpP17Component implements OnInit {
     }
   }
 
-  // 6. Print Report
+  // Formatting Helpers
+  formatDisplayDate(raw: string): string {
+    if (!raw) return '';
+    const clean = String(raw).trim().replace(/[-/]/g, '');
+    if (clean.length === 6) {
+      // DDMMYY -> DD-MM-20YY
+      return `${clean.substring(0, 2)}-${clean.substring(2, 4)}-20${clean.substring(4, 6)}`;
+    }
+    if (clean.length === 8) {
+      // DDMMYYYY -> DD-MM-YYYY
+      return `${clean.substring(0, 2)}-${clean.substring(2, 4)}-${clean.substring(4, 8)}`;
+    }
+    return raw;
+  }
+
+  formatCurrency(val: number): string {
+    if (!val && val !== 0) return '0.00';
+    return Number(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // 6. Print Report (Browser Print Dialog)
   printReport(): void {
     window.print();
   }
 
-  // 7. Export .TXT File for SAIL EDP
+  // 7. Download PDF (Modern, Clean Design with Data Reference)
+  downloadPdf(): void {
+    if (!this.rows || this.rows.length === 0) {
+      this.toastr.warning('No data to generate PDF.');
+      return;
+    }
+
+    try {
+      // Landscape A4: 297mm width x 210mm height
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const centerX = pageWidth / 2;
+
+      // Header drawing
+      const companyName = this.company.CompanyName || 'Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd.';
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(26, 54, 93); // Dark Navy
+      doc.text(companyName, centerX, 13, { align: 'center' });
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10.5);
+      doc.setTextColor(45, 55, 72);
+      const title = 'Loan Advances - Extra Transaction Advice (FILE NO.- P17)';
+      doc.text(title, centerX, 19, { align: 'center' });
+
+      // Subheader meta bar: Month & Report Date
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(74, 85, 104);
+      const monthLabel = `Month: ${this.formattedMonthDisplay} (${this.selectedMonthCode})`;
+      doc.text(monthLabel, 14, 25);
+
+      const dateLabel = `Report Date: ${this.reportDate}`;
+      doc.text(dateLabel, pageWidth - 14, 25, { align: 'right' });
+
+      // Divider line
+      doc.setDrawColor(49, 130, 206);
+      doc.setLineWidth(0.5);
+      doc.line(14, 27, pageWidth - 14, 27);
+
+      // Data Rows for autoTable
+      const body = this.rows.map(r => [
+        r.SlNo,
+        r.StaffNo,
+        r.LoanCode || '09',
+        r.VrNo || '',
+        this.formatDisplayDate(r.VrDate),
+        r.LoanPaid > 0 ? this.formatCurrency(r.LoanPaid) : '-',
+        r.LoanRefund > 0 ? this.formatCurrency(r.LoanRefund) : '-',
+        (r.LoanDeposited || r.LoanReceived) > 0 ? this.formatCurrency(r.LoanDeposited || r.LoanReceived) : '-',
+        r.InterestRefund > 0 ? this.formatCurrency(r.InterestRefund) : '-',
+        (r.InterestRecovered || r.InterestReceived) > 0 ? this.formatCurrency(r.InterestRecovered || r.InterestReceived) : '-',
+        r.Installment > 0 ? this.formatCurrency(r.Installment) : '-',
+        r.Remarks || (r.LoanPaid > 0 ? 'PNB' : ((r.LoanDeposited || r.LoanReceived) > 0 ? 'JSCB' : '-'))
+      ]);
+
+      const foot = [
+        [
+          { content: `Grand Total (${this.rows.length} Records):`, colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: this.formatCurrency(this.totals.TotalLoanPaid), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: this.formatCurrency(this.totals.TotalLoanRefund || 0), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: this.formatCurrency(this.totals.TotalLoanReceived), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: this.formatCurrency(this.totals.TotalInterestRefund), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: this.formatCurrency(this.totals.TotalInterestReceived || 0), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: this.formatCurrency(this.totals.TotalInstallment), styles: { halign: 'right', fontStyle: 'bold' } },
+          { content: '', styles: { halign: 'left' } }
+        ]
+      ];
+
+      autoTable(doc, {
+        head: [
+          [
+            { content: 'Sl No', styles: { halign: 'center' } },
+            { content: 'Staff No', styles: { halign: 'center' } },
+            { content: 'Loan Code', styles: { halign: 'center' } },
+            { content: 'Voucher No.', styles: { halign: 'center' } },
+            { content: 'Date', styles: { halign: 'center' } },
+            { content: 'Loan Paid (₹)', styles: { halign: 'right' } },
+            { content: 'Loan Refund (₹)', styles: { halign: 'right' } },
+            { content: 'Loan Deposited (₹)', styles: { halign: 'right' } },
+            { content: 'Int. Refund (₹)', styles: { halign: 'right' } },
+            { content: 'Int. Recovered (₹)', styles: { halign: 'right' } },
+            { content: 'Install. Amount (₹)', styles: { halign: 'right' } },
+            { content: 'Remarks', styles: { halign: 'left' } }
+          ]
+        ],
+        body: body as any,
+        foot: foot as any,
+        startY: 29,
+        margin: { top: 29, bottom: 15, left: 14, right: 14 },
+        theme: 'grid',
+        styles: {
+          font: 'helvetica',
+          fontSize: 7.2,
+          cellPadding: { top: 1.4, bottom: 1.4, left: 1.2, right: 1.2 },
+          textColor: [33, 37, 41],
+          lineColor: [222, 226, 230],
+          lineWidth: 0.15
+        },
+        headStyles: {
+          fillColor: [30, 64, 175], // Clean Tailwind/Bootstrap Blue
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 7.6,
+          halign: 'center',
+          cellPadding: { top: 2, bottom: 2, left: 1.2, right: 1.2 }
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252] // Subtle light zebra tint
+        },
+        footStyles: {
+          fillColor: [224, 231, 255], // Light indigo-blue total bar
+          textColor: [30, 58, 138],
+          fontStyle: 'bold',
+          fontSize: 7.6
+        },
+        columnStyles: {
+          0: { cellWidth: 12, halign: 'center' },
+          1: { cellWidth: 18, halign: 'center' },
+          2: { cellWidth: 15, halign: 'center' },
+          3: { cellWidth: 20, halign: 'center' },
+          4: { cellWidth: 22, halign: 'center' },
+          5: { cellWidth: 28, halign: 'right' },
+          6: { cellWidth: 24, halign: 'right' },
+          7: { cellWidth: 28, halign: 'right' },
+          8: { cellWidth: 24, halign: 'right' },
+          9: { cellWidth: 25, halign: 'right' },
+          10: { cellWidth: 26, halign: 'right' },
+          11: { cellWidth: 'auto', halign: 'left' }
+        },
+        didDrawPage: (data) => {
+          // Bottom footer on every page
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          doc.setTextColor(113, 128, 150);
+          const pageStr = `Page ${data.pageNumber} of ${doc.getNumberOfPages()}`;
+          doc.text(pageStr, centerX, pageHeight - 6, { align: 'center' });
+          doc.text('SAIL/BSL EDP - P17 Monthly Advice', 14, pageHeight - 6);
+          doc.text(`Generated on ${this.reportDate}`, pageWidth - 14, pageHeight - 6, { align: 'right' });
+        }
+      });
+
+      doc.save(`P17_${this.selectedMonthCode}.pdf`);
+      this.toastr.success('P17 PDF downloaded successfully!');
+    } catch (err: any) {
+      console.error('PDF error:', err);
+      this.toastr.error('Failed to generate PDF document.');
+    }
+  }
+
+  // Client-side fallback to generate 100% exact 79-character text file lines
+  generateClientP17Text(): string {
+    let out = '';
+    const monthCode = this.selectedMonthCode || '0426';
+    const socCode = '005';
+
+    this.rows.forEach((r, idx) => {
+      const pageNum = Math.floor(idx / 20) + 1;
+      const page = String(pageNum).padStart(3, '0');
+      const staff = String(r.StaffNo || '').trim().padStart(6, '0').slice(-6);
+      const loanCode = String(r.LoanCode || '09').trim().padStart(2, '0').slice(-2);
+      const vrNo = String(r.VrNo || '').trim().padStart(6, '0').slice(-6);
+
+      let vrDate = String(r.VrDate || '').trim().replace(/[-/]/g, '');
+      if (vrDate.length === 8) {
+        vrDate = vrDate.substring(0, 4) + vrDate.substring(6, 8);
+      } else if (vrDate.length >= 6) {
+        vrDate = vrDate.substring(0, 6);
+      } else {
+        vrDate = vrDate.padStart(6, '0');
+      }
+
+      const fmtAmt8 = (v: number) => {
+        const n = Math.round(v || 0);
+        return n > 0 ? String(n).padStart(8, '0') : ' '.repeat(8);
+      };
+      const fmtAmt6 = (v: number) => {
+        const n = Math.round(v || 0);
+        return n > 0 ? String(n).padStart(6, '0') : ' '.repeat(6);
+      };
+
+      const lnPaid = fmtAmt8(r.LoanPaid);
+      const lnRefund = fmtAmt8(r.LoanRefund);
+      const lnDep = fmtAmt8(r.LoanDeposited || r.LoanReceived);
+      const intRfnd = fmtAmt8(r.InterestRefund);
+      const intRec = fmtAmt8(r.InterestRecovered || r.InterestReceived);
+      const instt = fmtAmt6(r.Installment);
+
+      out += `P17${monthCode.padEnd(4)}${socCode}${page}${staff}${loanCode}${vrNo}${vrDate}${lnPaid}${lnRefund}${lnDep}${intRfnd}${intRec}${instt}\r\n`;
+    });
+    return out;
+  }
+
+  // 8. Export .TXT File for SAIL EDP (Exact 79-char specification)
   downloadEdpTextFile(): void {
+    if (!this.rows || this.rows.length === 0) {
+      this.toastr.warning('No data to export.');
+      return;
+    }
+
     const payload = {
       AdviceType: 'P17',
       MonthCode: this.selectedMonthCode,
@@ -407,51 +695,65 @@ export class EdpP17Component implements OnInit {
       request: this.localService.encrypt(JSON.stringify(payload)).toString()
     };
 
+    const fallbackDownload = () => {
+      const text = this.generateClientP17Text();
+      const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute('download', `P1705_${this.selectedMonthCode}.txt`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      this.toastr.success('EDP P17 Text File downloaded successfully!');
+    };
+
     this.service.edpAdvice('ExportTextFile', req).subscribe({
       next: (res: any) => {
         if (res.Message === ConstantData.SuccessMessage && res.FileContent) {
           const blob = new Blob([res.FileContent], { type: 'text/plain;charset=utf-8' });
           const link = document.createElement('a');
           link.href = URL.createObjectURL(blob);
-          link.setAttribute('download', res.FileName || `P17_${this.selectedMonthCode}.TXT`);
+          link.setAttribute('download', res.FileName || `P1705_${this.selectedMonthCode}.txt`);
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
           this.toastr.success('EDP P17 Text File downloaded successfully!');
         } else {
-          this.toastr.error(res.Message || 'Failed to generate text file.');
+          fallbackDownload();
         }
       },
       error: () => {
-        this.toastr.error('Server error exporting text file.');
+        fallbackDownload();
       }
     });
   }
 
-  // 8. Export CSV
+  // 9. Export CSV
   exportCsv(): void {
     if (this.rows.length === 0) {
       this.toastr.warning('No data to export.');
       return;
     }
 
-    const headers = ['SlNo', 'File/Page', 'StaffNo', 'VrNo', 'VrDate', 'LoanPaid', 'LoanRefund', 'LoanReceived', 'IntRefund', 'IntReceived', 'Installment'];
+    const headers = ['SlNo', 'File/Page', 'StaffNo', 'LoanCode', 'VrNo', 'VrDate', 'LoanPaid', 'LoanRefund', 'LoanDeposited', 'IntRefund', 'IntRecovered', 'Installment', 'Remarks'];
     const csvRows: string[] = [];
     csvRows.push(headers.join(','));
 
     for (const r of this.rows) {
       const row = [
         r.SlNo,
-        `"003/${r.PageNo || '001'}"`,
+        `"005/${r.PageNo || '001'}"`,
         `"${r.StaffNo}"`,
+        `"${r.LoanCode || '09'}"`,
         `"${r.VrNo}"`,
-        `"${r.VrDate}"`,
+        `"${this.formatDisplayDate(r.VrDate)}"`,
         r.LoanPaid || 0,
         r.LoanRefund || 0,
-        r.LoanReceived || 0,
+        (r.LoanDeposited || r.LoanReceived) || 0,
         r.InterestRefund || 0,
-        r.InterestReceived || 0,
-        r.Installment || 0
+        (r.InterestRecovered || r.InterestReceived) || 0,
+        r.Installment || 0,
+        `"${r.Remarks || ''}"`
       ];
       csvRows.push(row.join(','));
     }
@@ -459,7 +761,7 @@ export class EdpP17Component implements OnInit {
     const blob = new Blob([csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.setAttribute('download', `EDP_P17_${this.selectedMonthCode}.csv`);
+    link.setAttribute('download', `P1705_${this.selectedMonthCode}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
