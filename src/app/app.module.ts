@@ -61,6 +61,11 @@ import { LoanApplicationComponent } from './admin/loan-application/loan-applicat
 import { SavedLoanApplicationComponent } from './admin/saved-loan-application/saved-loan-application.component';
 import { LoanPurposeComponent } from './admin/loan-purpose/loan-purpose.component';
 import { MemberInfoComponent } from './admin/member-info/member-info.component';
+import { HeadBookComponent } from './admin/head-book/head-book.component';
+import { RtgsNeftAdviceComponent } from './admin/rtgs-neft-advice/rtgs-neft-advice.component';
+import { EdpP17Component } from './admin/edp-p17/edp-p17.component';
+import { EdpS05Component } from './admin/edp-s05/edp-s05.component';
+import { EdpS06Component } from './admin/edp-s06/edp-s06.component';
 
 @NgModule({
   declarations: [
@@ -107,7 +112,12 @@ import { MemberInfoComponent } from './admin/member-info/member-info.component';
     LoanApplicationComponent,
     SavedLoanApplicationComponent,
     LoanPurposeComponent,
-    MemberInfoComponent
+    MemberInfoComponent,
+    HeadBookComponent,
+    RtgsNeftAdviceComponent,
+    EdpP17Component,
+    EdpS05Component,
+    EdpS06Component
   ],
   imports: [
     BrowserModule,

@@ -1,6 +1,11 @@
 import { LoanApplicationComponent } from './admin/loan-application/loan-application.component';
 import { SavedLoanApplicationComponent } from './admin/saved-loan-application/saved-loan-application.component';
 import { LoanPurposeComponent } from './admin/loan-purpose/loan-purpose.component';
+import { MemberInfoComponent } from './admin/member-info/member-info.component';
+import { HeadBookComponent } from './admin/head-book/head-book.component';
+import { EdpP17Component } from './admin/edp-p17/edp-p17.component';
+import { EdpS05Component } from './admin/edp-s05/edp-s05.component';
+import { EdpS06Component } from './admin/edp-s06/edp-s06.component';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminLoginComponent } from './admin/admin-login/admin-login.component';
@@ -82,6 +87,11 @@ const routes: Routes = [
       { path: 'loan-application', component: LoanApplicationComponent },
       { path: 'saved-loan-application', component: SavedLoanApplicationComponent },
       { path: 'loan-purpose', component: LoanPurposeComponent },
+      { path: 'member-info', component: MemberInfoComponent },
+      { path: 'head-book', component: HeadBookComponent },
+      { path: 'edp-p17', component: EdpP17Component },
+      { path: 'edp-s05', component: EdpS05Component },
+      { path: 'edp-s06', component: EdpS06Component },
 
     ]
   },
