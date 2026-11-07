@@ -47,7 +47,7 @@ export class HeadBookComponent implements OnInit {
 
   // Setup / Dropdown options
   years: any[] = [];
-  selectedYearId: number = 2026;
+  selectedYearId: number = (new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1);
   heads: any[] = [];
   selectedHeadCode: string = '018';
   selectedHeadName: string = 'COMPULSORY DEPOSIT';
@@ -173,6 +173,7 @@ export class HeadBookComponent implements OnInit {
           } else if (this.years.length > 0) {
             this.selectedYearId = this.years[0].YearId;
           }
+          this.syncDatesForPeriod();
 
           this.heads = res.Heads || [];
           if (this.heads.length > 0) {
@@ -243,7 +244,7 @@ export class HeadBookComponent implements OnInit {
   }
 
   syncDatesForPeriod(): void {
-    const y = Number(this.selectedYearId) || 2026;
+    const y = Number(this.selectedYearId) || (new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1);
     const pad = (n: number) => String(n).padStart(2, '0');
 
     if (this.periodOption === 'Whole Year') {
@@ -281,7 +282,7 @@ export class HeadBookComponent implements OnInit {
   fetchHeadBook(): void {
     const payload = {
       StaffLoginId: this.userDetail?.StaffLoginId || 7,
-      YearId: Number(this.selectedYearId) || 2026,
+      YearId: Number(this.selectedYearId) || (new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1),
       HeadCode: this.selectedHeadCode,
       IncludeInterest: this.includeInterest && this.hasInterestOption,
       FromDate: this.fromDate,

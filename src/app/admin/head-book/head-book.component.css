@@ -218,11 +218,19 @@
     white-space: nowrap !important;
   }
 
-  .print-table tfoot {
-    display: table-footer-group !important;
+  .print-table tfoot,
+  .print-table tbody.print-table-total {
+    display: table-row-group !important;
   }
 
-  .print-table tfoot tr.tr-totals td {
+  .print-table tfoot tr.tr-totals,
+  .print-table tbody.print-table-total tr.tr-totals {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-table tfoot tr.tr-totals td,
+  .print-table tbody.print-table-total tr.tr-totals td {
     border-top: 1px solid #000000 !important;
     border-bottom: 1px solid #000000 !important;
     border-left: none !important;
@@ -246,7 +254,8 @@
 
   .print-table-interest thead tr th,
   .print-table-interest tbody tr td,
-  .print-table-interest tfoot tr td {
+  .print-table-interest tfoot tr td,
+  .print-table-interest tbody.print-table-total tr td {
     padding: 1.5px 2px !important;
   }
 }

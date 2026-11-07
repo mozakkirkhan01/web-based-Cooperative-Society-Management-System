@@ -515,7 +515,7 @@
           <td class="td-amount text-end">{{row.Closing | number:'1.2-2'}} {{row.ClosingType}}</td>
         </tr>
       </tbody>
-      <tfoot>
+      <tbody class="print-table-total">
         <tr class="tr-totals">
           <td colspan="3" class="td-total-label">Total: &nbsp; {{filteredRows.length}}</td>
           <td class="td-amount text-end">{{totals.Opening | number:'1.2-2'}} {{totals.OpeningType}}</td>
@@ -523,7 +523,7 @@
           <td class="td-amount text-end">{{totals.Credits | number:'1.2-2'}}</td>
           <td class="td-amount text-end">{{totals.Closing | number:'1.2-2'}} {{totals.ClosingType}}</td>
         </tr>
-      </tfoot>
+      </tbody>
     </table>
 
     <!-- 2. PRINT TABLE: DETAILED INTEREST 11 COLUMNS -->
@@ -558,7 +558,7 @@
           <td class="text-end">{{(row.ClosingInt || 0) | number:'1.2-2'}} {{row.ClosingIntType || 'Cr'}}</td>
         </tr>
       </tbody>
-      <tfoot>
+      <tbody class="print-table-total">
         <tr class="tr-totals">
           <td colspan="3" class="td-total-label">Total: &nbsp; {{filteredRows.length}}</td>
           <td class="text-end">{{(totals.OpeningPrn || 0) | number:'1.2-2'}} {{totals.OpeningPrnType || 'Cr'}}</td>
@@ -570,7 +570,7 @@
           <td class="text-end">{{(totals.ClosingPrn || 0) | number:'1.2-2'}} {{totals.ClosingPrnType || 'Cr'}}</td>
           <td class="text-end">{{(totals.ClosingInt || 0) | number:'1.2-2'}} {{totals.ClosingIntType || 'Cr'}}</td>
         </tr>
-      </tfoot>
+      </tbody>
     </table>
   </div>
 
