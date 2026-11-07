@@ -155,37 +155,32 @@ export class EdpS05Component implements OnInit {
     this.fetchAdviceData();
   }
 
+    generateMonthsForYear(fyName: string): any[] {
+    const startYear = parseInt((fyName || '').split('-')[0], 10) || new Date().getFullYear();
+    const monthNames = [
+      'April', 'May', 'June', 'July', 'August', 'September',
+      'October', 'November', 'December', 'January', 'February', 'March'
+    ];
+    return monthNames.map((name, index) => {
+      const calMonth = (index + 3) % 12 + 1;
+      const calYear = index < 9 ? startYear : startYear + 1;
+      const mm = String(calMonth).padStart(2, '0');
+      const yy = String(calYear).slice(-2);
+      return {
+        MonthCode: `${mm}${yy}`,
+        MonthName: `${name} ${calYear}`,
+        FinancialYearName: fyName
+      };
+    });
+  }
+
   updateMonthsForSelectedFY(): void {
-    if (this.selectedFinancialYear === '2026-27') {
-      this.months = [
-        { MonthCode: '0426', MonthName: 'April 2026' },
-        { MonthCode: '0526', MonthName: 'May 2026' },
-        { MonthCode: '0626', MonthName: 'June 2026' },
-        { MonthCode: '0726', MonthName: 'July 2026' },
-        { MonthCode: '0826', MonthName: 'August 2026' },
-        { MonthCode: '0926', MonthName: 'September 2026' },
-        { MonthCode: '1026', MonthName: 'October 2026' },
-        { MonthCode: '1126', MonthName: 'November 2026' },
-        { MonthCode: '1226', MonthName: 'December 2026' },
-        { MonthCode: '0127', MonthName: 'January 2027' },
-        { MonthCode: '0227', MonthName: 'February 2027' },
-        { MonthCode: '0327', MonthName: 'March 2027' }
-      ];
-    } else {
-      this.months = [
-        { MonthCode: '0425', MonthName: 'April 2025' },
-        { MonthCode: '0525', MonthName: 'May 2025' },
-        { MonthCode: '0625', MonthName: 'June 2025' },
-        { MonthCode: '0725', MonthName: 'July 2025' },
-        { MonthCode: '0825', MonthName: 'August 2025' },
-        { MonthCode: '0925', MonthName: 'September 2025' },
-        { MonthCode: '1025', MonthName: 'October 2025' },
-        { MonthCode: '1125', MonthName: 'November 2025' },
-        { MonthCode: '1225', MonthName: 'December 2025' },
-        { MonthCode: '0126', MonthName: 'January 2026' },
-        { MonthCode: '0226', MonthName: 'February 2026' },
-        { MonthCode: '0326', MonthName: 'March 2026' }
-      ];
+    if (this.allMonths && this.allMonths.length > 0) {
+      this.months = this.allMonths.filter(m => m.FinancialYearName === this.selectedFinancialYear);
+    }
+
+    if (!this.months || this.months.length === 0) {
+      this.months = this.generateMonthsForYear(this.selectedFinancialYear);
     }
 
     if (this.months.length > 0 && !this.months.some(m => m.MonthCode === this.selectedMonthCode)) {
@@ -193,7 +188,7 @@ export class EdpS05Component implements OnInit {
     }
   }
 
-  fetchAdviceData(): void {
+    fetchAdviceData(): void {
     const payload = {
       StaffLoginId: this.userDetail?.StaffLoginId || 7,
       AdviceType: 'S05',

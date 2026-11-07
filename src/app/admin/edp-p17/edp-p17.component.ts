@@ -192,30 +192,32 @@ export class EdpP17Component implements OnInit {
     });
   }
 
+    generateMonthsForYear(fyName: string): any[] {
+    const startYear = parseInt((fyName || '').split('-')[0], 10) || new Date().getFullYear();
+    const monthNames = [
+      'April', 'May', 'June', 'July', 'August', 'September',
+      'October', 'November', 'December', 'January', 'February', 'March'
+    ];
+    return monthNames.map((name, index) => {
+      const calMonth = (index + 3) % 12 + 1;
+      const calYear = index < 9 ? startYear : startYear + 1;
+      const mm = String(calMonth).padStart(2, '0');
+      const yy = String(calYear).slice(-2);
+      return {
+        MonthCode: `${mm}${yy}`,
+        MonthName: `${name} ${calYear}`,
+        FinancialYearName: fyName
+      };
+    });
+  }
+
   updateMonthsForSelectedFY(): void {
     if (this.allMonths && this.allMonths.length > 0) {
       this.months = this.allMonths.filter(m => m.FinancialYearName === this.selectedFinancialYear);
     }
 
     if (!this.months || this.months.length === 0) {
-      if (this.selectedFinancialYear === '2026-27') {
-        this.months = [
-          { MonthCode: '0426', MonthName: 'April 2026' },
-          { MonthCode: '0526', MonthName: 'May 2026' },
-          { MonthCode: '0626', MonthName: 'June 2026' },
-          { MonthCode: '0726', MonthName: 'July 2026' },
-          { MonthCode: '0826', MonthName: 'August 2026' },
-          { MonthCode: '0926', MonthName: 'September 2026' },
-          { MonthCode: '1026', MonthName: 'October 2026' },
-          { MonthCode: '1126', MonthName: 'November 2026' },
-          { MonthCode: '1226', MonthName: 'December 2026' },
-          { MonthCode: '0127', MonthName: 'January 2027' },
-          { MonthCode: '0227', MonthName: 'February 2027' },
-          { MonthCode: '0327', MonthName: 'March 2027' }
-        ];
-      } else {
-        this.months = this.allMonths.slice(0, 12);
-      }
+      this.months = this.generateMonthsForYear(this.selectedFinancialYear);
     }
 
     if (this.months.length > 0 && !this.months.some(m => m.MonthCode === this.selectedMonthCode)) {
@@ -223,7 +225,7 @@ export class EdpP17Component implements OnInit {
     }
   }
 
-  onFinancialYearChange(): void {
+    onFinancialYearChange(): void {
     this.updateMonthsForSelectedFY();
     this.fetchAdviceData();
   }
