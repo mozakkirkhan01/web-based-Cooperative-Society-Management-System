@@ -10,9 +10,9 @@
       </ol>
     </nav>
   </div>
-  <div class="alert alert-warning" *ngIf="AccessReview">Test data Â· Annual Access records, 2018â€“19 to 2025â€“26. Each year
+  <div class="alert alert-warning" *ngIf="AccessReview">Test data · Annual Access records, 2018–19 to 2025–26. Each year
     uses its own source opening balances. These reports are for review and are not posted or audited accounts.</div>
-  <div class="alert alert-info" *ngIf="!AccessReview">Select a financial year to view its records. From 2026â€“27, opening
+  <div class="alert alert-info" *ngIf="!AccessReview">Select a financial year to view its records. From 2026–27, opening
     balances carry forward from the imported closing balances and new posted entries appear here automatically.</div>
   <div class="card" *ngIf="Notice">
     <div class="card-body">
@@ -69,11 +69,11 @@
               class="w-100"><mat-label>Search member by name, member no. or staff no.</mat-label><input matInput
                 [(ngModel)]="MemberSearch" (input)="findMembers()" [matAutocomplete]="memberAuto"><mat-autocomplete
                 #memberAuto="matAutocomplete"><mat-option *ngFor="let member of Members"
-                  [value]="member.MemberName + ' â€” ' + member.MemberNo + ' / ' + member.StaffNo"
-                  (onSelectionChange)="$event.isUserInput && selectMember(member)">{{member.MemberName}} â€”
+                  [value]="member.MemberName + ' — ' + member.MemberNo + ' / ' + member.StaffNo"
+                  (onSelectionChange)="$event.isUserInput && selectMember(member)">{{member.MemberName}} —
                   {{member.MemberNo}} / {{member.StaffNo}}{{member.IsDeleted ? ' (inactive in source)' :
                   ''}}</mat-option></mat-autocomplete></mat-form-field>
-            <p *ngIf="SelectedMember">Member: {{SelectedMember.MemberNo}} Â· Staff: {{SelectedMember.StaffNo}} Â·
+            <p *ngIf="SelectedMember">Member: {{SelectedMember.MemberNo}} · Staff: {{SelectedMember.StaffNo}} ·
               {{SelectedMember.MemberName}}</p>
           </div>
           <div class="col-md-6" *ngIf="isBalance"><mat-form-field appearance="outline" class="w-100"><mat-label>{{Report
@@ -98,13 +98,13 @@
           </button>
         </div>
       </div>
-      <p *ngIf="Report == 'MemberLedger' && !MemberKey">Choose a member to see each headâ€™s opening balance, dated entries, period
+      <p *ngIf="Report == 'MemberLedger' && !MemberKey">Choose a member to see each head’s opening balance, dated entries, period
         totals and running balance.</p>
       <p *ngIf="Report == 'CashBank'">Daily Cash and Bank Book summary across Cash and Bank accounts, matching the cooperative society CashBook register.</p>
       <p *ngIf="Report == 'DayBook'">Daily journal of receipts and payments across Cash and Bank accounts, matching the cooperative society Daybook.</p>
       <p *ngIf="Report == 'MemberBalances'">Balances are grouped by member and head. Select LOAN TO MEMBER or LOAN TO
         STAFF for outstanding loan principal by member; this is not an individual-loan schedule.</p>
-      <p *ngIf="Report == 'LoanApplications'">Applications as recorded in the selected yearâ€™s Access file, including
+      <p *ngIf="Report == 'LoanApplications'">Applications as recorded in the selected year’s Access file, including
         application dates outside that financial year. The same application may appear in several yearly files.
         Sanctioned/payable amounts do not prove disbursement; use the member ledger for actual movements.</p>
     </div>
@@ -112,10 +112,10 @@
   <div class="card day-book" *ngIf="Loaded && Report == 'DayBook' && Checks.DayBook">
     <div class="card-body">
       <div class="day-book-heading mb-3">
-        <h5 class="card-title mb-0 fw-bold">Daybook Â· {{FromDate | date:'dd-MMM-yyyy'}}</h5>
+        <h5 class="card-title mb-0 fw-bold">Daybook · {{FromDate | date:'dd-MMM-yyyy'}}</h5>
         <div>
           <button mat-stroked-button class="me-2 day-book-print" (click)="expandAllGroups(true)">Expand All (+)</button>
-          <button mat-stroked-button class="me-2 day-book-print" (click)="expandAllGroups(false)">Collapse All (âˆ’)</button>
+          <button mat-stroked-button class="me-2 day-book-print" (click)="expandAllGroups(false)">Collapse All (−)</button>
           <button mat-stroked-button class="day-book-print" (click)="printDayBook()">Print</button>
         </div>
       </div>
@@ -492,7 +492,7 @@
         <div>
           <h4 class="card-title fw-bold mb-1 text-primary">Main Ledger</h4>
           <div class="text-muted small">
-            <span class="fw-semibold text-dark">{{headDisplayName}}</span> Â· From <strong>{{FromDate | date:'dd-MM-yyyy'}}</strong> to <strong>{{ToDate | date:'dd-MM-yyyy'}}</strong>
+            <span class="fw-semibold text-dark">{{headDisplayName}}</span> · From <strong>{{FromDate | date:'dd-MM-yyyy'}}</strong> to <strong>{{ToDate | date:'dd-MM-yyyy'}}</strong>
           </div>
         </div>
         <div class="d-flex gap-2">
@@ -637,14 +637,14 @@
           <button mat-button (click)="page(1)" [disabled]="dataLoading || PageNumber >= pageCount">Next</button>
         </div>
         <span class="text-muted small">
-          {{mainLedgerRows.length}} active days/totals Â· {{headDisplayName}}
+          {{mainLedgerRows.length}} active days/totals · {{headDisplayName}}
         </span>
       </div>
     </div>
   </div>
   <div class="card" *ngIf="Loaded && !isMainLedger && Report != 'Checks' && Report != 'LoanApplications' && (Report != 'DayBook' || !Checks.DayBook) && (Report != 'CashBank' || !Checks.DayBook)">
     <div class="card-body">
-      <h5 class="card-title">{{Title}} Â· {{FromDate | date:'dd-MM-yyyy'}}<ng-container *ngIf="Report != 'DayBook'"> to
+      <h5 class="card-title">{{Title}} · {{FromDate | date:'dd-MM-yyyy'}}<ng-container *ngIf="Report != 'DayBook'"> to
           {{ToDate | date:'dd-MM-yyyy'}}</ng-container></h5>
       <div class="row mb-3">
         <div class="col-md-3" *ngIf="Report != 'DayBook'">Opening: <strong>{{balance(Totals.Opening)}}</strong></div>
@@ -653,7 +653,7 @@
         <div class="col-md-3" *ngIf="Report != 'DayBook'">Closing (net): <strong>{{balance(Totals.Closing)}}</strong>
         </div>
       </div>
-      <p *ngIf="isTrialBalance">Closing debit: <strong>{{Totals.ClosingDebit | number:'1.2-2'}}</strong> Â·
+      <p *ngIf="isTrialBalance">Closing debit: <strong>{{Totals.ClosingDebit | number:'1.2-2'}}</strong> ·
         Closing credit: <strong>{{Totals.ClosingCredit | number:'1.2-2'}}</strong>. Totals reflect the selected filters.
       </p>
       <div class="d-flex justify-content-between align-items-center mb-3"><label>Entries per page <select
@@ -714,7 +714,7 @@
   </div>
   <div class="card" *ngIf="Loaded && Report == 'LoanApplications'">
     <div class="card-body">
-      <h5 class="card-title">Loan Applications Â· {{YearId}}â€“{{YearId + 1}} source file</h5>
+      <h5 class="card-title">Loan Applications · {{YearId}}–{{YearId + 1}} source file</h5>
       <div class="table-responsive">
         <table class="table table-bordered">
           <thead>
@@ -749,10 +749,10 @@
               <td>{{row.MemberName}}<small class="d-block text-muted">{{row.MemberNo}} / {{row.StaffNo}}</small></td>
               <td><span class="badge bg-light text-dark border">{{row.LoanType}}</span></td>
               <td>{{row.CheckedDate | date:'dd-MM-yyyy'}}</td>
-              <td class="fw-semibold">â‚¹ {{row.Requested | number:'1.2-2'}}</td>
-              <td class="fw-bold text-success">â‚¹ {{row.Sanctioned | number:'1.2-2'}}</td>
-              <td class="fw-semibold">â‚¹ {{row.Payable | number:'1.2-2'}}</td>
-              <td>â‚¹ {{row.Instalment | number:'1.2-2'}}</td>
+              <td class="fw-semibold">₹ {{row.Requested | number:'1.2-2'}}</td>
+              <td class="fw-bold text-success">₹ {{row.Sanctioned | number:'1.2-2'}}</td>
+              <td class="fw-semibold">₹ {{row.Payable | number:'1.2-2'}}</td>
+              <td>₹ {{row.Instalment | number:'1.2-2'}}</td>
               <td>
                 <span class="badge" [ngClass]="row.Passed ? 'bg-success' : 'bg-warning text-dark'">
                   {{row.Passed == null ? 'Unknown' : (row.Passed ? 'Yes' : 'No')}}
@@ -768,7 +768,7 @@
         </table>
       </div>
       <p *ngIf="!Rows.length">No matching applications.</p>
-      <div class="d-flex justify-content-between align-items-center"><span>{{Total}} applications Â· Page {{PageNumber}}
+      <div class="d-flex justify-content-between align-items-center"><span>{{Total}} applications · Page {{PageNumber}}
           of {{pageCount}}</span>
         <div><button mat-button (click)="page(-1)" [disabled]="dataLoading || PageNumber == 1">Previous</button><button
             mat-button (click)="page(1)" [disabled]="dataLoading || PageNumber >= pageCount">Next</button></div>
@@ -836,13 +836,13 @@
             </tbody>
           </table>
         </div>
-        <p *ngIf="YearId == 2018">2018â€“19 is the earliest supplied year; no prior-year file is available for this
+        <p *ngIf="YearId == 2018">2018–19 is the earliest supplied year; no prior-year file is available for this
           comparison.</p>
       </div>
     </div>
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">Unmatched member identities Â· selected year</h5>
+        <h5 class="card-title">Unmatched member identities · selected year</h5>
         <p>Amounts remain in the reports under their original member/staff identity. They have not been assigned to
           another member.</p>
         <div class="table-responsive">
@@ -867,9 +867,9 @@
     </div>
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">Preserved source tables Â· selected year</h5>
+        <h5 class="card-title">Preserved source tables · selected year</h5>
         <p>Deleted entries, archived transactions, loan applications, sureties and report caches are preserved. Only
-          active DailyTrans entries and the selected yearâ€™s Openings feed these reports.</p>
+          active DailyTrans entries and the selected year’s Openings feed these reports.</p>
         <div class="table-responsive">
           <table class="table table-bordered">
             <thead>
@@ -901,7 +901,7 @@
       <div class="modal-header bg-primary text-white py-2">
         <h5 class="modal-title fw-bold fs-6 mb-0" id="loanAppModalLabel">
           <i class="bi bi-file-earmark-text-fill me-2"></i>Historical Loan Application #{{selectedLoanApp.ApplicationNumber}}
-          <span class="badge bg-light text-primary ms-2">{{selectedLoanApp.YearId}}â€“{{selectedLoanApp.YearId + 1}}</span>
+          <span class="badge bg-light text-primary ms-2">{{selectedLoanApp.YearId}}–{{selectedLoanApp.YearId + 1}}</span>
           <span class="badge ms-2" [ngClass]="selectedLoanApp.Passed ? 'bg-success' : 'bg-secondary'">
             Passed: {{selectedLoanApp.Passed ? 'Yes' : 'No'}}
           </span>
@@ -964,19 +964,19 @@
                   </div>
                   <div class="col-sm-6">
                     <span class="text-muted small d-block">Monthly Instalment</span>
-                    <span class="fw-bold fs-6 text-primary">â‚¹ {{selectedLoanApp.Instalment | number:'1.2-2'}}</span>
+                    <span class="fw-bold fs-6 text-primary">₹ {{selectedLoanApp.Instalment | number:'1.2-2'}}</span>
                   </div>
                   <div class="col-sm-4">
                     <span class="text-muted small d-block">Requested (Applied)</span>
-                    <span class="fw-bold">â‚¹ {{selectedLoanApp.Requested | number:'1.2-2'}}</span>
+                    <span class="fw-bold">₹ {{selectedLoanApp.Requested | number:'1.2-2'}}</span>
                   </div>
                   <div class="col-sm-4">
                     <span class="text-muted small d-block">Sanctioned Amount</span>
-                    <span class="fw-bold text-success fs-6">â‚¹ {{selectedLoanApp.Sanctioned | number:'1.2-2'}}</span>
+                    <span class="fw-bold text-success fs-6">₹ {{selectedLoanApp.Sanctioned | number:'1.2-2'}}</span>
                   </div>
                   <div class="col-sm-4">
                     <span class="text-muted small d-block">Net Payable</span>
-                    <span class="fw-bold text-dark fs-6">â‚¹ {{selectedLoanApp.Payable | number:'1.2-2'}}</span>
+                    <span class="fw-bold text-dark fs-6">₹ {{selectedLoanApp.Payable | number:'1.2-2'}}</span>
                   </div>
                 </div>
               </div>
@@ -1049,7 +1049,7 @@
                         <th>Member No</th>
                         <th>Guarantor Name</th>
                         <th>Department</th>
-                        <th class="text-end pe-3">Guaranteed Amount (â‚¹)</th>
+                        <th class="text-end pe-3">Guaranteed Amount (₹)</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1059,13 +1059,13 @@
                         <td>{{s.SuretyMemberNo || 'N/A'}}</td>
                         <td class="fw-semibold text-primary">{{s.MemberName || 'N/A'}}</td>
                         <td>{{s.DepartmentName || 'N/A'}}</td>
-                        <td class="text-end pe-3 fw-bold text-success">â‚¹ {{s.SuretyAmount | number:'1.2-2'}}</td>
+                        <td class="text-end pe-3 fw-bold text-success">₹ {{s.SuretyAmount | number:'1.2-2'}}</td>
                       </tr>
                     </tbody>
                     <tfoot class="table-light fw-bold" *ngIf="loanAppSureties.length > 0">
                       <tr>
                         <td colspan="5" class="text-end">Total Guaranteed:</td>
-                        <td class="text-end pe-3 text-success">â‚¹ {{getTotalGuaranteedAmount() | number:'1.2-2'}}</td>
+                        <td class="text-end pe-3 text-success">₹ {{getTotalGuaranteedAmount() | number:'1.2-2'}}</td>
                       </tr>
                     </tfoot>
                   </table>
@@ -1089,5 +1089,3 @@
   </div>
 </div>
 </main>
-
-
