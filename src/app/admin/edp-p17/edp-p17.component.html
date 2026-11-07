@@ -154,7 +154,7 @@
           </div>
           <div>
             <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Loan Paid (Disbursed)</div>
-            <div class="fs-6 fw-bold text-success">₹{{totals.TotalLoanPaid | number:'1.2-2'}}</div>
+            <div class="fs-6 fw-bold text-success">₹{{formatPlainInt(totals.TotalLoanPaid)}}</div>
           </div>
         </div>
       </div>
@@ -168,7 +168,7 @@
           </div>
           <div>
             <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Int. Refunded (Pro-rata)</div>
-            <div class="fs-6 fw-bold text-dark">₹{{totals.TotalInterestRefund | number:'1.2-2'}}</div>
+            <div class="fs-6 fw-bold text-dark">₹{{formatPlainInt(totals.TotalInterestRefund)}}</div>
           </div>
         </div>
       </div>
@@ -182,7 +182,7 @@
           </div>
           <div>
             <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Loan Recovered</div>
-            <div class="fs-6 fw-bold text-info">₹{{totals.TotalLoanReceived | number:'1.2-2'}}</div>
+            <div class="fs-6 fw-bold text-info">₹{{formatPlainInt(totals.TotalLoanReceived)}}</div>
           </div>
         </div>
       </div>
@@ -196,7 +196,7 @@
           </div>
           <div>
             <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Installments (Next Mo)</div>
-            <div class="fs-6 fw-bold text-dark">₹{{totals.TotalInstallment | number:'1.2-2'}}</div>
+            <div class="fs-6 fw-bold text-dark">₹{{formatPlainInt(totals.TotalInstallment)}}</div>
           </div>
         </div>
       </div>
@@ -227,13 +227,13 @@
               <div class="col-8 position-relative">
                 <label class="form-label small fw-semibold text-muted mb-1">Staff No *</label>
                 <div class="input-group input-group-sm">
-                  <input type="text" class="form-control" [(ngModel)]="formModel.StaffNo" name="staffNo" placeholder="e.g. 766157" (input)="onSearchStaff(formModel.StaffNo)" autocomplete="off" required>
+                  <input type="text" class="form-control" [(ngModel)]="formModel.StaffNo" name="staffNo" placeholder="e.g. 766157" (input)="onSearchStaff(formModel.StaffNo)" (blur)="onStaffNoBlur()" (keydown.enter)="$event.preventDefault(); onStaffNoBlur()" autocomplete="off" required>
                   <span class="input-group-text"><i class="bi bi-search"></i></span>
                 </div>
 
                 <!-- Autocomplete dropdown -->
                 <div class="dropdown-menu show w-100 shadow p-1" *ngIf="showMemberDropdown && memberSearchResults.length > 0" style="max-height: 180px; overflow-y: auto; z-index: 1050;">
-                  <button type="button" class="dropdown-item py-1 small" *ngFor="let m of memberSearchResults" (click)="selectMember(m)">
+                  <button type="button" class="dropdown-item py-1 small" *ngFor="let m of memberSearchResults" (mousedown)="selectMember(m)">
                     <strong class="text-primary">{{m.StaffNo}}</strong> - {{m.MemberName}}
                     <span class="text-muted d-block" style="font-size: 0.72rem;">Mem: {{m.MemberNo}} | {{m.Department}}</span>
                   </button>
@@ -256,7 +256,7 @@
             <div class="row g-2 mb-2">
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1 text-nowrap">Vr. No *</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrNo" name="vrNo" placeholder="e.g. 057730" required>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrNo" name="vrNo" placeholder="e.g. 057784" required>
               </div>
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1 text-nowrap">Vr. Date (DDMMYY) *</label>
@@ -338,8 +338,7 @@
           <table class="table table-hover table-striped align-middle mb-0 small text-nowrap">
             <thead class="table-light">
               <tr>
-                <th style="width: 40px;">#</th>
-                <th>File/Page</th>
+                <th>FILE/PAGE</th>
                 <th>Staff No</th>
                 <th>Code</th>
                 <th>Vr. No</th>
@@ -356,7 +355,7 @@
             <tbody>
               <!-- Empty state -->
               <tr *ngIf="filteredRows.length === 0">
-                <td colspan="13" class="text-center py-5 text-muted">
+                <td colspan="12" class="text-center py-5 text-muted">
                   <i class="bi bi-inbox fs-2 d-block mb-1"></i>
                   No P17 advice entries found for month {{formattedMonthDisplay}}.
                 </td>
@@ -364,7 +363,6 @@
 
               <!-- Data Rows -->
               <tr *ngFor="let row of pagedRows; let i = index">
-                <td class="text-muted">{{row.SlNo}}</td>
                 <td><span class="badge bg-light text-dark border">005/{{row.PageNo || '001'}}</span></td>
                 <td>
                   <span class="fw-bold text-primary">{{row.StaffNo}}</span>
@@ -376,19 +374,19 @@
                 <td><code>{{row.VrNo}}</code></td>
                 <td>{{formatDisplayDate(row.VrDate)}}</td>
                 <td class="text-end fw-semibold text-success">
-                  {{row.LoanPaid > 0 ? (row.LoanPaid | number:'1.2-2') : '-'}}
+                  {{formatPlainInt(row.LoanPaid, true)}}
                 </td>
                 <td class="text-end text-info">
-                  {{(row.LoanDeposited || row.LoanReceived) > 0 ? ((row.LoanDeposited || row.LoanReceived) | number:'1.2-2') : '-'}}
+                  {{formatPlainInt(row.LoanDeposited || row.LoanReceived, true)}}
                 </td>
                 <td class="text-end fw-semibold text-dark">
-                  {{row.InterestRefund > 0 ? (row.InterestRefund | number:'1.2-2') : '-'}}
+                  {{formatPlainInt(row.InterestRefund, true)}}
                 </td>
                 <td class="text-end text-muted">
-                  {{(row.InterestRecovered || row.InterestReceived) > 0 ? ((row.InterestRecovered || row.InterestReceived) | number:'1.2-2') : '-'}}
+                  {{formatPlainInt(row.InterestRecovered || row.InterestReceived, true)}}
                 </td>
                 <td class="text-end fw-bold">
-                  {{row.Installment > 0 ? (row.Installment | number:'1.2-2') : '-'}}
+                  {{formatPlainInt(row.Installment, true)}}
                 </td>
                 <td>
                   <span class="badge bg-light text-secondary border">{{row.Remarks || (row.LoanPaid > 0 ? 'PNB' : ((row.LoanDeposited || row.LoanReceived) > 0 ? 'JSCB' : '-'))}}</span>
@@ -409,12 +407,12 @@
             <!-- Table Footer Totals -->
             <tfoot class="table-light fw-bold" *ngIf="filteredRows.length > 0">
               <tr>
-                <td colspan="6" class="text-end">Total ({{totals.TotalRecords}} Records):</td>
-                <td class="text-end text-success">₹{{totals.TotalLoanPaid | number:'1.2-2'}}</td>
-                <td class="text-end text-info">₹{{totals.TotalLoanReceived | number:'1.2-2'}}</td>
-                <td class="text-end text-dark">₹{{totals.TotalInterestRefund | number:'1.2-2'}}</td>
-                <td class="text-end text-muted">₹{{totals.TotalInterestReceived || 0 | number:'1.2-2'}}</td>
-                <td class="text-end text-primary">₹{{totals.TotalInstallment | number:'1.2-2'}}</td>
+                <td colspan="5" class="text-end">Total ({{totals.TotalRecords}} Records):</td>
+                <td class="text-end text-success">₹{{formatPlainInt(totals.TotalLoanPaid)}}</td>
+                <td class="text-end text-info">₹{{formatPlainInt(totals.TotalLoanReceived)}}</td>
+                <td class="text-end text-dark">₹{{formatPlainInt(totals.TotalInterestRefund)}}</td>
+                <td class="text-end text-muted">₹{{formatPlainInt(totals.TotalInterestReceived || 0)}}</td>
+                <td class="text-end text-primary">₹{{formatPlainInt(totals.TotalInstallment)}}</td>
                 <td colspan="2"></td>
               </tr>
             </tfoot>
@@ -442,76 +440,78 @@
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- OFFICIAL PRINT REPORT VIEW (MATCHING P17 OFFICIAL PRINT LAYOUT)           -->
+    <!-- ========================================================================= -->
+  <!-- OFFICIAL PRINT REPORT VIEW (MAX 10 ROWS PER PAGE WITH AUTO PAGE-BREAK)    -->
   <!-- ========================================================================= -->
   <div class="print-container d-none d-print-block">
-    <!-- Header -->
-    <div class="print-header text-center mb-3">
-      <div class="company-name fw-bold fs-5 text-dark">
-        {{company.CompanyName || 'Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd.'}}
+    <div class="print-page-sheet" *ngFor="let page of printPages; let pIdx = index; let isLast = last">
+      <!-- Header -->
+      <div class="print-header text-center mb-2">
+        <div class="company-name fw-bold fs-5 text-dark">
+          {{company.CompanyName || 'Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd.'}}
+        </div>
+        <div class="company-sub text-muted small">
+          Loan Advances-Extra Transaction Advice (FILE NO.-P17)
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top border-bottom small fw-semibold">
+          <span>Month: {{formattedMonthDisplay}} ({{selectedMonthCode}})</span>
+          <span>Report Date: {{reportDate}}</span>
+        </div>
       </div>
-      <div class="company-sub text-muted small">
-        Loan Advances-Extra Transaction Advice (FILE NO.-P17)
-      </div>
-      <div class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top border-bottom small fw-semibold">
-        <span>Month: {{formattedMonthDisplay}} ({{selectedMonthCode}})</span>
-        <span>Report Date: {{reportDate}}</span>
-      </div>
-    </div>
 
-    <!-- Official Print Table with Full 12 Data Columns -->
-    <table class="official-print-table table table-sm table-bordered">
-      <thead>
-        <tr class="table-light">
-          <th class="text-center" style="width: 35px;">Sl</th>
-          <th class="text-center">Staff No</th>
-          <th class="text-center">Code</th>
-          <th class="text-center">Vr. No</th>
-          <th class="text-center">Date</th>
-          <th class="text-end">Loan Paid</th>
-          <th class="text-end">Loan Refund</th>
-          <th class="text-end">Loan Deposited</th>
-          <th class="text-end">Int. Refund</th>
-          <th class="text-end">Int. Recvd</th>
-          <th class="text-end">Installment</th>
-          <th class="text-start">Remarks</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let r of rows">
-          <td class="text-center">{{r.SlNo}}</td>
-          <td class="text-center fw-bold">{{r.StaffNo}}</td>
-          <td class="text-center">{{r.LoanCode || '09'}}</td>
-          <td class="text-center">{{r.VrNo}}</td>
-          <td class="text-center">{{formatDisplayDate(r.VrDate)}}</td>
-          <td class="text-end">{{r.LoanPaid > 0 ? (r.LoanPaid | number:'1.2-2') : '-'}}</td>
-          <td class="text-end">{{r.LoanRefund > 0 ? (r.LoanRefund | number:'1.2-2') : '-'}}</td>
-          <td class="text-end">{{(r.LoanDeposited || r.LoanReceived) > 0 ? ((r.LoanDeposited || r.LoanReceived) | number:'1.2-2') : '-'}}</td>
-          <td class="text-end">{{r.InterestRefund > 0 ? (r.InterestRefund | number:'1.2-2') : '-'}}</td>
-          <td class="text-end">{{(r.InterestRecovered || r.InterestReceived) > 0 ? ((r.InterestRecovered || r.InterestReceived) | number:'1.2-2') : '-'}}</td>
-          <td class="text-end fw-semibold">{{r.Installment > 0 ? (r.Installment | number:'1.2-2') : '-'}}</td>
-          <td class="text-start">{{r.Remarks || (r.LoanPaid > 0 ? 'PNB' : ((r.LoanDeposited || r.LoanReceived) > 0 ? 'JSCB' : '-'))}}</td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr class="fw-bold table-light">
-          <td colspan="5" class="text-end">Grand Total ({{rows.length}} Records):</td>
-          <td class="text-end">{{totals.TotalLoanPaid | number:'1.2-2'}}</td>
-          <td class="text-end">{{totals.TotalLoanRefund || 0 | number:'1.2-2'}}</td>
-          <td class="text-end">{{totals.TotalLoanReceived | number:'1.2-2'}}</td>
-          <td class="text-end">{{totals.TotalInterestRefund | number:'1.2-2'}}</td>
-          <td class="text-end">{{totals.TotalInterestReceived || 0 | number:'1.2-2'}}</td>
-          <td class="text-end">{{totals.TotalInstallment | number:'1.2-2'}}</td>
-          <td></td>
-        </tr>
-      </tfoot>
-    </table>
+      <!-- Official Print Table (Max 10 Data Rows per Page) -->
+      <table class="official-print-table table table-sm table-bordered">
+        <thead>
+          <tr class="table-light">
+            <th class="text-center">FILE/PAGE</th>
+            <th class="text-center">Staff No</th>
+            <th class="text-center">Code</th>
+            <th class="text-center">Vr. No</th>
+            <th class="text-center">Date</th>
+            <th class="text-end">Loan Paid</th>
+            <th class="text-end">Loan Refund</th>
+            <th class="text-end">Loan Deposited</th>
+            <th class="text-end">Int. Refund</th>
+            <th class="text-end">Int. Recvd</th>
+            <th class="text-end">Installment</th>
+            <th class="text-start">Remarks</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of page.rows">
+            <td class="text-center">005/{{r.PageNo || page.pageNumber}}</td>
+            <td class="text-center fw-bold">{{r.StaffNo}}</td>
+            <td class="text-center">{{r.LoanCode || '09'}}</td>
+            <td class="text-center">{{r.VrNo}}</td>
+            <td class="text-center">{{formatDisplayDate(r.VrDate)}}</td>
+            <td class="text-end">{{formatPlainInt(r.LoanPaid, true)}}</td>
+            <td class="text-end">{{formatPlainInt(r.LoanRefund, true)}}</td>
+            <td class="text-end">{{formatPlainInt(r.LoanDeposited || r.LoanReceived, true)}}</td>
+            <td class="text-end">{{formatPlainInt(r.InterestRefund, true)}}</td>
+            <td class="text-end">{{formatPlainInt(r.InterestRecovered || r.InterestReceived, true)}}</td>
+            <td class="text-end fw-semibold">{{formatPlainInt(r.Installment, true)}}</td>
+            <td class="text-start">{{r.Remarks || (r.LoanPaid > 0 ? 'PNB' : ((r.LoanDeposited || r.LoanReceived) > 0 ? 'JSCB' : '-'))}}</td>
+          </tr>
+        </tbody>
+        <tfoot *ngIf="isLast">
+          <tr class="fw-bold table-light">
+            <td colspan="5" class="text-end">Grand Total ({{rows.length}} Records):</td>
+            <td class="text-end">{{formatPlainInt(totals.TotalLoanPaid)}}</td>
+            <td class="text-end">{{formatPlainInt(totals.TotalLoanRefund || 0)}}</td>
+            <td class="text-end">{{formatPlainInt(totals.TotalLoanReceived || 0)}}</td>
+            <td class="text-end">{{formatPlainInt(totals.TotalInterestRefund || 0)}}</td>
+            <td class="text-end">{{formatPlainInt(totals.TotalInterestReceived || 0)}}</td>
+            <td class="text-end">{{formatPlainInt(totals.TotalInstallment || 0)}}</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
 
-    <!-- Page Footer (Fixed at page bottom) -->
-    <div class="print-page-footer">
-      <div class="print-footer-rule"></div>
-      <div class="print-footer-page-text">Page - 1 of 1</div>
+      <!-- Page Footer (Fixed at bottom of each page sheet) -->
+      <div class="print-page-footer">
+        <div class="print-footer-rule"></div>
+        <div class="print-footer-page-text">Page - {{pIdx + 1}} of {{printPages.length}}</div>
+      </div>
     </div>
   </div>
 
