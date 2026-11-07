@@ -32,8 +32,8 @@ export class MemberInfoComponent implements OnInit {
   detailViewOptions: string[] = ['Surety List', 'Loan Recoveries', 'CD Recoveries', 'RD Recoveries'];
 
   // Financial Year Selection
-  selectedYearId: number = 2026;
-  financialYearName: string = '2026-27';
+  selectedYearId: number = (new Date().getMonth() >= 3 ? new Date().getFullYear() : new Date().getFullYear() - 1);
+  financialYearName: string = `${this.selectedYearId}-${String((this.selectedYearId + 1) % 100).padStart(2, '0')}`;
   financialYears: any[] = [];
 
   constructor(
