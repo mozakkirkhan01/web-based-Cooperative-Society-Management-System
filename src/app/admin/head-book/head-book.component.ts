@@ -62,8 +62,8 @@ export class HeadBookComponent implements OnInit {
     'August', 'September', 'October', 'November',
     'December', 'January', 'February', 'March'
   ];
-  fromDate: string = '2026-04-01';
-  toDate: string = '2027-03-31';
+  fromDate: string = '';
+  toDate: string = '';
 
   // Record Range filter
   filterType: 'All' | 'StaffNo' | 'MemberNo' = 'All';
@@ -168,12 +168,19 @@ export class HeadBookComponent implements OnInit {
         this.dataLoading = false;
         if (res.Message === ConstantData.SuccessMessage) {
           this.years = res.Years || [];
-          if (res.ActiveYearId) {
+          if (res.CurrentYearId) {
+            this.selectedYearId = res.CurrentYearId;
+          } else if (res.ActiveYearId) {
             this.selectedYearId = res.ActiveYearId;
           } else if (this.years.length > 0) {
             this.selectedYearId = this.years[0].YearId;
           }
-          this.syncDatesForPeriod();
+          if (res.CurrentStartDate && res.CurrentEndDate) {
+            this.fromDate = res.CurrentStartDate;
+            this.toDate = res.CurrentEndDate;
+          } else {
+            this.syncDatesForPeriod();
+          }
 
           this.heads = res.Heads || [];
           if (this.heads.length > 0) {
@@ -193,7 +200,6 @@ export class HeadBookComponent implements OnInit {
             this.company = res.Company;
           }
 
-          this.syncDatesForPeriod();
           this.fetchHeadBook();
         } else {
           this.toastr.error(res.Message || 'Failed to load Head Book setup.');

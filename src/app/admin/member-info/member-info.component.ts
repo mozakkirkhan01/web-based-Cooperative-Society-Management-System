@@ -36,6 +36,12 @@ export class MemberInfoComponent implements OnInit {
   financialYearName: string = `${this.selectedYearId}-${String((this.selectedYearId + 1) % 100).padStart(2, '0')}`;
   financialYears: any[] = [];
 
+  get isCurrentFinancialYear(): boolean {
+    if (!this.financialYears || this.financialYears.length === 0) return true;
+    const match = this.financialYears.find((f: any) => f.YearId === this.selectedYearId);
+    return match ? !!match.IsCurrent : false;
+  }
+
   constructor(
     private service: AppService,
     private localService: LocalService,
@@ -134,7 +140,7 @@ export class MemberInfoComponent implements OnInit {
 
     this.isLoading = true;
     const payload: any = {
-      YearId: this.selectedYearId || 2026
+      YearId: this.selectedYearId || 0
     };
 
     if (memberId && memberId > 0) {
