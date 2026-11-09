@@ -135,7 +135,7 @@
           </div>
           <div>
             <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Total Monthly Installment (EMI)</div>
-            <div class="fs-6 fw-bold text-success">₹{{totals.TotalInstallment | number:'1.2-2'}}</div>
+            <div class="fs-6 fw-bold text-success">₹{{formatPlainInt(totals.TotalInstallment)}}</div>
           </div>
         </div>
       </div>
@@ -165,13 +165,13 @@
             <div class="mb-2 position-relative">
               <label class="form-label small fw-semibold text-muted mb-1">Staff No *</label>
               <div class="input-group input-group-sm">
-                <input type="text" class="form-control" [(ngModel)]="formModel.StaffNo" name="staffNo" placeholder="e.g. 773003" (input)="onSearchStaff(formModel.StaffNo)" autocomplete="off" required>
+                <input type="text" class="form-control" [(ngModel)]="formModel.StaffNo" name="staffNo" placeholder="e.g. 773003" (input)="onSearchStaff(formModel.StaffNo)" (blur)="onStaffNoBlur()" (keydown.enter)="$event.preventDefault(); onStaffNoBlur()" autocomplete="off" required>
                 <span class="input-group-text"><i class="bi bi-search"></i></span>
               </div>
 
               <!-- Autocomplete dropdown -->
               <div class="dropdown-menu show w-100 shadow p-1" *ngIf="showMemberDropdown && memberSearchResults.length > 0" style="max-height: 180px; overflow-y: auto;">
-                <button type="button" class="dropdown-item py-1 small" *ngFor="let m of memberSearchResults" (click)="selectMember(m)">
+                <button type="button" class="dropdown-item py-1 small" *ngFor="let m of memberSearchResults" (mousedown)="selectMember(m)">
                   <strong class="text-primary">{{m.StaffNo}}</strong> - {{m.MemberName}}
                   <span class="text-muted d-block" style="font-size: 0.72rem;">Mem: {{m.MemberNo}} | {{m.Department}}</span>
                 </button>
@@ -194,7 +194,7 @@
             <div class="row g-2 mb-2">
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">VR No.</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrNo" name="vrNo" placeholder="057730">
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrNo" name="vrNo" placeholder="057784">
               </div>
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">VR Date (DDMMYY)</label>
@@ -252,8 +252,7 @@
           <table class="table table-hover table-striped align-middle mb-0 small">
             <thead class="table-light text-nowrap">
               <tr>
-                <th style="width: 40px;">#</th>
-                <th>File/Page</th>
+                <th>FILE/PAGE</th>
                 <th>Staff No</th>
                 <th>Member Name</th>
                 <th class="text-end">Installment (₹)</th>
@@ -267,7 +266,7 @@
             <tbody>
               <!-- Empty state -->
               <tr *ngIf="filteredRows.length === 0">
-                <td colspan="10" class="text-center py-5 text-muted">
+                <td colspan="9" class="text-center py-5 text-muted">
                   <i class="bi bi-inbox fs-2 d-block mb-1"></i>
                   No S06 advice entries found for month {{formattedMonthDisplay}}.
                 </td>
@@ -275,7 +274,6 @@
 
               <!-- Data Rows -->
               <tr *ngFor="let row of pagedRows; let i = index">
-                <td class="text-muted">{{row.SlNo}}</td>
                 <td><span class="badge bg-light text-dark border">005/{{row.PageNo || '001'}}</span></td>
                 <td>
                   <span class="fw-bold text-primary">{{row.StaffNo}}</span>
@@ -286,7 +284,7 @@
                   <div class="text-muted" style="font-size: 0.72rem;" *ngIf="row.Department">{{row.Department}}</div>
                 </td>
                 <td class="text-end fw-semibold text-success">
-                  {{row.Installment > 0 ? (row.Installment | number:'1.2-2') : '0.00'}}
+                  {{formatPlainInt(row.Installment)}}
                 </td>
                 <td><code>{{row.VrNo ? formatVrNo(row.VrNo) : '-'}}</code></td>
                 <td>{{row.VrDate || '-'}}</td>
@@ -308,8 +306,8 @@
             <!-- Table Footer Totals -->
             <tfoot class="table-light fw-bold" *ngIf="filteredRows.length > 0">
               <tr>
-                <td colspan="4" class="text-end">Total ({{totals.TotalRecords}} Records):</td>
-                <td class="text-end text-success">₹{{totals.TotalInstallment | number:'1.2-2'}}</td>
+                <td colspan="3" class="text-end">Total ({{totals.TotalRecords}} Records):</td>
+                <td class="text-end text-success">₹{{formatPlainInt(totals.TotalInstallment)}}</td>
                 <td colspan="5"></td>
               </tr>
             </tfoot>
@@ -339,68 +337,72 @@
 
   <!-- ========================================================================= -->
   <!-- OFFICIAL PRINT REPORT VIEW (MATCHING S06 OFFICIAL PRINT LAYOUT)           -->
+    <!-- ========================================================================= -->
+  <!-- OFFICIAL PRINT REPORT VIEW (MAX 10 ROWS PER PAGE WITH AUTO PAGE-BREAK)    -->
   <!-- ========================================================================= -->
   <div class="print-container d-none d-print-block">
-    <!-- Header -->
-    <div class="print-header text-center">
-      <div class="company-name fw-bold">
-        Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd.
+    <div class="print-page-sheet" *ngFor="let page of printPages; let pIdx = index; let isLast = last">
+      <!-- Header -->
+      <div class="print-header text-center">
+        <div class="company-name fw-bold">
+          Bokaro Steel Employees (TA/MED/MAT.) C.C.S.Ltd.
+        </div>
+        <div class="company-hindi fw-bold">
+          बोकारो इस्पात कर्मचारी (टी०ए०/मेड०/मैट०) सहकारी साख समिति लिमिटेड
+        </div>
+        <div class="company-sub">
+          <span>(Regd. No.- BAGH-6/78)</span>
+          <span class="ms-3">Old Admn. Bldg., Bokaro Steel City-827001</span>
+        </div>
       </div>
-      <div class="company-hindi fw-bold">
-        बोकारो इस्पात कर्मचारी (टी०ए०/मेड०/मैट०) सहकारी साख समिति लिमिटेड
+
+      <div class="print-report-title">
+        EDP - S06 (Loan and Master Changes Advice)
       </div>
-      <div class="company-sub">
-        <span>(Regd. No.- BAGH-6/78)</span>
-        <span class="ms-3">Old Admn. Bldg., Bokaro Steel City-827001</span>
+
+      <div class="print-sub-header">
+        <span><strong>Month: {{selectedMonthCode}}</strong></span>
+        <span>Report Date: {{reportDate}}</span>
       </div>
-    </div>
 
-    <div class="print-report-title">
-      EDP - S06 (Loan and Master Changes Advice)
-    </div>
+      <!-- Official Monospace Print Table (Max 10 rows) -->
+      <table class="official-print-table">
+        <thead>
+          <tr>
+            <th class="text-start">Type</th>
+            <th class="text-start">MmYy</th>
+            <th class="text-start">FILE/PAGE</th>
+            <th class="text-start">StaffNo</th>
+            <th class="text-start">Code</th>
+            <th class="text-end">Installment</th>
+            <th class="text-start">AccNo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of page.rows">
+            <td class="text-start">S06</td>
+            <td class="text-start">{{selectedMonthCode}}</td>
+            <td class="text-start">005/{{r.PageNo || page.pageNumber}}</td>
+            <td class="text-start">{{r.StaffNo}}</td>
+            <td class="text-start">{{r.Code || '05'}}</td>
+            <td class="text-end">{{formatFixedDigits(r.Installment, 7)}}</td>
+            <td class="text-start">{{r.AccNo || '000048'}}</td>
+          </tr>
+        </tbody>
+        <tfoot *ngIf="isLast">
+          <tr class="total-records-row">
+            <td colspan="7" class="text-start">
+              Total Records:&nbsp;&nbsp;&nbsp;&nbsp;{{rows.length}}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
 
-    <div class="print-sub-header">
-      <span><strong>Month: {{selectedMonthCode}}</strong></span>
-      <span>Report Date: {{reportDate}}</span>
-    </div>
-
-    <!-- Official Monospace Print Table -->
-    <table class="official-print-table">
-      <thead>
-        <tr>
-          <th class="text-start">Type</th>
-          <th class="text-start">MmYy</th>
-          <th class="text-start">File/Page</th>
-          <th class="text-start">StaffNo</th>
-          <th class="text-start">Code</th>
-          <th class="text-end">Installment</th>
-          <th class="text-start">AccNo</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let r of rows">
-          <td class="text-start">S06</td>
-          <td class="text-start">{{selectedMonthCode}}</td>
-          <td class="text-start">005/{{r.PageNo || '001'}}</td>
-          <td class="text-start">{{r.StaffNo}}</td>
-          <td class="text-start">{{r.Code || '05'}}</td>
-          <td class="text-end">{{formatFixedDigits(r.Installment, 7)}}</td>
-          <td class="text-start">{{r.AccNo || '000048'}}</td>
-        </tr>
-      </tbody>
-      <tfoot>
-        <tr class="total-records-row">
-          <td colspan="7" class="text-start">
-            Total Records:&nbsp;&nbsp;&nbsp;&nbsp;{{rows.length}}
-          </td>
-        </tr>
-      </tfoot>
-    </table>
-
-    <!-- Page Footer (Fixed at page bottom) -->
-    <div class="print-page-footer">
-      <div class="print-footer-rule"></div>
-      <div class="print-footer-page-text">Page - 1 of 1</div>
+      <!-- Page Footer -->
+      <div class="print-page-footer">
+        <div class="print-footer-rule"></div>
+        <div class="print-footer-page-text">Page - {{pIdx + 1}} of {{printPages.length}}</div>
+      </div>
     </div>
   </div>
 
