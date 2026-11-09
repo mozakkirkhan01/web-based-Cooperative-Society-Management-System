@@ -1,3 +1,4 @@
+import { formatDateDDMMMYYYY } from '../../utils/formatters';
 import { Component, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
@@ -416,20 +417,7 @@ export class TrialBalanceComponent implements OnInit {
   }
 
   formatDateDDMMMYYYY(dateInput: any): string {
-    if (!dateInput) return '';
-    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateInput)) {
-      const parts = dateInput.substring(0, 10).split('-');
-      const year = parts[0];
-      const monthIdx = parseInt(parts[1], 10) - 1;
-      const day = parts[2];
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return `${day}-${months[monthIdx] || parts[1]}-${year}`;
-    }
-    const d = new Date(dateInput);
-    if (isNaN(d.getTime())) return String(dateInput);
-    const day = String(d.getDate()).padStart(2, '0');
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`;
+    return formatDateDDMMMYYYY(dateInput);
   }
 
   private createHindiTextImage(text: string): { dataUrl: string; widthMm: number; heightMm: number } | null {

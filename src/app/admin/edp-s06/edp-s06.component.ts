@@ -1,3 +1,11 @@
+import {
+  REPORT_PAGE_SIZE_OPTIONS,
+  MEMBER_CATEGORY_FILTER_OPTIONS,
+  SocietyConfig,
+  getTodayDisplayDate,
+  generateFiscalMonthsForYear
+} from '../../utils/constants';
+import { formatPlainInt } from '../../utils/formatters';
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 
 import { ToastrService } from 'ngx-toastr';
@@ -126,18 +134,8 @@ export class EdpS06Component implements OnInit {
 
   pageSize = 10;
 
-  pageSizeOptions = [
-
-    { label: '10 / page', value: 10 },
-    { label: '15 / page', value: 15 },
-
-    { label: '25 / page', value: 25 },
-
-    { label: '50 / page', value: 50 },
-
-    { label: 'All records', value: -1 }
-
-  ];
+  pageSizeOptions = [...REPORT_PAGE_SIZE_OPTIONS];
+  memberCategoryOptions = MEMBER_CATEGORY_FILTER_OPTIONS;
 
 
 
@@ -184,19 +182,7 @@ export class EdpS06Component implements OnInit {
 
 
   initReportDate(): void {
-
-    const today = new Date();
-
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-    const dd = String(today.getDate()).padStart(2, '0');
-
-    const mmm = months[today.getMonth()];
-
-    const yyyy = today.getFullYear();
-
-    this.reportDate = `${dd}-${mmm}-${yyyy}`;
-
+    this.reportDate = getTodayDisplayDate();
   }
 
 
@@ -231,13 +217,13 @@ export class EdpS06Component implements OnInit {
 
       Installment: 0,
 
-      Code: '05',
+      Code: SocietyConfig.Code2,
 
       VrNo: '',
 
       VrDate: '',
 
-      AccNo: '000048'
+      AccNo: SocietyConfig.DefaultAccountNo
 
     };
 
@@ -381,39 +367,7 @@ export class EdpS06Component implements OnInit {
 
 
     generateMonthsForYear(fyName: string): any[] {
-
-    const startYear = parseInt((fyName || '').split('-')[0], 10) || new Date().getFullYear();
-
-    const monthNames = [
-
-      'April', 'May', 'June', 'July', 'August', 'September',
-
-      'October', 'November', 'December', 'January', 'February', 'March'
-
-    ];
-
-    return monthNames.map((name, index) => {
-
-      const calMonth = (index + 3) % 12 + 1;
-
-      const calYear = index < 9 ? startYear : startYear + 1;
-
-      const mm = String(calMonth).padStart(2, '0');
-
-      const yy = String(calYear).slice(-2);
-
-      return {
-
-        MonthCode: `${mm}${yy}`,
-
-        MonthName: `${name} ${calYear}`,
-
-        FinancialYearName: fyName
-
-      };
-
-    });
-
+    return generateFiscalMonthsForYear(fyName);
   }
 
 
@@ -666,7 +620,7 @@ export class EdpS06Component implements OnInit {
 
       const paddedMem = memStr.length <= 4 ? memStr.padStart(4, '0') : memStr.slice(-4);
 
-      this.formModel.VrNo = '05' + paddedMem;
+      this.formModel.VrNo = SocietyConfig.Code2 + paddedMem;
 
     }
 

@@ -5,6 +5,8 @@ import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
 import { LoadDataService } from '../../utils/load-data.service';
 import { ConstantData } from '../../utils/constant-data';
+import { SHORT_MONTH_NAMES } from '../../utils/constants';
+import { formatBalance } from '../../utils/formatters';
 import * as XLSX from 'xlsx';
 
 @Component({
@@ -88,9 +90,8 @@ export class ScheduleComponent implements OnInit, OnDestroy {
   get IssueCount() { return this.Lines.filter(row => row.Issue).length; }
   formatMonth(yyyymm: string) {
     if (!yyyymm || yyyymm.length !== 6) return yyyymm;
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const m = parseInt(yyyymm.substring(4, 6), 10);
-    return (months[m - 1] || yyyymm.substring(4, 6)) + '-' + yyyymm.substring(0, 4);
+    return (SHORT_MONTH_NAMES[m - 1] || yyyymm.substring(4, 6)) + '-' + yyyymm.substring(0, 4);
   }
   constructor(private service: AppService, private localService: LocalService,
     private loadData: LoadDataService, private toastr: ToastrService,
@@ -201,7 +202,7 @@ export class ScheduleComponent implements OnInit, OnDestroy {
   }
   headName(id: any) { return this.HeadList.find(x => x.HeadId == id)?.HeadName || this.SourceHeadList.find(x => x.HeadId == id)?.HeadName || id; }
   balance(id: any) { return this.BalanceList.find(x => x.HeadId == id)?.ClosingBalance; }
-  formatBalance(value: any) { return value == null ? 'Not available' : Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''); }
+  formatBalance(value: any) { return formatBalance(value); }
   total(field: string) { return this.Lines.reduce((sum, x) => sum + Math.round(Number(x[field] || 0) * 100), 0) / 100; }
   get cutAmount(): number {
     return Math.max(0, Math.round((this.total('Credit') - this.total('Debit')) * 100) / 100);

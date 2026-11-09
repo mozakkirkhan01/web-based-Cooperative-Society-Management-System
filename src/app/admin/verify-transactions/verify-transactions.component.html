@@ -51,13 +51,7 @@
         <div class="col-md-2 col-sm-6">
           <label class="form-label small fw-semibold text-muted mb-1">Transaction Type</label>
           <select class="form-select form-select-sm" [(ngModel)]="txnType" (change)="onFilter()">
-            <option value="ALL">All Types</option>
-            <option value="PAYMENT">Payments</option>
-            <option value="RECEIPT">Receipts</option>
-            <option value="CONTRA">Contra</option>
-            <option value="TRANSFER">Transfer</option>
-            <option value="SCHEDULE">Schedule</option>
-            <option value="SALARY">Salary</option>
+            <option *ngFor="let opt of txnTypeOptions" [value]="opt.Key">{{ opt.Value }}</option>
           </select>
         </div>
 

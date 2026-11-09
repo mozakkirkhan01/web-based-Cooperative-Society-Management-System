@@ -1,3 +1,10 @@
+import {
+  FISCAL_MONTH_NAMES,
+  SHORT_MONTH_NAMES,
+  SocietyConfig,
+  getTodayDisplayDate
+} from '../../utils/constants';
+import { formatDisplayDate, formatDateDDMMMYYYY } from '../../utils/formatters';
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
@@ -56,12 +63,7 @@ export class HeadBookComponent implements OnInit {
 
   // Period / Date filter
   periodOption: string = 'Whole Year';
-  periodOptions: string[] = [
-    'Whole Year',
-    'April', 'May', 'June', 'July',
-    'August', 'September', 'October', 'November',
-    'December', 'January', 'February', 'March'
-  ];
+  periodOptions: string[] = ['Whole Year', ...FISCAL_MONTH_NAMES];
   fromDate: string = '';
   toDate: string = '';
 
@@ -134,12 +136,7 @@ export class HeadBookComponent implements OnInit {
   }
 
   initReportDate(): void {
-    const today = new Date();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mmm = months[today.getMonth()];
-    const yyyy = today.getFullYear();
-    this.reportDate = `${dd}-${mmm}-${yyyy}`;
+    this.reportDate = getTodayDisplayDate();
   }
 
   get recordsDisplay(): string {
@@ -482,14 +479,7 @@ export class HeadBookComponent implements OnInit {
   }
 
   formatDateDisplay(d: string): string {
-    if (!d) return '';
-    const parts = d.split('-');
-    if (parts.length === 3) {
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const mIdx = parseInt(parts[1], 10) - 1;
-      return `${parts[2]}-${months[mIdx] || parts[1]}-${parts[0]}`;
-    }
-    return d;
+    return formatDateDDMMMYYYY(d);
   }
 
   closePage(): void {

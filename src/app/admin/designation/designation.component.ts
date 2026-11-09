@@ -1,3 +1,4 @@
+import { STATUS_OPTIONS } from '../../utils/constants';
 import { Component, ViewChild } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
@@ -21,7 +22,7 @@ export class DesignationComponent {
   DesignationList: any = []
   Designation: any = {}
   isSubmitted = false
-  StatusList = this.loadData.GetEnumList(Status);
+  StatusList = STATUS_OPTIONS;
   AllStatusList = Status;
   PageSize = ConstantData.PageSizes;
   p: number = 1;

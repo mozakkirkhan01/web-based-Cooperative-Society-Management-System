@@ -1,3 +1,11 @@
+import {
+  REPORT_PAGE_SIZE_OPTIONS,
+  MEMBER_CATEGORY_FILTER_OPTIONS,
+  EDP_SORT_BY_OPTIONS,
+  SocietyConfig,
+  getTodayDisplayDate,
+  generateFiscalMonthsForYear
+} from '../../utils/constants';
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
@@ -61,12 +69,9 @@ export class EdpS05Component implements OnInit {
   searchText = '';
   currentPage = 1;
   pageSize = 25;
-  pageSizeOptions = [
-    { label: '15 / page', value: 15 },
-    { label: '25 / page', value: 25 },
-    { label: '50 / page', value: 50 },
-    { label: 'All records', value: -1 }
-  ];
+  pageSizeOptions = [...REPORT_PAGE_SIZE_OPTIONS];
+  memberCategoryOptions = MEMBER_CATEGORY_FILTER_OPTIONS;
+  sortByOptions = EDP_SORT_BY_OPTIONS;
 
   isEditing = false;
   editIndex = -1;
@@ -90,12 +95,7 @@ export class EdpS05Component implements OnInit {
   }
 
   initReportDate(): void {
-    const today = new Date();
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const dd = String(today.getDate()).padStart(2, '0');
-    const mmm = months[today.getMonth()];
-    const yyyy = today.getFullYear();
-    this.reportDate = `${dd}-${mmm}-${yyyy}`;
+    this.reportDate = getTodayDisplayDate();
   }
 
   get formattedMonthDisplay(): string {
@@ -109,7 +109,7 @@ export class EdpS05Component implements OnInit {
       SlNo: 0,
       PageNo: '001',
       StaffNo: '',
-      CoopNo: '05',
+      CoopNo: SocietyConfig.Code2,
       MemberNo: '',
       MemberName: '',
       Department: '',
@@ -156,22 +156,7 @@ export class EdpS05Component implements OnInit {
   }
 
     generateMonthsForYear(fyName: string): any[] {
-    const startYear = parseInt((fyName || '').split('-')[0], 10) || new Date().getFullYear();
-    const monthNames = [
-      'April', 'May', 'June', 'July', 'August', 'September',
-      'October', 'November', 'December', 'January', 'February', 'March'
-    ];
-    return monthNames.map((name, index) => {
-      const calMonth = (index + 3) % 12 + 1;
-      const calYear = index < 9 ? startYear : startYear + 1;
-      const mm = String(calMonth).padStart(2, '0');
-      const yy = String(calYear).slice(-2);
-      return {
-        MonthCode: `${mm}${yy}`,
-        MonthName: `${name} ${calYear}`,
-        FinancialYearName: fyName
-      };
-    });
+    return generateFiscalMonthsForYear(fyName);
   }
 
   updateMonthsForSelectedFY(): void {

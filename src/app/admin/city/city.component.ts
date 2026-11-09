@@ -1,3 +1,4 @@
+import { STATUS_OPTIONS } from '../../utils/constants';
 import { Component,ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -29,7 +30,7 @@ export class CityComponent {
   itemPerPage: number = this.PageSize[0];
   StateList: any[] = [];
   filterState: any[] = [];
-  StatusList = this.loadData.GetEnumList(Status);
+  StatusList = STATUS_OPTIONS;
   action: ActionModel = {} as ActionModel;
   staffLogin: StaffLoginModel = {} as StaffLoginModel;
   AllStatusList = Status;

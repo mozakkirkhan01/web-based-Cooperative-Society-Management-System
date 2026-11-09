@@ -1,3 +1,4 @@
+import { STATUS_OPTIONS, PSU_UNIT_OPTIONS } from '../../utils/constants';
 import { Component, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -21,8 +22,8 @@ export class MemberDocComponent {
   MemberList: any = []
   MemberImageList: any = []
   isSubmitted = false
-  StatusList = this.loadData.GetEnumList(Status);
-  PsuUnitList = this.loadData.GetEnumList(PsuUnit);
+  StatusList = STATUS_OPTIONS;
+  PsuUnitList = PSU_UNIT_OPTIONS;
   PageSize = ConstantData.PageSizes;
   p: number = 1;
   Search: string = '';

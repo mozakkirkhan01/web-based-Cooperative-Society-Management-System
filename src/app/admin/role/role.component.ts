@@ -1,3 +1,4 @@
+import { STATUS_OPTIONS } from '../../utils/constants';
 import { Component, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -28,7 +29,7 @@ export class RoleComponent {
   itemPerPage: number = this.PageSize[0];
   action: ActionModel = {} as ActionModel;
   staffLogin: StaffLoginModel = {} as StaffLoginModel;
-  StatusList = this.loadData.GetEnumList(Status);
+  StatusList = STATUS_OPTIONS;
   AllStatusList = Status;
 
   sort(key: any) {

@@ -1,3 +1,4 @@
+import { STATUS_OPTIONS, GENDER_OPTIONS, STAFF_TYPE_OPTIONS } from '../../utils/constants';
 import { Component, ViewChild, } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -31,9 +32,9 @@ export class StaffComponent {
   itemPerPage: number = this.PageSize[0];
   action: ActionModel = {} as ActionModel;
   staffLogin: StaffLoginModel = {} as StaffLoginModel;
-  StatusList = this.loadDataService.GetEnumList(Status);
-  GenderList = this.loadDataService.GetEnumList(Gender);
-  StaffTypeList = this.loadDataService.GetEnumList(StaffType);
+  StatusList = STATUS_OPTIONS;
+  GenderList = GENDER_OPTIONS;
+  StaffTypeList = STAFF_TYPE_OPTIONS;
   AllStatusList = Status;
   AllGenderList = Gender;
   AllStaffTypeList = StaffType;

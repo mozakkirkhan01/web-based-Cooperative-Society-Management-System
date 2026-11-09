@@ -1,3 +1,11 @@
+import {
+  STATUS_OPTIONS,
+  GENDER_OPTIONS,
+  PSU_UNIT_OPTIONS,
+  MEMBER_TYPE_OPTIONS,
+  NOMINEE_RELATION_OPTIONS,
+  GUARDIAN_TYPE_OPTIONS
+} from '../../utils/constants';
 import { Component, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -24,11 +32,11 @@ export class MemberComponent {
   DepartmentList: any = []
   Member: any = {}
   isSubmitted = false
-  StatusList = this.loadData.GetEnumList(Status);
-  NomineeRelationList = this.loadData.GetEnumList(NomineeRelation);
-  GenderList = this.loadData.GetEnumList(Gender);
-  PsuUnitList = this.loadData.GetEnumList(PsuUnit);
-  MemberTypeList = this.loadData.GetEnumList(MemberType);
+  StatusList = STATUS_OPTIONS;
+  NomineeRelationList = NOMINEE_RELATION_OPTIONS;
+  GenderList = GENDER_OPTIONS;
+  PsuUnitList = PSU_UNIT_OPTIONS;
+  MemberTypeList = MEMBER_TYPE_OPTIONS;
   PageSize = ConstantData.PageSizes;
   p: number = 1;
   Search: string = '';
@@ -42,7 +50,7 @@ export class MemberComponent {
   AllNomineeRelationList = NomineeRelation;
   AllGenderList = Gender;
   AllMemberTypeList = MemberType;
-  GuardianTypeList = this.loadData.GetEnumList(GuardianType);
+  GuardianTypeList = GUARDIAN_TYPE_OPTIONS;
   AllGuardianTypeList = GuardianType;
   selectedMember: any = {};
   filterStatus: number = 0;        // 0 = All

@@ -1,3 +1,4 @@
+import { STATUS_OPTIONS } from '../../utils/constants';
 
 import { Component,ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
@@ -24,7 +25,7 @@ export class MenuComponent {
   MenuList: any = []
   Menu: any = {}
   isSubmitted = false
-  StatusList = this.loadData.GetEnumList(Status);
+  StatusList = STATUS_OPTIONS;
   filterPage: any[] = []
   PageList: any[] = []
   ParentMenuId: any = null;

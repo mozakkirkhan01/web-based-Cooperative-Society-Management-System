@@ -6,6 +6,7 @@ import { LocalService } from '../../utils/local.service';
 import { LoadDataService } from '../../utils/load-data.service';
 import { ConstantData } from '../../utils/constant-data';
 import { NotificationService } from '../../utils/notification.service';
+import { formatBalance } from '../../utils/formatters';
 
 @Component({
   selector: 'app-transfer',
@@ -228,7 +229,7 @@ export class TransferComponent implements OnInit, OnDestroy {
   }
   headName(id: any) { return this.HeadList.find(x => x.HeadId == id)?.HeadName || id; }
   balance(id: any) { return this.BalanceList.find(x => x.HeadId == id)?.ClosingBalance; }
-  formatBalance(value: any) { return value == null ? 'Not available' : Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''); }
+  formatBalance(value: any) { return formatBalance(value); }
   total(field: string) { return this.Lines.reduce((sum, x) => sum + Math.round(Number(x[field] || 0) * 100), 0) / 100; }
   addLine() {
     if (this.dataLoading || this.isSaving || this.pendingTransaction || !this.CanCreate) return;

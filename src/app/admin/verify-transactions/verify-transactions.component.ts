@@ -6,6 +6,7 @@ import { LocalService } from '../../utils/local.service';
 import { LoadDataService } from '../../utils/load-data.service';
 import { ConstantData } from '../../utils/constant-data';
 import { NotificationService } from '../../utils/notification.service';
+import { TRANSACTION_TYPE_FILTER_OPTIONS } from '../../utils/constants';
 
 @Component({
   selector: 'app-verify-transactions',
@@ -18,6 +19,7 @@ export class VerifyTransactionsComponent implements OnInit, OnDestroy {
   isProcessing = false;
 
   // Filter state
+  readonly txnTypeOptions = TRANSACTION_TYPE_FILTER_OPTIONS;
   txnType = 'ALL';
   selectedFYId = 0;
   financialYears: any[] = [];

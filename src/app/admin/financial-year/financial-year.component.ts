@@ -1,3 +1,4 @@
+import { STATUS_OPTIONS } from '../../utils/constants';
 import { Component, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -21,7 +22,7 @@ dataLoading: boolean = false
   FinancialYearList: any = []
   FinancialYear: any = {}
   isSubmitted = false
-  StatusList = this.loadData.GetEnumList(Status);
+  StatusList = STATUS_OPTIONS;
   PageSize = ConstantData.PageSizes;
   p: number = 1;
   Search: string = '';

@@ -6,6 +6,7 @@ import { LocalService } from '../../utils/local.service';
 import { LoadDataService } from '../../utils/load-data.service';
 import { ConstantData } from '../../utils/constant-data';
 import { NotificationService } from '../../utils/notification.service';
+import { formatBalance } from '../../utils/formatters';
 
 @Component({
   selector: 'app-contra',
@@ -47,9 +48,12 @@ export class ContraComponent implements OnInit, OnDestroy {
   isReadOnly = false;
   currentFinancialYear: any = null;
   isLockedFinancialYear: boolean = false;
-  lockedFYName: string = '';
-  minVoucherDate: Date | null = null;
-  maxVoucherDate: Date | null = null;
+  lockedFYName: string = '';
+
+  minVoucherDate: Date | null = null;
+
+  maxVoucherDate: Date | null = null;
+
   pendingTransaction: any = null;
   contextRequest = 0;
   memberRequest = 0;
@@ -125,7 +129,8 @@ export class ContraComponent implements OnInit, OnDestroy {
   getContext() {
     const current = ++this.contextRequest;
     this.BalanceList = []; this.MemberBalance = null; this.FinancialYearName = ''; this.VoucherList = [];
-    this.checkFinancialYearLock();
+    this.checkFinancialYearLock();
+
     if (!this.SocietyId || !this.VoucherDate) return;
     this.service.accounting('JournalContext', this.request({ SocietyId: this.SocietyId, VoucherDate: this.loadData.loadDateYMD(this.VoucherDate), HeadId: this.Line.HeadId || 0, MemberId: this.Line.MemberId || null })).subscribe((response: any) => {
       if (current != this.contextRequest) return;
@@ -162,7 +167,7 @@ export class ContraComponent implements OnInit, OnDestroy {
   }
   headName(id: any) { return this.HeadList.find(x => x.HeadId == id)?.HeadName || id; }
   balance(id: any) { return this.BalanceList.find(x => x.HeadId == id)?.ClosingBalance; }
-  formatBalance(value: any) { return value == null ? 'Not available' : Math.abs(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (value > 0 ? ' Dr' : value < 0 ? ' Cr' : ''); }
+  formatBalance(value: any) { return formatBalance(value); }
   total(field: string) { return this.Lines.reduce((sum, x) => sum + Math.round(Number(x[field] || 0) * 100), 0) / 100; }
   addLine() {
     if (this.dataLoading || this.isSaving || this.pendingTransaction || !this.CanCreate) return;

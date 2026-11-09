@@ -1,3 +1,4 @@
+import { HEAD_TYPE_OPTIONS } from '../../utils/constants';
 import { Component, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
@@ -20,7 +21,7 @@ export class HeadComponent {
   HeadList: any = []
   Head: any = {}
   isSubmitted = false
-  HeadTypeList = this.loadData.GetEnumList(HeadType);
+  HeadTypeList = HEAD_TYPE_OPTIONS;
   PageSize = ConstantData.PageSizes;
   p: number = 1;
   Search: string = '';

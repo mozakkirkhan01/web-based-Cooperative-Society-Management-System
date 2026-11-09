@@ -1,3 +1,4 @@
+import { STATUS_OPTIONS } from '../../utils/constants';
 import { Component, OnInit, ViewChild } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
@@ -22,7 +23,7 @@ export class LoanPurposeComponent implements OnInit {
   PurposeList: any[] = [];
   Purpose: any = {};
   isSubmitted: boolean = false;
-  StatusList = this.loadData.GetEnumList(Status);
+  StatusList = STATUS_OPTIONS;
   AllStatusList = Status;
   PageSize = ConstantData.PageSizes;
   p: number = 1;

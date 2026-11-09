@@ -1,4 +1,7 @@
 import { RuntimeConfig } from './runtime-config';
+import { DEFAULT_PAGE_SIZES, REPORT_PAGE_SIZE_OPTIONS } from './constants/pagination.constants';
+import { STATUS_OPTIONS } from './constants/dropdown.constants';
+import { SocietyConfig } from './constants/society.constants';
 
 export class ConstantData {
     public static readonly AccessReview = RuntimeConfig.accessReview;
@@ -6,8 +9,17 @@ export class ConstantData {
     public static AccessDenied = "Access Denied";
     private static readonly noImageUrl = "assets/img/no-image.avif";
     public static RowChangesMessage = "Allow to changes all row while changing first row";
-    public static PageSizes = [10, 20, 100, 200, 500, 1000, 2000, 5000];
-    public static StatusList = [{ Key: 1, Value: "Active" }, { Key: 2, Value: "Inactive" }];
+
+    /** Centralized Pagination */
+    public static PageSizes = [...DEFAULT_PAGE_SIZES];
+    public static ReportPageSizes = [...REPORT_PAGE_SIZE_OPTIONS];
+
+    /** Centralized Status */
+    public static StatusList = [...STATUS_OPTIONS];
+
+    /** Society Business Configuration */
+    public static Society = SocietyConfig;
+
     public static DestinationTypeList = [{ Key: 1, Value: "Domestic" }, { Key: 2, Value: "International" }];
     public static BoolList = [{ Key: true, Value: "Yes" }, { Key: false, Value: "No" }];
     private static readonly adminKey = "52F4785C-7EE7-426E-A1AE-C2300972E70A";
@@ -41,6 +53,4 @@ export class ConstantData {
         const parts = fileName.split('.');
         return `.${parts.length > 1 ? parts[parts.length - 1] : ''}`;
     }
-
-
 }

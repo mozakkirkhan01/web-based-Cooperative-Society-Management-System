@@ -1,3 +1,4 @@
+import { STATUS_OPTIONS } from '../../utils/constants';
 import { Component, ViewChild } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
@@ -28,7 +29,7 @@ export class RoleMenuComponent {
   action: ActionModel = {} as ActionModel;
   staffLogin: StaffLoginModel = {} as StaffLoginModel;
   Search: any = null;
-  StatusList = this.loadData.GetEnumList(Status);
+  StatusList = STATUS_OPTIONS;
 
   constructor(
     private service: AppService,

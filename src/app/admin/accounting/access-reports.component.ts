@@ -6,6 +6,8 @@ import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
 import { ConstantData } from '../../utils/constant-data';
 import { LoadDataService } from '../../utils/load-data.service';
+import { FISCAL_MONTH_NAMES, SHORT_MONTH_NAMES } from '../../utils/constants';
+import { formatDateDDMMMYYYY } from '../../utils/formatters';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -35,8 +37,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   PeriodList: string[] = [
     'Till Date',
     'Whole Year',
-    'April', 'May', 'June', 'July', 'August', 'September',
-    'October', 'November', 'December', 'January', 'February', 'March'
+    ...FISCAL_MONTH_NAMES
   ];
   Rows: any[] = []; Totals: any = {}; Checks: any = {}; Total = 0;
   Company: any = null;
@@ -218,8 +219,8 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
       this.FromDate = this.loadData.loadDateYMD(start) || '';
       this.ToDate = this.loadData.loadDateYMD(end) || '';
     } else {
-      const monthNames = ['April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December', 'January', 'February', 'March'];
-      const monthIdx = monthNames.indexOf(this.PeriodFilter);
+      const monthNames = FISCAL_MONTH_NAMES;
+      const monthIdx = (monthNames as readonly string[]).indexOf(this.PeriodFilter);
       if (monthIdx >= 0) {
         const targetYear = monthIdx < 9 ? startYear : endYear;
         const targetJsMonth = monthIdx < 9 ? (monthIdx + 3) : (monthIdx - 9);
@@ -366,8 +367,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
     if (!dateInput) return '';
     const d = new Date(dateInput);
     if (isNaN(d.getTime())) return String(dateInput);
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${months[d.getMonth()]}-${d.getFullYear()}`;
+    return `${SHORT_MONTH_NAMES[d.getMonth()]}-${d.getFullYear()}`;
   }
   openDayBook(date?: any) {
     let d = this.FromDate;
@@ -442,20 +442,7 @@ export class AccessReportsComponent implements OnInit, OnDestroy {
   }
 
   formatDateDDMMMYYYY(dateInput: any): string {
-    if (!dateInput) return '';
-    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateInput)) {
-      const parts = dateInput.substring(0, 10).split('-');
-      const year = parts[0];
-      const monthIdx = parseInt(parts[1], 10) - 1;
-      const day = parts[2];
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return `${day}-${months[monthIdx] || parts[1]}-${year}`;
-    }
-    const d = new Date(dateInput);
-    if (isNaN(d.getTime())) return String(dateInput);
-    const day = String(d.getDate()).padStart(2, '0');
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`;
+    return formatDateDDMMMYYYY(dateInput);
   }
 
   private createHindiTextImage(text: string): { dataUrl: string; widthMm: number; heightMm: number } | null {

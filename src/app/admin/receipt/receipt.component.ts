@@ -5,6 +5,8 @@ import { AppService } from '../../utils/app.service';
 import { ConstantData } from '../../utils/constant-data';
 import { LoadDataService } from '../../utils/load-data.service';
 import { Status, BankCashType, DebitCreditType, HeadType } from '../../utils/enum';
+import { STATUS_OPTIONS, BANK_CASH_TYPE_OPTIONS, DEBIT_CREDIT_TYPE_OPTIONS } from '../../utils/constants';
+import { formatBalance } from '../../utils/formatters';
 import { ActionModel, RequestModel, StaffLoginModel } from '../../utils/interface';
 import { LocalService } from '../../utils/local.service';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -52,9 +54,9 @@ export class ReceiptComponent {
   FromDate: any = null;
   ToDate: any = null;
   isSubmitted = false
-  StatusList = this.loadData.GetEnumList(Status);
-  BankCashTypeList = this.loadData.GetEnumList(BankCashType);
-  DebitCreditTypeList = this.loadData.GetEnumList(DebitCreditType);
+  StatusList = [...STATUS_OPTIONS];
+  BankCashTypeList = [...BANK_CASH_TYPE_OPTIONS];
+  DebitCreditTypeList = [...DEBIT_CREDIT_TYPE_OPTIONS];
   PageSize = ConstantData.PageSizes.filter(x => x <= 200);
   p: number = 1;
   Search: string = '';
@@ -218,10 +220,7 @@ export class ReceiptComponent {
   }
 
   formatBalance(value: any, signed = true) {
-    if (value == null) return this.balanceLoading ? 'Loading...' : 'Not available';
-    const amount = signed ? Math.abs(value) : value;
-    return amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) +
-      (signed ? (value > 0 ? ' Dr' : value < 0 ? ' Cr' : '') : '');
+    return formatBalance(value, signed, this.balanceLoading);
   }
 
   sort(key: any) {
