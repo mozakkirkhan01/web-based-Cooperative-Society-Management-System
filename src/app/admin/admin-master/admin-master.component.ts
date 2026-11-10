@@ -9,6 +9,7 @@ import { Status } from '../../utils/enum';
 import { RequestModel, StaffLoginModel } from '../../utils/interface';
 import { DOCUMENT } from '@angular/common';
 import { NotificationService } from '../../utils/notification.service';
+import { CompanySettingsService } from '../../utils/company-settings.service';
 
 @Component({
   selector: 'app-admin-master',
@@ -31,7 +32,8 @@ export class AdminMasterComponent implements OnInit {
     private router: Router,
     private service: AppService,
     private toastr: ToastrService,
-    public notificationService: NotificationService
+    public notificationService: NotificationService,
+    private companySettingsService: CompanySettingsService
   ) { }
 
   ngOnInit(): void {
@@ -39,6 +41,7 @@ export class AdminMasterComponent implements OnInit {
     this.screenWidth = window.innerWidth;
     this.getUserMenuList();
     this.getCompanyList();
+    this.companySettingsService.loadSettings();
     this.docElm = this.document.documentElement;
     this.notificationService.pendingCount$.subscribe(count => {
       this.pendingCount = count;
