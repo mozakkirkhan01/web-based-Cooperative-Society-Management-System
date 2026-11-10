@@ -123,6 +123,51 @@
                                         </mat-error>
                                     </mat-form-field>
 
+                                    <!-- Tier 2: Society & EDI Payroll Protocol Settings -->
+                                    <div class="col-sm-12 mt-2 mb-2">
+                                        <div class="card shadow-sm border">
+                                            <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
+                                                <span class="fw-bold text-primary small">
+                                                    <i class="bi bi-shield-lock-fill me-1"></i> Society &amp; System Protocol Identifiers (Tier 2)
+                                                </span>
+                                                <span class="badge bg-secondary-subtle text-dark border small">
+                                                    SAIL Payroll &amp; Voucher EDI
+                                                </span>
+                                            </div>
+                                            <div class="card-body pt-3 pb-1" style="margin-bottom: 15px;">
+                                                <div class="row">
+                                                    <mat-form-field appearance="outline" class="col-sm-6 col-md-3">
+                                                        <mat-label>Society Code (3-digit)</mat-label>
+                                                        <input matInput #SocietyCode3="ngModel" name="SocietyCode3"
+                                                            [(ngModel)]="Company.SocietyCode3" placeholder="005" maxlength="3">
+                                                        <mat-hint class="small">File/Page prefix (005/001)</mat-hint>
+                                                    </mat-form-field>
+
+                                                    <mat-form-field appearance="outline" class="col-sm-6 col-md-3">
+                                                        <mat-label>Voucher Prefix (2-digit)</mat-label>
+                                                        <input matInput #SocietyCode2="ngModel" name="SocietyCode2"
+                                                            [(ngModel)]="Company.SocietyCode2" placeholder="05" maxlength="2">
+                                                        <mat-hint class="small">Vr. No prefix (057784)</mat-hint>
+                                                    </mat-form-field>
+
+                                                    <mat-form-field appearance="outline" class="col-sm-6 col-md-3">
+                                                        <mat-label>Default Bank/Control Acc</mat-label>
+                                                        <input matInput #DefaultAccountNo="ngModel" name="DefaultAccountNo"
+                                                            [(ngModel)]="Company.DefaultAccountNo" placeholder="000048" maxlength="20">
+                                                        <mat-hint class="small">S-06 Default Acc</mat-hint>
+                                                    </mat-form-field>
+
+                                                    <mat-form-field appearance="outline" class="col-sm-6 col-md-3">
+                                                        <mat-label>Default Loan Code</mat-label>
+                                                        <input matInput #DefaultLoanCode="ngModel" name="DefaultLoanCode"
+                                                            [(ngModel)]="Company.DefaultLoanCode" placeholder="09" maxlength="2">
+                                                        <mat-hint class="small">General Loan Code</mat-hint>
+                                                    </mat-form-field>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
                             <div class="col-sm-6">

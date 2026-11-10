@@ -1,4 +1,5 @@
 import { STATUS_OPTIONS } from '../../utils/constants';
+import { CompanySettingsService } from '../../utils/company-settings.service';
 import { Component, ViewChild } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
@@ -38,7 +39,8 @@ export class CompanyComponent {
     private toastr: ToastrService,
     private localService: LocalService,
     private loadData: LoadDataService,
-    private router: Router
+    private router: Router,
+    private companySettingsService: CompanySettingsService
   ) { }
 
   ngOnInit(): void {
@@ -91,6 +93,10 @@ export class CompanyComponent {
       if (response.Message == ConstantData.SuccessMessage) {
         if (response.CompanyList.length > 0) {
           this.Company = response.CompanyList[0];
+          if (!this.Company.SocietyCode3) this.Company.SocietyCode3 = '005';
+          if (!this.Company.SocietyCode2) this.Company.SocietyCode2 = '05';
+          if (!this.Company.DefaultAccountNo) this.Company.DefaultAccountNo = '000048';
+          if (!this.Company.DefaultLoanCode) this.Company.DefaultLoanCode = '09';
           this.LogoPNGPhoto = this.imageUrl + this.Company.LogoPNG;
           this.LogoPhoto = this.imageUrl + this.Company.Logo;
         }
@@ -180,6 +186,7 @@ export class CompanyComponent {
         } else {
           this.toastr.success("Company added successfully")
         }
+        this.companySettingsService.refresh();
         this.resetForm()
         this.getCompanyList()
       } else {
