@@ -8,6 +8,7 @@ import {
 } from '../../utils/constants';
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import { ToastrService } from 'ngx-toastr';
+import { CompanySettingsService } from '../../utils/company-settings.service';
 import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
 import { ConstantData } from '../../utils/constant-data';
@@ -85,7 +86,8 @@ export class EdpS05Component implements OnInit {
   constructor(
     private service: AppService,
     private localService: LocalService,
-    private toastr: ToastrService
+    private toastr: ToastrService,
+    public companySettings: CompanySettingsService
   ) { }
 
   ngOnInit(): void {
@@ -109,7 +111,7 @@ export class EdpS05Component implements OnInit {
       SlNo: 0,
       PageNo: '001',
       StaffNo: '',
-      CoopNo: SocietyConfig.Code2,
+      CoopNo: this.companySettings.Code2,
       MemberNo: '',
       MemberName: '',
       Department: '',

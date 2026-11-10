@@ -16,6 +16,7 @@ import {
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 
 import { ToastrService } from 'ngx-toastr';
+import { CompanySettingsService } from '../../utils/company-settings.service';
 
 import { AppService } from '../../utils/app.service';
 
@@ -197,7 +198,9 @@ export class EdpP17Component implements OnInit {
 
     private localService: LocalService,
 
-    private toastr: ToastrService
+    private toastr: ToastrService,
+
+    public companySettings: CompanySettingsService
 
   ) { }
 
@@ -247,7 +250,7 @@ export class EdpP17Component implements OnInit {
 
       Department: '',
 
-      LoanCode: SocietyConfig.DefaultLoanCode,
+      LoanCode: this.companySettings.DefaultLoanCode,
 
       VrNo: '',
 
@@ -599,7 +602,7 @@ export class EdpP17Component implements OnInit {
 
       const paddedMem = memStr.length <= 4 ? memStr.padStart(4, '0') : memStr.slice(-4);
 
-      this.formModel.VrNo = SocietyConfig.Code2 + paddedMem;
+      this.formModel.VrNo = this.companySettings.Code2 + paddedMem;
 
     }
 
@@ -1254,7 +1257,7 @@ export class EdpP17Component implements OnInit {
 
     const monthCode = this.selectedMonthCode || '0426';
 
-    const socCode = SocietyConfig.Code3;
+    const socCode = this.companySettings.Code3;
 
     this.rows.forEach((r, idx) => {
 

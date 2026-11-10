@@ -9,6 +9,7 @@ import { formatPlainInt } from '../../utils/formatters';
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 
 import { ToastrService } from 'ngx-toastr';
+import { CompanySettingsService } from '../../utils/company-settings.service';
 
 import { AppService } from '../../utils/app.service';
 
@@ -163,7 +164,9 @@ export class EdpS06Component implements OnInit {
 
     private localService: LocalService,
 
-    private toastr: ToastrService
+    private toastr: ToastrService,
+
+    public companySettings: CompanySettingsService
 
   ) { }
 
@@ -217,13 +220,13 @@ export class EdpS06Component implements OnInit {
 
       Installment: 0,
 
-      Code: SocietyConfig.Code2,
+      Code: this.companySettings.Code2,
 
       VrNo: '',
 
       VrDate: '',
 
-      AccNo: SocietyConfig.DefaultAccountNo
+      AccNo: this.companySettings.DefaultAccountNo
 
     };
 
@@ -620,7 +623,7 @@ export class EdpS06Component implements OnInit {
 
       const paddedMem = memStr.length <= 4 ? memStr.padStart(4, '0') : memStr.slice(-4);
 
-      this.formModel.VrNo = SocietyConfig.Code2 + paddedMem;
+      this.formModel.VrNo = this.companySettings.Code2 + paddedMem;
 
     }
 
