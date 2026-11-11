@@ -22,47 +22,93 @@
     <ul class="d-flex align-items-center">
       <!-- Notification Nav Item -->
       <li class="nav-item dropdown">
-        <a class="nav-link nav-icon" href="javascript:void(0)" data-bs-toggle="dropdown" title="Pending Verification Notifications">
+        <a class="nav-link nav-icon notif-bell-btn" href="javascript:void(0)" data-bs-toggle="dropdown" title="Pending Verification Notifications">
           <i class="bi bi-bell"></i>
-          <span class="badge bg-primary badge-number" *ngIf="pendingCount > 0">{{pendingCount}}</span>
+          <span class="badge rounded-pill bg-danger badge-number notif-pulse" *ngIf="pendingCount > 0">{{pendingCount}}</span>
         </a>
 
-        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
-          <li class="dropdown-header">
-            <span>You have <strong>{{pendingCount}}</strong> pending transaction{{pendingCount === 1 ? '' : 's'}}</span>
-            <a routerLink="/admin/verify-transactions">
-              <span class="badge rounded-pill bg-primary p-2 ms-2">View all</span>
-            </a>
-          </li>
-          <li>
-            <hr class="dropdown-divider">
-          </li>
-
-          <li *ngIf="pendingNotifications.length === 0" class="notification-item text-center py-3 text-muted">
-            <i class="bi bi-check-circle text-success fs-4 me-2"></i>
-            <div>
-              <h4 class="mb-0">All verified!</h4>
-              <p class="mb-0 small">No transactions waiting</p>
+        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow modern-notif-dropdown">
+          <!-- Dropdown Header -->
+          <li class="notif-header">
+            <div class="d-flex align-items-center justify-content-between">
+              <div class="d-flex align-items-center gap-2">
+                <div class="notif-header-icon-wrap">
+                  <i class="bi bi-shield-check text-primary"></i>
+                </div>
+                <div>
+                  <h6 class="mb-0 fw-bold notif-header-title text-dark">Notifications</h6>
+                  <span class="text-muted small">Pending Verification</span>
+                </div>
+              </div>
+              <div class="d-flex align-items-center gap-1">
+                <span class="badge rounded-pill bg-primary px-2 py-1 notif-header-badge" *ngIf="pendingCount > 0">
+                  {{pendingCount}} pending
+                </span>
+                <button type="button" class="btn notif-refresh-btn" (click)="refreshNotifications($event)" title="Refresh pending count">
+                  <i class="bi bi-arrow-repeat" [class.notif-spin]="isRefreshingNotifications"></i>
+                </button>
+              </div>
             </div>
           </li>
 
-          <ng-container *ngFor="let item of pendingNotifications">
-            <li class="notification-item" style="cursor: pointer;" (click)="openVerifyPage(item)">
-              <i [ngClass]="getNotificationIcon(item.TxnType)"></i>
-              <div>
-                <h4>{{item.TxnType}} · {{item.VoucherNumber}}</h4>
-                <p class="mb-1 text-dark fw-bold">₹{{item.Amount | number:'1.2-2'}}</p>
-                <p class="text-truncate text-muted small" style="max-width: 220px;">{{item.Narration || 'Awaiting verification'}}</p>
-                <p class="small text-muted mb-0">{{item.TimeAgo}}</p>
-              </div>
-            </li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-          </ng-container>
+          <!-- Empty State -->
+          <li *ngIf="pendingNotifications.length === 0" class="notif-empty-state text-center py-5 px-3">
+            <div class="text-success notif-empty-icon mb-2">
+              <i class="bi bi-check-circle-fill"></i>
+            </div>
+            <h6 class="fw-bold text-dark mb-1">All Caught Up!</h6>
+            <p class="text-muted small mb-0">No vouchers currently awaiting verification.</p>
+          </li>
 
-          <li class="dropdown-footer text-center">
-            <a routerLink="/admin/verify-transactions" class="fw-semibold">Open Verify Transactions</a>
+          <!-- Notification Items Scroll Area -->
+          <li *ngIf="pendingNotifications.length > 0">
+            <ul class="list-unstyled mb-0 notif-scroll-area">
+              <li *ngFor="let item of pendingNotifications" class="notif-card-item" (click)="openVerifyPage(item)">
+                <div class="d-flex align-items-start gap-3">
+                  <!-- Type Avatar Chip -->
+                  <div class="notif-icon-avatar" [ngClass]="getNotificationMeta(item.TxnType).bgClass">
+                    <i [ngClass]="getNotificationMeta(item.TxnType).icon" class="notif-avatar-icon"></i>
+                  </div>
+
+                  <!-- Item Body -->
+                  <div class="flex-grow-1 min-w-0">
+                    <div class="d-flex align-items-center justify-content-between mb-1">
+                      <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <span class="badge notif-type-chip" [ngClass]="getNotificationMeta(item.TxnType).badgeClass">
+                          {{getNotificationMeta(item.TxnType).label}}
+                        </span>
+                        <span class="fw-semibold text-secondary small">{{item.VoucherNumber}}</span>
+                      </div>
+                      <span class="fw-bold notif-amount">₹{{item.Amount | number:'1.2-2'}}</span>
+                    </div>
+
+                    <p class="notif-narration text-truncate mb-1" [title]="item.Narration || ''">
+                      {{cleanNarration(item.Narration)}}
+                    </p>
+
+                    <div class="d-flex align-items-center justify-content-between pt-1">
+                      <span class="notif-time d-flex align-items-center gap-1">
+                        <i class="bi bi-clock"></i> {{formatTimeAgo(item.TimeAgo)}}
+                      </span>
+                      <span class="notif-action-pill">
+                        Review <i class="bi bi-arrow-right-short"></i>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </li>
+
+          <!-- Footer Action -->
+          <li class="notif-footer text-center">
+            <button type="button" class="btn btn-primary btn-sm w-100 py-2 fw-semibold rounded-3 d-flex align-items-center justify-content-center gap-2 shadow-sm" (click)="openVerifyPage()">
+              <span>Open Verify Transactions</span>
+              <i class="bi bi-arrow-right"></i>
+            </button>
+            <div class="notif-footer-hint text-muted mt-2">
+              Review and approve pending financial vouchers
+            </div>
           </li>
         </ul>
       </li><!-- End Notification Nav Item -->

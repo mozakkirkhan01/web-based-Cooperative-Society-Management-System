@@ -13,7 +13,8 @@ import { CompanySettingsService } from '../../utils/company-settings.service';
 
 @Component({
   selector: 'app-admin-master',
-  templateUrl: './admin-master.component.html'
+  templateUrl: './admin-master.component.html',
+  styleUrls: ['./admin-master.component.css']
 })
 export class AdminMasterComponent implements OnInit {
   isAccessReview = ConstantData.AccessReview;
@@ -25,6 +26,7 @@ export class AdminMasterComponent implements OnInit {
   docElm: any;
   pendingCount = 0;
   pendingNotifications: any[] = [];
+  isRefreshingNotifications: boolean = false;
 
   constructor(
     @Inject(DOCUMENT) private document: any,
@@ -60,6 +62,103 @@ export class AdminMasterComponent implements OnInit {
     if (type === 'CONTRA') return 'bi bi-bank2 text-info';
     if (type === 'SCHEDULE') return 'bi bi-calendar2-week-fill text-warning';
     return 'bi bi-journal-check text-secondary';
+  }
+
+  refreshNotifications(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.isRefreshingNotifications = true;
+    this.notificationService.refresh();
+    setTimeout(() => {
+      this.isRefreshingNotifications = false;
+    }, 600);
+  }
+
+  getNotificationMeta(txnType: string): { icon: string; bgClass: string; badgeClass: string; label: string } {
+    const type = (txnType || '').toUpperCase();
+    switch (type) {
+      case 'TRANSFER':
+        return {
+          icon: 'bi bi-arrow-left-right',
+          bgClass: 'notif-bg-transfer',
+          badgeClass: 'bg-primary-subtle text-primary border border-primary-subtle',
+          label: 'Transfer'
+        };
+      case 'PAYMENT':
+        return {
+          icon: 'bi bi-arrow-up-right',
+          bgClass: 'notif-bg-payment',
+          badgeClass: 'bg-danger-subtle text-danger border border-danger-subtle',
+          label: 'Payment'
+        };
+      case 'RECEIPT':
+        return {
+          icon: 'bi bi-arrow-down-left',
+          bgClass: 'notif-bg-receipt',
+          badgeClass: 'bg-success-subtle text-success border border-success-subtle',
+          label: 'Receipt'
+        };
+      case 'CONTRA':
+        return {
+          icon: 'bi bi-bank',
+          bgClass: 'notif-bg-contra',
+          badgeClass: 'bg-info-subtle text-info border border-info-subtle',
+          label: 'Contra'
+        };
+      case 'SCHEDULE':
+        return {
+          icon: 'bi bi-calendar2-check',
+          bgClass: 'notif-bg-schedule',
+          badgeClass: 'bg-warning-subtle text-warning border border-warning-subtle',
+          label: 'Schedule'
+        };
+      case 'SALARY':
+        return {
+          icon: 'bi bi-wallet2',
+          bgClass: 'notif-bg-salary',
+          badgeClass: 'bg-purple-subtle text-purple border border-purple-subtle',
+          label: 'Salary'
+        };
+      default:
+        return {
+          icon: 'bi bi-journal-text',
+          bgClass: 'notif-bg-journal',
+          badgeClass: 'bg-secondary-subtle text-secondary border border-secondary-subtle',
+          label: txnType || 'Journal'
+        };
+    }
+  }
+
+  cleanNarration(narration: string): string {
+    if (!narration) return 'Awaiting verification';
+    const parts = narration.split('|').map(p => p.trim()).filter(p => !!p);
+    const ignoreKeywords = ['TRANSFER', 'PAYMENT', 'RECEIPT', 'CONTRA', 'SCHEDULE', 'SALARY', 'JOURNAL'];
+    const filtered = parts.filter(p => !ignoreKeywords.includes(p.toUpperCase()));
+    const unique: string[] = [];
+    for (const part of filtered) {
+      if (!unique.some(u => u.toLowerCase() === part.toLowerCase())) {
+        unique.push(part);
+      }
+    }
+    if (unique.length === 0) {
+      return parts[0] || 'Awaiting verification';
+    }
+    return unique.join(' • ');
+  }
+
+  formatTimeAgo(timeAgo: string): string {
+    if (!timeAgo) return '';
+    const match = timeAgo.match(/^(\d+)\s*(day|hr|min)s?\s*ago$/i);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      const unit = match[2].toLowerCase();
+      const unitFull = unit === 'day' ? (num === 1 ? 'day' : 'days') :
+                       unit === 'hr' ? (num === 1 ? 'hr' : 'hrs') :
+                       (num === 1 ? 'min' : 'mins');
+      return `${num} ${unitFull} ago`;
+    }
+    return timeAgo;
   }
 
   openVerifyPage(item?: any) {
