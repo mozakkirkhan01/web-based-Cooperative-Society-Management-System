@@ -234,6 +234,18 @@ export class EdpP17Component implements OnInit {
 
   }
 
+  get formattedMonthCode(): string {
+
+    if (this.selectedMonthCode && this.selectedMonthCode.length === 4) {
+
+      return `${this.selectedMonthCode.substring(0, 2)}/${this.selectedMonthCode.substring(2, 4)}`;
+
+    }
+
+    return this.selectedMonthCode || '';
+
+  }
+
   getEmptyForm(): P17Row {
 
     return {
@@ -272,7 +284,7 @@ export class EdpP17Component implements OnInit {
 
       Installment: 0,
 
-      Remarks: 'PNB'
+      Remarks: ''
 
     };
 
@@ -748,6 +760,8 @@ export class EdpP17Component implements OnInit {
 
     }
 
+    this.formModel.Remarks = (this.formModel.Remarks || '').trim();
+
     if (this.isEditing && this.editIndex >= 0) {
 
       this.rows[this.editIndex] = { ...this.formModel };
@@ -1047,7 +1061,7 @@ export class EdpP17Component implements OnInit {
 
       doc.setTextColor(74, 85, 104);
 
-      const monthLabel = `Month: ${this.formattedMonthDisplay} (${this.selectedMonthCode})`;
+      const monthLabel = `Month: ${this.formattedMonthDisplay} (${this.formattedMonthCode})`;
 
       doc.text(monthLabel, 14, 25);
 
@@ -1089,7 +1103,7 @@ export class EdpP17Component implements OnInit {
 
         r.Installment > 0 ? this.formatCurrency(r.Installment) : '-',
 
-        r.Remarks || (r.LoanPaid > 0 ? 'PNB' : ((r.LoanDeposited || r.LoanReceived) > 0 ? 'JSCB' : '-'))
+        r.Remarks || '-'
 
       ]);
 
@@ -1131,13 +1145,13 @@ export class EdpP17Component implements OnInit {
 
             { content: 'Voucher No.', styles: { halign: 'center' } },
 
-            { content: 'Date', styles: { halign: 'center' } },
+            { content: 'Vr. Date', styles: { halign: 'center' } },
 
             { content: 'Loan Paid (₹)', styles: { halign: 'right' } },
 
             { content: 'Loan Refund (₹)', styles: { halign: 'right' } },
 
-            { content: 'Loan Deposited (₹)', styles: { halign: 'right' } },
+            { content: 'Loan Recvd (₹)', styles: { halign: 'right' } },
 
             { content: 'Int. Refund (₹)', styles: { halign: 'right' } },
 
@@ -1451,7 +1465,7 @@ export class EdpP17Component implements OnInit {
 
     }
 
-    const headers = ['SlNo', 'File/Page', 'StaffNo', 'LoanCode', 'VrNo', 'VrDate', 'LoanPaid', 'LoanRefund', 'LoanDeposited', 'IntRefund', 'IntRecovered', 'Installment', 'Remarks'];
+    const headers = ['SlNo', 'File/Page', 'StaffNo', 'LoanCode', 'VrNo', 'VrDate', 'LoanPaid', 'LoanRefund', 'LoanRecvd', 'IntRefund', 'IntRecovered', 'Installment', 'Remarks'];
 
     const csvRows: string[] = [];
 

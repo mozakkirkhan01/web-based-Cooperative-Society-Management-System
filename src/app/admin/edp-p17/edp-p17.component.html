@@ -17,29 +17,35 @@
 
     <!-- Action Buttons -->
     <div class="d-flex flex-wrap align-items-center gap-2">
-      <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" (click)="fetchAdviceData()" [disabled]="dataLoading">
+      <button type="button" class="btn btn-primary btn-sm px-3 shadow-sm" (click)="fetchAdviceData()"
+        [disabled]="dataLoading">
         <span *ngIf="dataLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
         <i *ngIf="!dataLoading" class="bi bi-arrow-repeat me-1"></i> Fetch / Refresh
       </button>
 
-      <button type="button" class="btn btn-success btn-sm px-3 shadow-sm" (click)="saveDraftBatch()" [disabled]="savingBatch || rows.length === 0">
+      <button type="button" class="btn btn-success btn-sm px-3 shadow-sm" (click)="saveDraftBatch()"
+        [disabled]="savingBatch || rows.length === 0">
         <span *ngIf="savingBatch" class="spinner-border spinner-border-sm me-1" role="status"></span>
         <i *ngIf="!savingBatch" class="bi bi-save me-1"></i> Save Draft
       </button>
 
-      <button type="button" class="btn btn-outline-primary btn-sm px-3 shadow-sm" (click)="printReport()" [disabled]="dataLoading || rows.length === 0">
+      <button type="button" class="btn btn-outline-primary btn-sm px-3 shadow-sm" (click)="printReport()"
+        [disabled]="dataLoading || rows.length === 0">
         <i class="bi bi-printer me-1"></i> Print Official
       </button>
 
-      <button type="button" class="btn btn-outline-danger btn-sm px-3 shadow-sm" (click)="downloadPdf()" [disabled]="dataLoading || rows.length === 0" title="Download Official P17 PDF Document">
+      <button type="button" class="btn btn-outline-danger btn-sm px-3 shadow-sm" (click)="downloadPdf()"
+        [disabled]="dataLoading || rows.length === 0" title="Download Official P17 PDF Document">
         <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
       </button>
 
-      <button type="button" class="btn btn-outline-dark btn-sm px-3 shadow-sm" (click)="downloadEdpTextFile()" [disabled]="dataLoading || rows.length === 0" title="Generate ASCII text file for SAIL/BSL EDP">
+      <button type="button" class="btn btn-outline-dark btn-sm px-3 shadow-sm" (click)="downloadEdpTextFile()"
+        [disabled]="dataLoading || rows.length === 0" title="Generate ASCII text file for SAIL/BSL EDP">
         <i class="bi bi-file-earmark-arrow-down me-1"></i> Export .TXT (SAIL)
       </button>
 
-      <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" (click)="exportCsv()" [disabled]="dataLoading || rows.length === 0">
+      <button type="button" class="btn btn-outline-secondary btn-sm px-3 shadow-sm" (click)="exportCsv()"
+        [disabled]="dataLoading || rows.length === 0">
         <i class="bi bi-file-earmark-excel me-1"></i> Export CSV
       </button>
     </div>
@@ -75,7 +81,8 @@
         <!-- Financial Year Selector -->
         <div class="col-lg-3 col-md-4 col-sm-6">
           <label class="form-label small fw-semibold text-muted mb-1">Financial Year</label>
-          <select class="form-select form-select-sm" [(ngModel)]="selectedFinancialYear" (change)="onFinancialYearChange()">
+          <select class="form-select form-select-sm" [(ngModel)]="selectedFinancialYear"
+            (change)="onFinancialYearChange()">
             <option *ngFor="let fy of financialYears" [value]="fy.FinancialYearName">
               {{fy.FinancialYearName}} {{fy.IsCurrent ? '(Current)' : ''}}
             </option>
@@ -119,7 +126,8 @@
         <!-- Action Button -->
         <div class="col-lg-2 col-md-4 col-sm-6 ms-auto d-flex flex-column align-items-end justify-content-start">
           <label class="form-label small fw-semibold mb-1 invisible d-none d-lg-block">&nbsp;</label>
-          <button type="button" class="btn btn-primary btn-sm px-4" (click)="fetchAdviceData()" [disabled]="dataLoading">
+          <button type="button" class="btn btn-primary btn-sm px-4" (click)="fetchAdviceData()"
+            [disabled]="dataLoading">
             <span *ngIf="dataLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
             <i *ngIf="!dataLoading" class="bi bi-search me-1"></i> Apply & Show
           </button>
@@ -153,7 +161,8 @@
             <i class="bi bi-arrow-up-right-circle fs-5"></i>
           </div>
           <div>
-            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Loan Paid (Disbursed)</div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Loan Paid (Disbursed)
+            </div>
             <div class="fs-6 fw-bold text-success">₹{{formatPlainInt(totals.TotalLoanPaid)}}</div>
           </div>
         </div>
@@ -167,7 +176,8 @@
             <i class="bi bi-percent fs-5"></i>
           </div>
           <div>
-            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Int. Refunded (Pro-rata)</div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Int. Refunded (Pro-rata)
+            </div>
             <div class="fs-6 fw-bold text-dark">₹{{formatPlainInt(totals.TotalInterestRefund)}}</div>
           </div>
         </div>
@@ -195,7 +205,8 @@
             <i class="bi bi-cash-stack fs-5"></i>
           </div>
           <div>
-            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Installments (Next Mo)</div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.7rem;">Installments (Next Mo)
+            </div>
             <div class="fs-6 fw-bold text-dark">₹{{formatPlainInt(totals.TotalInstallment)}}</div>
           </div>
         </div>
@@ -216,7 +227,8 @@
             <i class="bi" [ngClass]="isEditing ? 'bi-pencil-square text-warning' : 'bi-plus-circle text-primary'"></i>
             {{isEditing ? 'Edit P17 Advice Entry' : 'Add Loan / Extra Transaction'}}
           </span>
-          <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" (click)="cancelEdit()" *ngIf="isEditing">
+          <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" (click)="cancelEdit()"
+            *ngIf="isEditing">
             Cancel
           </button>
         </div>
@@ -227,40 +239,51 @@
               <div class="col-8 position-relative">
                 <label class="form-label small fw-semibold text-muted mb-1">Staff No *</label>
                 <div class="input-group input-group-sm">
-                  <input type="text" class="form-control" [(ngModel)]="formModel.StaffNo" name="staffNo" placeholder="e.g. 766157" (input)="onSearchStaff(formModel.StaffNo)" (blur)="onStaffNoBlur()" (keydown.enter)="$event.preventDefault(); onStaffNoBlur()" autocomplete="off" required>
+                  <input type="text" class="form-control" [(ngModel)]="formModel.StaffNo" name="staffNo"
+                    placeholder="e.g. 766157" (input)="onSearchStaff(formModel.StaffNo)" (blur)="onStaffNoBlur()"
+                    (keydown.enter)="$event.preventDefault(); onStaffNoBlur()" autocomplete="off" required>
                   <span class="input-group-text"><i class="bi bi-search"></i></span>
                 </div>
 
                 <!-- Autocomplete dropdown -->
-                <div class="dropdown-menu show w-100 shadow p-1" *ngIf="showMemberDropdown && memberSearchResults.length > 0" style="max-height: 180px; overflow-y: auto; z-index: 1050;">
-                  <button type="button" class="dropdown-item py-1 small" *ngFor="let m of memberSearchResults" (mousedown)="selectMember(m)">
+                <div class="dropdown-menu show w-100 shadow p-1"
+                  *ngIf="showMemberDropdown && memberSearchResults.length > 0"
+                  style="max-height: 180px; overflow-y: auto; z-index: 1050;">
+                  <button type="button" class="dropdown-item py-1 small" *ngFor="let m of memberSearchResults"
+                    (mousedown)="selectMember(m)">
                     <strong class="text-primary">{{m.StaffNo}}</strong> - {{m.MemberName}}
-                    <span class="text-muted d-block" style="font-size: 0.72rem;">Mem: {{m.MemberNo}} | {{m.Department}}</span>
+                    <span class="text-muted d-block" style="font-size: 0.72rem;">Mem: {{m.MemberNo}} |
+                      {{m.Department}}</span>
                   </button>
                 </div>
               </div>
 
               <div class="col-4">
                 <label class="form-label small fw-semibold text-muted mb-1 text-nowrap">Loan Code</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.LoanCode" name="loanCode" placeholder="09">
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.LoanCode" name="loanCode"
+                  placeholder="09">
               </div>
             </div>
 
             <!-- Member details display if found -->
             <div class="p-2 mb-2 bg-light rounded border small" *ngIf="formModel.MemberName">
               <div class="text-truncate fw-semibold text-dark">{{formModel.MemberName}}</div>
-              <div class="text-muted" style="font-size: 0.75rem;">Mem No: {{formModel.MemberNo || 'N/A'}} | Dept: {{formModel.Department || 'N/A'}}</div>
+              <div class="text-muted" style="font-size: 0.75rem;">Mem No: {{formModel.MemberNo || 'N/A'}} | Dept:
+                {{formModel.Department || 'N/A'}}</div>
             </div>
 
             <!-- Vr No & Vr Date (Balanced 2-Column Row) -->
             <div class="row g-2 mb-2">
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1 text-nowrap">Vr. No *</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrNo" name="vrNo" placeholder="e.g. 057784" required>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrNo" name="vrNo"
+                  placeholder="e.g. 057784" required>
               </div>
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1 text-nowrap">Vr. Date (DDMMYY) *</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrDate" name="vrDate" placeholder="020426" (change)="onLoanAmountOrDateChange()" (input)="onLoanAmountOrDateChange()" required>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrDate" name="vrDate"
+                  placeholder="020426" (change)="onLoanAmountOrDateChange()" (input)="onLoanAmountOrDateChange()"
+                  required>
               </div>
             </div>
 
@@ -268,11 +291,13 @@
             <div class="row g-2 mb-2">
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">Loan Paid (₹)</label>
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.LoanPaid" name="loanPaid" placeholder="0.00" (input)="onLoanAmountOrDateChange()">
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.LoanPaid"
+                  name="loanPaid" placeholder="0.00" (input)="onLoanAmountOrDateChange()">
               </div>
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">Int. Refunded (₹)</label>
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.InterestRefund" name="interestRefund" placeholder="0.00">
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.InterestRefund"
+                  name="interestRefund" placeholder="0.00">
               </div>
             </div>
 
@@ -280,11 +305,13 @@
             <div class="row g-2 mb-2">
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">Loan Recovered (₹)</label>
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.LoanReceived" name="loanReceived" placeholder="0.00">
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.LoanReceived"
+                  name="loanReceived" placeholder="0.00">
               </div>
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">Int. Recovered (₹)</label>
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.InterestReceived" name="interestReceived" placeholder="0.00">
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.InterestReceived"
+                  name="interestReceived" placeholder="0.00">
               </div>
             </div>
 
@@ -292,17 +319,20 @@
             <div class="row g-2 mb-3">
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">Installment (₹)</label>
-                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.Installment" name="installment" placeholder="0.00">
+                <input type="number" class="form-control form-control-sm" [(ngModel)]="formModel.Installment"
+                  name="installment" placeholder="0.00">
               </div>
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1">Remarks (Bank/JE)</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.Remarks" name="remarks" placeholder="PNB / SBI / JSCB">
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.Remarks" name="remarks"
+                  placeholder="PNB / SBI / JSCB">
               </div>
             </div>
 
             <!-- Submit buttons -->
             <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-sm flex-grow-1" [ngClass]="isEditing ? 'btn-warning text-dark' : 'btn-primary'">
+              <button type="submit" class="btn btn-sm flex-grow-1"
+                [ngClass]="isEditing ? 'btn-warning text-dark' : 'btn-primary'">
                 <i class="bi" [ngClass]="isEditing ? 'bi-check-circle' : 'bi-plus-circle'"></i>
                 {{isEditing ? 'Update Entry' : 'Add to Advice'}}
               </button>
@@ -322,12 +352,14 @@
         <div class="card-body p-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
           <div class="input-group input-group-sm" style="max-width: 250px;">
             <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" class="form-control" [(ngModel)]="searchText" (input)="applyFilterAndSort()" placeholder="Search staff, vr no...">
+            <input type="text" class="form-control" [(ngModel)]="searchText" (input)="applyFilterAndSort()"
+              placeholder="Search staff, vr no...">
           </div>
 
           <div class="d-flex align-items-center gap-2">
             <span class="text-muted small">Show</span>
-            <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="pageSize" (change)="currentPage = 1">
+            <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="pageSize"
+              (change)="currentPage = 1">
               <option *ngFor="let opt of pageSizeOptions" [ngValue]="opt.value">{{opt.label}}</option>
             </select>
           </div>
@@ -342,9 +374,9 @@
                 <th>Staff No</th>
                 <th>Code</th>
                 <th>Vr. No</th>
-                <th>Date</th>
+                <th>Vr. Date</th>
                 <th class="text-end">Loan Paid (₹)</th>
-                <th class="text-end">Loan Deposited (₹)</th>
+                <th class="text-end">Loan Recvd (₹)</th>
                 <th class="text-end">Int. Rfnd (₹)</th>
                 <th class="text-end">Int. Recvd (₹)</th>
                 <th class="text-end">Installment (₹)</th>
@@ -366,8 +398,10 @@
                 <td><span class="badge bg-light text-dark border">005/{{row.PageNo || '001'}}</span></td>
                 <td>
                   <span class="fw-bold text-primary">{{row.StaffNo}}</span>
-                  <span *ngIf="row.IsRepeatedStaff" class="badge bg-warning text-dark ms-1" title="Staff No repeated in another date">*</span>
-                  <span *ngIf="row.HasPaidAndReceivedSameDate" class="badge bg-danger ms-1" title="Staff No holds LoanPaid and LoanRcvd both in same date">#</span>
+                  <span *ngIf="row.IsRepeatedStaff" class="badge bg-warning text-dark ms-1"
+                    title="Staff No repeated in another date">*</span>
+                  <span *ngIf="row.HasPaidAndReceivedSameDate" class="badge bg-danger ms-1"
+                    title="Staff No holds LoanPaid and LoanRcvd both in same date">#</span>
                   <div class="text-muted" style="font-size: 0.72rem;" *ngIf="row.MemberName">{{row.MemberName}}</div>
                 </td>
                 <td><span class="badge bg-secondary-subtle text-dark">{{row.LoanCode || '09'}}</span></td>
@@ -389,14 +423,19 @@
                   {{formatPlainInt(row.Installment, true)}}
                 </td>
                 <td>
-                  <span class="badge bg-light text-secondary border">{{row.Remarks || (row.LoanPaid > 0 ? 'PNB' : ((row.LoanDeposited || row.LoanReceived) > 0 ? 'JSCB' : '-'))}}</span>
+                  <span class="badge bg-light text-secondary border" *ngIf="row.Remarks">{{row.Remarks}}</span>
+                  <span class="text-muted" *ngIf="!row.Remarks">-</span>
                 </td>
                 <td class="text-center">
                   <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-1" (click)="editRow(row, (currentPage - 1) * (pageSize === -1 ? 0 : pageSize) + i)" title="Edit entry">
+                    <button type="button" class="btn btn-outline-primary btn-sm py-0 px-1"
+                      (click)="editRow(row, (currentPage - 1) * (pageSize === -1 ? 0 : pageSize) + i)"
+                      title="Edit entry">
                       <i class="bi bi-pencil"></i>
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1" (click)="deleteRow((currentPage - 1) * (pageSize === -1 ? 0 : pageSize) + i)" title="Delete entry">
+                    <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1"
+                      (click)="deleteRow((currentPage - 1) * (pageSize === -1 ? 0 : pageSize) + i)"
+                      title="Delete entry">
                       <i class="bi bi-trash"></i>
                     </button>
                   </div>
@@ -420,15 +459,18 @@
         </div>
 
         <!-- Pagination -->
-        <div class="card-footer bg-white border-top py-2 d-flex justify-content-between align-items-center" *ngIf="totalPages > 1 && pageSize !== -1">
+        <div class="card-footer bg-white border-top py-2 d-flex justify-content-between align-items-center"
+          *ngIf="totalPages > 1 && pageSize !== -1">
           <span class="text-muted small">
-            Showing {{((currentPage - 1) * pageSize) + 1}} to {{Math.min(currentPage * pageSize, filteredRows.length)}} of {{filteredRows.length}} entries
+            Showing {{((currentPage - 1) * pageSize) + 1}} to {{Math.min(currentPage * pageSize, filteredRows.length)}}
+            of {{filteredRows.length}} entries
           </span>
           <ul class="pagination pagination-sm mb-0">
             <li class="page-item" [class.disabled]="currentPage === 1">
               <a class="page-link" (click)="goToPage(currentPage - 1)">Prev</a>
             </li>
-            <li class="page-item" *ngFor="let p of [].constructor(totalPages); let idx = index" [class.active]="currentPage === (idx + 1)">
+            <li class="page-item" *ngFor="let p of [].constructor(totalPages); let idx = index"
+              [class.active]="currentPage === (idx + 1)">
               <a class="page-link" (click)="goToPage(idx + 1)">{{idx + 1}}</a>
             </li>
             <li class="page-item" [class.disabled]="currentPage === totalPages">
@@ -440,7 +482,7 @@
     </div>
   </div>
 
-    <!-- ========================================================================= -->
+  <!-- ========================================================================= -->
   <!-- OFFICIAL PRINT REPORT VIEW (MAX 10 ROWS PER PAGE WITH AUTO PAGE-BREAK)    -->
   <!-- ========================================================================= -->
   <div class="print-container d-none d-print-block">
@@ -453,8 +495,9 @@
         <div class="company-sub text-muted small">
           Loan Advances-Extra Transaction Advice (FILE NO.-P17)
         </div>
-        <div class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top border-bottom small fw-semibold">
-          <span>Month: {{formattedMonthDisplay}} ({{selectedMonthCode}})</span>
+        <div
+          class="d-flex justify-content-between align-items-center mt-2 pt-1 border-top border-bottom small fw-semibold">
+          <span>Month: {{formattedMonthDisplay}} ({{formattedMonthCode}})</span>
           <span>Report Date: {{reportDate}}</span>
         </div>
       </div>
@@ -467,10 +510,10 @@
             <th class="text-center">Staff No</th>
             <th class="text-center">Code</th>
             <th class="text-center">Vr. No</th>
-            <th class="text-center">Date</th>
+            <th class="text-center">Vr. Date</th>
             <th class="text-end">Loan Paid</th>
             <th class="text-end">Loan Refund</th>
-            <th class="text-end">Loan Deposited</th>
+            <th class="text-end">Loan Recvd</th>
             <th class="text-end">Int. Refund</th>
             <th class="text-end">Int. Recvd</th>
             <th class="text-end">Installment</th>
@@ -490,7 +533,7 @@
             <td class="text-end">{{formatPlainInt(r.InterestRefund, true)}}</td>
             <td class="text-end">{{formatPlainInt(r.InterestRecovered || r.InterestReceived, true)}}</td>
             <td class="text-end fw-semibold">{{formatPlainInt(r.Installment, true)}}</td>
-            <td class="text-start">{{r.Remarks || (r.LoanPaid > 0 ? 'PNB' : ((r.LoanDeposited || r.LoanReceived) > 0 ? 'JSCB' : '-'))}}</td>
+            <td class="text-start">{{r.Remarks || '-'}}</td>
           </tr>
         </tbody>
         <tfoot *ngIf="isLast">
