@@ -590,6 +590,10 @@ export class EdpP17Component implements OnInit {
 
     this.formModel.Department = m.Department;
 
+    if (m.AgreedInstallment && m.AgreedInstallment > 0) {
+      this.formModel.Installment = m.AgreedInstallment;
+    }
+
     this.showMemberDropdown = false;
 
     this.memberSearchResults = [];
@@ -663,39 +667,61 @@ export class EdpP17Component implements OnInit {
   }
 
   onLoanAmountOrDateChange(): void {
+    if (this.formModel.LoanPaid > 0 && this.formModel.VrDate) {
+      const dateStr = (this.formModel.VrDate || '').trim();
+      let day = 0;
+      let month = 0;
+      let year = 0;
 
-    if (this.formModel.LoanPaid > 0 && this.formModel.VrDate && this.formModel.VrDate.length >= 6) {
-
-      // Parse day from VrDate (DDMMYY)
-
-      const day = parseInt(this.formModel.VrDate.substring(0, 2), 10);
-
-      let daysInMonth = 31;
-
-      if (this.selectedMonthCode && this.selectedMonthCode.length === 4) {
-
-        const m = parseInt(this.selectedMonthCode.substring(0, 2), 10);
-
-        const y = 2000 + parseInt(this.selectedMonthCode.substring(2, 4), 10);
-
-        daysInMonth = new Date(y, m, 0).getDate();
-
+      if (dateStr.includes('/') || dateStr.includes('-') || dateStr.includes('.')) {
+        // Handles "15/10/2026", "15-10-26", "15.10.2026"
+        const parts = dateStr.split(/[\/\-\.]/).map((p: string) => p.trim()).filter((p: string) => !!p);
+        if (parts.length >= 1) day = parseInt(parts[0], 10) || 0;
+        if (parts.length >= 2) month = parseInt(parts[1], 10) || 0;
+        if (parts.length >= 3) {
+          year = parseInt(parts[2], 10) || 0;
+          if (year < 100) year += 2000;
+        }
+      } else {
+        // Raw digits like "151026" (DDMMYY) or "15102026" (DDMMYYYY)
+        const digits = dateStr.replace(/\D/g, '');
+        if (digits.length >= 2) day = parseInt(digits.substring(0, 2), 10) || 0;
+        if (digits.length >= 4) month = parseInt(digits.substring(2, 4), 10) || 0;
+        if (digits.length >= 6) {
+          if (digits.length >= 8) {
+            year = parseInt(digits.substring(4, 8), 10) || 0;
+          } else {
+            year = 2000 + (parseInt(digits.substring(4, 6), 10) || 0);
+          }
+        }
       }
 
-      const daysCharged = Math.max(1, (daysInMonth - day) + 1);
-
-      // Interest formula: (Principal * 6.5 * daysCharged) / 36500
-
-      this.formModel.InterestRefund = Math.round((this.formModel.LoanPaid * 6.5 * daysCharged) / 36500);
-
-      if (!this.formModel.Installment || this.formModel.Installment === 0) {
-
-        this.formModel.Installment = Math.round(this.formModel.LoanPaid / 24);
-
+      // If month was not extracted from VrDate, fall back to selectedMonthCode
+      if ((!month || month < 1 || month > 12) && this.selectedMonthCode && this.selectedMonthCode.length === 4) {
+        month = parseInt(this.selectedMonthCode.substring(0, 2), 10) || 0;
       }
 
+      // If year was not extracted from VrDate, fall back to selectedMonthCode or current year
+      if (!year || year < 2000) {
+        if (this.selectedMonthCode && this.selectedMonthCode.length === 4) {
+          year = 2000 + (parseInt(this.selectedMonthCode.substring(2, 4), 10) || 0);
+        } else {
+          year = new Date().getFullYear();
+        }
+      }
+
+      if (day >= 1 && day <= 31 && month >= 1 && month <= 12) {
+        // Accurately resolves 31, 30, 29, or 28 days for any month and leap year
+        const daysInMonth = new Date(year, month, 0).getDate();
+        const daysCharged = Math.max(1, (daysInMonth - day) + 1);
+
+        const rate = this.companySettings.DefaultInterestRate || 6.5;
+        // Interest formula: (Principal * Rate * DaysCharged) / 36500
+        this.formModel.InterestRefund = Math.round((this.formModel.LoanPaid * rate * daysCharged) / 36500);
+
+        // Agreed monthly recovery installment is entered by operator or loaded from loan records
+      }
     }
-
   }
 
   addOrUpdateEntry(): void {

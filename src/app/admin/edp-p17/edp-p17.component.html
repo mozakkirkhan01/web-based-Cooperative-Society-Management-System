@@ -260,7 +260,7 @@
               </div>
               <div class="col-6">
                 <label class="form-label small fw-semibold text-muted mb-1 text-nowrap">Vr. Date (DDMMYY) *</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrDate" name="vrDate" placeholder="020426" (change)="onLoanAmountOrDateChange()" required>
+                <input type="text" class="form-control form-control-sm" [(ngModel)]="formModel.VrDate" name="vrDate" placeholder="020426" (change)="onLoanAmountOrDateChange()" (input)="onLoanAmountOrDateChange()" required>
               </div>
             </div>
 
