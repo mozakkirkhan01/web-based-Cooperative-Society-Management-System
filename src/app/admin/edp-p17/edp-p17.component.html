@@ -406,7 +406,7 @@
                 </td>
                 <td><span class="badge bg-secondary-subtle text-dark">{{row.LoanCode || '09'}}</span></td>
                 <td><code>{{row.VrNo}}</code></td>
-                <td>{{formatDisplayDate(row.VrDate)}}</td>
+                <td class="text-nowrap">{{formatDisplayDate(row.VrDate)}}</td>
                 <td class="text-end fw-semibold text-success">
                   {{formatPlainInt(row.LoanPaid, true)}}
                 </td>
@@ -486,7 +486,8 @@
   <!-- OFFICIAL PRINT REPORT VIEW (MAX 10 ROWS PER PAGE WITH AUTO PAGE-BREAK)    -->
   <!-- ========================================================================= -->
   <div class="print-container d-none d-print-block">
-    <div class="print-page-sheet" *ngFor="let page of printPages; let pIdx = index; let isLast = last">
+    <div class="print-page-sheet" *ngFor="let page of printPages; let pIdx = index; let isLast = last"
+      [class.print-page-break]="!isLast">
       <!-- Header -->
       <div class="print-header text-center mb-2">
         <div class="company-name fw-bold fs-5 text-dark">
@@ -502,20 +503,20 @@
         </div>
       </div>
 
-      <!-- Official Print Table (Max 10 Data Rows per Page) -->
+      <!-- Official Print Table (Max 20 Data Rows per Page) -->
       <table class="official-print-table table table-sm table-bordered">
         <thead>
           <tr class="table-light">
             <th class="text-center">FILE/PAGE</th>
-            <th class="text-center">Staff No</th>
+            <th class="text-center">Staff<br>No</th>
             <th class="text-center">Code</th>
             <th class="text-center">Vr. No</th>
-            <th class="text-center">Vr. Date</th>
-            <th class="text-end">Loan Paid</th>
-            <th class="text-end">Loan Refund</th>
-            <th class="text-end">Loan Recvd</th>
-            <th class="text-end">Int. Refund</th>
-            <th class="text-end">Int. Recvd</th>
+            <th class="text-center text-nowrap">Vr.<br>Date</th>
+            <th class="text-end">Loan<br>Paid</th>
+            <th class="text-end">Loan<br>Refund</th>
+            <th class="text-end">Loan<br>Recvd</th>
+            <th class="text-end">Int.<br>Refund</th>
+            <th class="text-end">Int.<br>Recvd</th>
             <th class="text-end">Installment</th>
             <th class="text-start">Remarks</th>
           </tr>
@@ -526,7 +527,7 @@
             <td class="text-center fw-bold">{{r.StaffNo}}</td>
             <td class="text-center">{{r.LoanCode || '09'}}</td>
             <td class="text-center">{{r.VrNo}}</td>
-            <td class="text-center">{{formatDisplayDate(r.VrDate)}}</td>
+            <td class="text-center text-nowrap">{{formatDisplayDate(r.VrDate)}}</td>
             <td class="text-end">{{formatPlainInt(r.LoanPaid, true)}}</td>
             <td class="text-end">{{formatPlainInt(r.LoanRefund, true)}}</td>
             <td class="text-end">{{formatPlainInt(r.LoanDeposited || r.LoanReceived, true)}}</td>

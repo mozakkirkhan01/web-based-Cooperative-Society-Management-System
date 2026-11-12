@@ -830,7 +830,7 @@ export class EdpP17Component implements OnInit {
     let sl = 1;
     for (let i = 0; i < this.rows.length; i++) {
       this.rows[i].SlNo = sl++;
-      this.rows[i].PageNo = String(Math.floor(i / 10) + 1).padStart(3, '0');
+      this.rows[i].PageNo = String(Math.floor(i / 20) + 1).padStart(3, '0');
     }
   }
 
@@ -918,7 +918,7 @@ export class EdpP17Component implements OnInit {
 
   get printPages(): { pageIndex: number; pageNumber: string; rows: P17Row[]; isLastPage: boolean }[] {
     const pages: any[] = [];
-    const maxRows = 10;
+    const maxRows = 20;
     if (!this.rows || this.rows.length === 0) {
       return [{ pageIndex: 0, pageNumber: '001', rows: [], isLastPage: true }];
     }
@@ -1301,7 +1301,7 @@ export class EdpP17Component implements OnInit {
 
     this.rows.forEach((r, idx) => {
 
-      const pageNum = Math.floor(idx / 10) + 1;
+      const pageNum = Math.floor(idx / 20) + 1;
 
       const page = String(pageNum).padStart(3, '0');
 
