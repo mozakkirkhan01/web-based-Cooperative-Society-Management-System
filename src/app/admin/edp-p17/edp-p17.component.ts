@@ -80,6 +80,14 @@ export interface P17Row {
 
 }
 
+export interface P17SessionDraft {
+  monthCode: string;
+  financialYear: string;
+  savedAt: string;
+  recordCount: number;
+  rows: P17Row[];
+}
+
 @Component({
 
   selector: 'app-edp-p17',
@@ -101,6 +109,10 @@ export class EdpP17Component implements OnInit {
   savingBatch = false;
 
   isInitialLoad = true;
+
+  // Active Session Storage Protection
+  hasSessionDraft = false;
+  sessionDraftTime = '';
 
   userDetail: any = {};
 
@@ -394,9 +406,113 @@ export class EdpP17Component implements OnInit {
 
   }
 
+  // =========================================================================
+  // BROWSER SESSION STORAGE DRAFT MANAGEMENT (ZERO DATABASE WRITES)
+  // =========================================================================
+
+  saveToSession(): void {
+    try {
+      if (!this.selectedMonthCode) return;
+      if (!this.rows || this.rows.length === 0) {
+        this.clearSessionDraft();
+        return;
+      }
+      const draft: P17SessionDraft = {
+        monthCode: this.selectedMonthCode,
+        financialYear: this.selectedFinancialYear,
+        savedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        recordCount: this.rows.length,
+        rows: this.rows
+      };
+      this.localService.saveSessionData(
+        `EDP_P17_SESSION_${this.selectedMonthCode}`,
+        JSON.stringify(draft)
+      );
+      this.hasSessionDraft = true;
+      this.sessionDraftTime = draft.savedAt;
+    } catch (e) {
+      console.error('Failed to save advice to sessionStorage', e);
+    }
+  }
+
+  loadFromSession(monthCode: string = this.selectedMonthCode): boolean {
+    try {
+      if (!monthCode) return false;
+      const raw = this.localService.getSessionData(`EDP_P17_SESSION_${monthCode}`);
+      if (!raw) {
+        this.hasSessionDraft = false;
+        this.sessionDraftTime = '';
+        return false;
+      }
+      const draft: P17SessionDraft = JSON.parse(raw);
+      if (draft && draft.monthCode === monthCode && Array.isArray(draft.rows) && draft.rows.length > 0) {
+        this.rows = draft.rows;
+        this.hasSessionDraft = true;
+        this.sessionDraftTime = draft.savedAt || '';
+        this.applyFilterAndSort();
+        this.calculateTotals();
+        return true;
+      }
+    } catch (e) {
+      console.error('Failed to parse session draft', e);
+    }
+    this.hasSessionDraft = false;
+    this.sessionDraftTime = '';
+    return false;
+  }
+
+  clearSessionDraft(monthCode: string = this.selectedMonthCode): void {
+    try {
+      this.localService.removeSessionData(`EDP_P17_SESSION_${monthCode}`);
+    } catch (e) {
+      console.error('Error clearing session draft', e);
+    }
+    this.hasSessionDraft = false;
+    this.sessionDraftTime = '';
+  }
+
+  onMonthChange(): void {
+    if (this.loadFromSession(this.selectedMonthCode)) {
+      this.toastr.info(`Restored ${this.rows.length} records from active session for ${this.formattedMonthDisplay} (saved at ${this.sessionDraftTime}).`);
+    } else {
+      this.fetchAdviceData(true);
+    }
+  }
+
+  onFetchRefreshClick(): void {
+    if (this.hasSessionDraft) {
+      if (confirm(`You have an active temporary session with ${this.rows.length} records for ${this.formattedMonthDisplay}.\n\nFetching fresh server data will overwrite these session records.\n\nDo you want to discard the session and fetch fresh vouchers?`)) {
+        this.clearSessionDraft();
+        this.fetchAdviceData(true);
+      }
+    } else {
+      this.fetchAdviceData(true);
+    }
+  }
+
+  onDiscardSessionClick(): void {
+    if (this.hasSessionDraft) {
+      if (confirm(`Are you sure you want to discard the temporary session draft for ${this.formattedMonthDisplay}? All ${this.rows.length} uncommitted records will be cleared.`)) {
+        this.clearSessionDraft();
+        this.fetchAdviceData(true);
+        this.toastr.warning('Temporary session draft discarded.');
+      }
+    } else if (this.rows.length > 0) {
+      if (confirm(`Do you want to reload and reset records for ${this.formattedMonthDisplay} from the server?`)) {
+        this.fetchAdviceData(true);
+      }
+    }
+  }
+
   // 2. Fetch Advice Data
 
-  fetchAdviceData(): void {
+  fetchAdviceData(forceFresh: boolean = false): void {
+
+    if (!forceFresh && this.loadFromSession(this.selectedMonthCode)) {
+      this.dataLoading = false;
+      this.isInitialLoad = false;
+      return;
+    }
 
     const payload = {
 
@@ -431,6 +547,10 @@ export class EdpP17Component implements OnInit {
         if (res.Message === ConstantData.SuccessMessage) {
 
           this.rows = res.Rows || [];
+
+          this.hasSessionDraft = false;
+
+          this.sessionDraftTime = '';
 
           this.applyFilterAndSort();
 
@@ -493,6 +613,8 @@ export class EdpP17Component implements OnInit {
         this.savingBatch = false;
 
         if (res.Message === ConstantData.SuccessMessage) {
+
+          this.clearSessionDraft();
 
           this.toastr.success('P17 Advice Batch saved successfully!');
 
@@ -786,6 +908,8 @@ export class EdpP17Component implements OnInit {
 
     this.calculateTotals();
 
+    this.saveToSession();
+
   }
 
   editRow(row: P17Row, index: number): void {
@@ -811,6 +935,8 @@ export class EdpP17Component implements OnInit {
       this.calculateTotals();
 
       this.toastr.warning('Row removed.');
+
+      this.saveToSession();
 
     }
 

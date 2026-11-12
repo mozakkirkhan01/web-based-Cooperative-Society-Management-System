@@ -224,6 +224,40 @@ export class LocalService {
     localStorage.clear();
   }
 
+  public saveSessionData(key: string, value: string): void {
+    try {
+      sessionStorage.setItem(key, this.encrypt(value));
+    } catch (e) {
+      console.error('Session storage save error', e);
+    }
+  }
+
+  public getSessionData(key: string): string {
+    try {
+      const data = sessionStorage.getItem(key) || '';
+      return data ? this.decrypt(data) : '';
+    } catch (e) {
+      console.error('Session storage get error', e);
+      return '';
+    }
+  }
+
+  public removeSessionData(key: string): void {
+    try {
+      sessionStorage.removeItem(key);
+    } catch (e) {
+      console.error('Session storage remove error', e);
+    }
+  }
+
+  public clearSessionData(): void {
+    try {
+      sessionStorage.clear();
+    } catch (e) {
+      console.error('Session storage clear error', e);
+    }
+  }
+
   public encrypt(txt: string): string {
     return CryptoJS.AES.encrypt(CryptoJS.enc.Utf8.parse(txt), this.key,
     {
