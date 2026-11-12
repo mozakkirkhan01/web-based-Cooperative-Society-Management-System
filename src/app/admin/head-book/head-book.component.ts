@@ -193,6 +193,14 @@ export class HeadBookComponent implements OnInit {
             }
           }
 
+          if (this.isShareCapitalHead()) {
+            this.sortColumn = 'MemberNo';
+            this.sortDirection = 'asc';
+          } else {
+            this.sortColumn = 'StaffNo';
+            this.sortDirection = 'asc';
+          }
+
           if (res.Company) {
             this.company = res.Company;
           }
@@ -226,6 +234,12 @@ export class HeadBookComponent implements OnInit {
         this.includeInterest = false;
       }
     }
+    if (this.isShareCapitalHead()) {
+      this.sortColumn = 'MemberNo';
+    } else {
+      this.sortColumn = 'StaffNo';
+    }
+    this.sortDirection = 'asc';
     this.fetchHeadBook();
   }
 
@@ -279,6 +293,13 @@ export class HeadBookComponent implements OnInit {
     }
   }
 
+  isShareCapitalHead(): boolean {
+    const code = (this.selectedHeadCode || '').trim();
+    const name = (this.selectedHeadName || '').toUpperCase().replace(/\s+/g, '');
+    const current = this.heads.find((h: any) => h.HeadCode === code);
+    return code === '083' || name.includes('SHARECAPITAL') || !!current?.IsShareCapital;
+  }
+
   // --------------------------------------------------------------------------
   // 3. Fetch Data
   // --------------------------------------------------------------------------
@@ -308,6 +329,11 @@ export class HeadBookComponent implements OnInit {
           this.rows = res.Rows || [];
           this.totalMembersCount = res.TotalMembers || this.rows.length;
           this.totals = res.Totals || {};
+          if (res.DefaultSortColumn) {
+            this.sortColumn = res.DefaultSortColumn;
+          } else if (this.isShareCapitalHead()) {
+            this.sortColumn = 'MemberNo';
+          }
           this.currentPage = 1;
           this.applyFilterAndSort();
         } else {
@@ -362,9 +388,17 @@ export class HeadBookComponent implements OnInit {
 
       // Numeric sorting for StaffNo and MemberNo if purely numeric
       if (this.sortColumn === 'StaffNo' || this.sortColumn === 'MemberNo') {
-        const numA = parseInt(valA, 10);
-        const numB = parseInt(valB, 10);
-        if (!isNaN(numA) && !isNaN(numB)) {
+        const strA = (valA ?? '').toString().trim();
+        const strB = (valB ?? '').toString().trim();
+        const numA = parseInt(strA, 10);
+        const numB = parseInt(strB, 10);
+
+        const isSpecialA = isNaN(numA) || numA === 0 || strA === '-' || strA === '0000' || strA === '999999';
+        const isSpecialB = isNaN(numB) || numB === 0 || strB === '-' || strB === '0000' || strB === '999999';
+
+        if (isSpecialA && !isSpecialB) return 1;
+        if (!isSpecialA && isSpecialB) return -1;
+        if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
           return this.sortDirection === 'asc' ? numA - numB : numB - numA;
         }
       }
