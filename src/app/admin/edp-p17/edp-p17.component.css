@@ -191,18 +191,18 @@
     border-bottom: 1px solid #000 !important;
     border-left: none !important;
     border-right: none !important;
-    padding: 2px 3px !important;
+    padding: 3.5px 3px !important;
     font-weight: bold !important;
     background: transparent !important;
     color: #000 !important;
     vertical-align: bottom !important;
-    line-height: 1.15 !important;
+    line-height: 1.2 !important;
   }
 
   .official-print-table tbody tr td {
     border: none !important;
-    padding: 1.5px 3px !important;
-    line-height: 1.2 !important;
+    padding: 4.5px 3px !important;
+    line-height: 1.8 !important;
     background: transparent !important;
     color: #000 !important;
     vertical-align: middle !important;
