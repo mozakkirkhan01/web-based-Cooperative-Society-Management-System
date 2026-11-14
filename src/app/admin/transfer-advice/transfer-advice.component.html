@@ -1,0 +1,594 @@
+<main id="main" class="main">
+
+  <!-- ========================================================================= -->
+  <!-- PAGE HEADER & ACTION BUTTONS                                              -->
+  <!-- ========================================================================= -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom no-print">
+    <div class="pagetitle mb-2 mb-md-0">
+      <h1 class="h3 fw-bold text-dark mb-0">Bank Advice - Transfer to Same Bank A/cs</h1>
+      <nav>
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+          <li class="breadcrumb-item">Banking</li>
+          <li class="breadcrumb-item active">Transfer Advice (Same Bank)</li>
+        </ol>
+      </nav>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <span class="badge bg-info-subtle text-info border border-info small py-1 px-2 d-none d-md-inline-flex align-items-center gap-1"
+            *ngIf="hasSessionDraft" title="Active temporary session saved at {{sessionDraftTime}}">
+        <i class="bi bi-shield-check"></i> Session Draft ({{sessionDraftTime}})
+      </span>
+
+      <button type="button" class="btn btn-outline-primary btn-sm px-3 shadow-sm" (click)="printReport()"
+        [disabled]="rows.length === 0" title="Print Official Bank Advice Document">
+        <i class="bi bi-printer me-1"></i> Print Official
+      </button>
+
+      <button type="button" class="btn btn-outline-danger btn-sm px-3 shadow-sm" (click)="downloadPdf()"
+        [disabled]="rows.length === 0" title="Download Official PDF Document">
+        <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
+      </button>
+
+      <button type="button" class="btn btn-outline-success btn-sm px-3 shadow-sm" (click)="exportExcel()"
+        [disabled]="rows.length === 0" title="Export Excel Document (.xlsx)">
+        <i class="bi bi-file-earmark-excel me-1"></i> Export Excel
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- KPI METRIC CARDS                                                          -->
+  <!-- ========================================================================= -->
+  <div class="row g-2 mb-3 no-print">
+    <!-- Total Beneficiaries -->
+    <div class="col-xl-3 col-md-6 col-sm-6 col-12">
+      <div class="card stat-card shadow-sm border-0 h-100 bg-white">
+        <div class="card-body p-2 d-flex align-items-center">
+          <div class="stat-icon bg-primary-subtle text-primary rounded p-2 me-2">
+            <i class="bi bi-people-fill fs-5"></i>
+          </div>
+          <div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Beneficiaries</div>
+            <div class="fs-6 fw-bold text-dark">{{rows.length}} Records</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Total Disbursement Amount -->
+    <div class="col-xl-3 col-md-6 col-sm-6 col-12">
+      <div class="card stat-card shadow-sm border-0 h-100 bg-white">
+        <div class="card-body p-2 d-flex align-items-center">
+          <div class="stat-icon bg-success-subtle text-success rounded p-2 me-2">
+            <i class="bi bi-currency-rupee fs-5"></i>
+          </div>
+          <div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Total Transfer Amount</div>
+            <div class="fs-6 fw-bold text-success">₹{{totalAmount | number:'1.2-2'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Society Source Bank -->
+    <div class="col-xl-3 col-md-6 col-sm-6 col-12">
+      <div class="card stat-card shadow-sm border-0 h-100 bg-white">
+        <div class="card-body p-2 d-flex align-items-center">
+          <div class="stat-icon bg-info-subtle text-info rounded p-2 me-2">
+            <i class="bi bi-bank fs-5"></i>
+          </div>
+          <div class="text-truncate">
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Society A/c No</div>
+            <div class="fs-6 fw-bold text-dark text-truncate" [title]="selectedBank?.AccountNo || '-'">
+              {{selectedBank?.AccountNo || '-'}}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Validation Integrity -->
+    <div class="col-xl-3 col-md-6 col-sm-6 col-12">
+      <div class="card stat-card shadow-sm border-0 h-100 bg-white">
+        <div class="card-body p-2 d-flex align-items-center">
+          <div class="stat-icon rounded p-2 me-2"
+               [ngClass]="invalidIfscCount === 0 && missingAccountCount === 0 ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning'">
+            <i class="bi fs-5"
+               [ngClass]="invalidIfscCount === 0 && missingAccountCount === 0 ? 'bi-shield-check' : 'bi-exclamation-triangle-fill'"></i>
+          </div>
+          <div>
+            <div class="small text-muted text-uppercase fw-semibold" style="font-size: 0.72rem;">Banking Integrity</div>
+            <div class="fs-6 fw-bold"
+                 [ngClass]="invalidIfscCount === 0 && missingAccountCount === 0 ? 'text-success' : 'text-danger'">
+              <span *ngIf="invalidIfscCount === 0 && missingAccountCount === 0">100% Valid</span>
+              <span *ngIf="invalidIfscCount > 0 || missingAccountCount > 0">
+                {{invalidIfscCount + missingAccountCount}} Warning(s)
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- FILTER TOOLBAR CARD (SOCIETY BANK + DATE RANGE)                           -->
+  <!-- ========================================================================= -->
+  <div class="card filter-card shadow-sm border-0 mb-3 no-print">
+    <div class="card-body p-3">
+      <div class="row g-2 align-items-end">
+
+        <!-- Transfer to same Bank from -->
+        <div class="col-lg-4 col-md-6 col-12">
+          <label class="form-label small fw-semibold text-muted mb-1">
+            <i class="bi bi-bank text-primary me-1"></i>Transfer to same Bank from *
+          </label>
+          <select class="form-select form-select-sm" [(ngModel)]="selectedBankId" (change)="onBankChange()"
+            [disabled]="setupLoading">
+            <option [ngValue]="null" disabled>-- Select Society Source Bank --</option>
+            <option *ngFor="let b of banks" [ngValue]="b.BankId">
+              {{b.BankName}} (A/c: {{b.AccountNo}})
+            </option>
+          </select>
+        </div>
+
+        <!-- Verified Date From -->
+        <div class="col-lg-3 col-md-3 col-6">
+          <label class="form-label small fw-semibold text-muted mb-1">
+            <i class="bi bi-calendar-event text-secondary me-1"></i>Verified From *
+          </label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="fromDate">
+        </div>
+
+        <!-- Verified Date To -->
+        <div class="col-lg-3 col-md-3 col-6">
+          <label class="form-label small fw-semibold text-muted mb-1">
+            <i class="bi bi-calendar-check text-secondary me-1"></i>Verified To *
+          </label>
+          <input type="date" class="form-control form-control-sm" [(ngModel)]="toDate">
+        </div>
+
+        <!-- Fetch Details Button -->
+        <div class="col-lg-2 col-md-12 col-12">
+          <button type="button" class="btn btn-primary btn-sm w-100 shadow-sm" (click)="fetchVerifiedLoans()"
+            [disabled]="dataLoading || setupLoading">
+            <span *ngIf="dataLoading" class="spinner-border spinner-border-sm me-1" role="status"></span>
+            <i *ngIf="!dataLoading" class="bi bi-search me-1"></i> Get Details
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- SESSION DRAFT SAFETY BANNER                                               -->
+  <!-- ========================================================================= -->
+  <div class="alert alert-info py-2 px-3 mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2 no-print border-info"
+       *ngIf="hasSessionDraft">
+    <div class="d-flex align-items-center gap-2 small">
+      <i class="bi bi-shield-check text-primary fs-5"></i>
+      <span>
+        <strong>Temporary Session Protected:</strong> Storing <strong>{{rows.length}}</strong> unsaved records locally in this browser tab for <strong>{{selectedBank?.BankName}}</strong> (last saved at {{sessionDraftTime}}). &bull; Safe against F5 page refresh; automatically wiped when browser tab is closed.
+      </span>
+    </div>
+    <button type="button" class="btn btn-outline-danger btn-sm py-0 px-2 small" (click)="onDiscardSessionClick()"
+      title="Discard session draft and clear table">
+      <i class="bi bi-trash me-1"></i> Discard Session
+    </button>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MAIN INTERACTIVE TABLE CARD                                               -->
+  <!-- ========================================================================= -->
+  <div class="card shadow-sm border-0 mb-3 no-print">
+    <!-- Table Toolbar -->
+    <div class="card-body p-2 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <!-- Search Input -->
+      <div class="input-group input-group-sm" style="max-width: 280px;">
+        <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+        <input type="text" class="form-control" [(ngModel)]="searchText" (input)="applyFilterAndSort()"
+          placeholder="Search staff, name, a/c, IFSC...">
+      </div>
+
+      <!-- Action Buttons Matching Exact Layout -->
+      <div class="d-flex align-items-center gap-2">
+        <!-- Discard / Trash Button -->
+        <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" (click)="onDiscardSessionClick()"
+          [disabled]="rows.length === 0"
+          [title]="hasSessionDraft ? 'Discard temporary session draft' : 'Clear all records'">
+          <i class="bi bi-trash3"></i>
+        </button>
+
+        <!-- Print Official Button in Toolbar -->
+        <button type="button" class="btn btn-outline-primary btn-sm py-1 px-2" (click)="printReport()"
+          [disabled]="rows.length === 0" title="Print Official Bank Advice">
+          <i class="bi bi-printer me-1"></i> Print Official
+        </button>
+
+        <!-- Page Size Selector -->
+        <span class="text-muted small ms-1">Show</span>
+        <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="pageSize"
+          (change)="currentPage = 1">
+          <option *ngFor="let opt of pageSizeOptions" [ngValue]="opt.value">{{opt.label}}</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Data Table View -->
+    <div class="table-responsive p-0" style="min-height: 280px;">
+      <table class="table table-hover table-striped align-middle mb-0 small text-nowrap">
+        <thead class="table-light">
+          <tr>
+            <th class="text-center" style="width: 45px;">#</th>
+            <th>Staff No</th>
+            <th>Mem. No</th>
+            <th>Beneficiary Name</th>
+            <th>A/c No</th>
+            <th>IFS Code</th>
+            <th>Bank Name</th>
+            <th>Branch</th>
+            <th class="text-end">Amount (₹)</th>
+            <th class="text-center" style="width: 70px;">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Empty State -->
+          <tr *ngIf="paginatedRows.length === 0">
+            <td colspan="10" class="text-center py-5 text-muted">
+              <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
+              <span class="fw-semibold">No transfer advice records loaded.</span>
+              <div class="small mt-1 text-muted">
+                Select <strong>{{selectedBank ? selectedBank.BankName : 'Society Bank'}}</strong> and date range, then click <strong>Get Details</strong> or add a beneficiary manually below.
+              </div>
+            </td>
+          </tr>
+
+          <!-- Data Rows -->
+          <tr *ngFor="let r of paginatedRows; let idx = index">
+            <td class="text-center text-muted fw-semibold">
+              {{(currentPage - 1) * pageSize + idx + 1}}
+            </td>
+            <td>
+              <span class="fw-bold text-primary">{{r.StaffNo}}</span>
+              <span *ngIf="r.Source === 'MANUAL'" class="badge bg-secondary-subtle text-secondary small ms-1" style="font-size: 0.65rem;">Manual</span>
+            </td>
+            <td class="text-muted">{{r.MemberNo || '-'}}</td>
+            <td>
+              <div class="fw-semibold text-dark">{{r.MemberName}}</div>
+              <div *ngIf="r.ApplicationNumber" class="text-muted" style="font-size: 0.72rem;">
+                App: {{r.ApplicationNumber}}
+              </div>
+            </td>
+            <td>
+              <span [class.text-danger]="!r.HasAccountNo" class="fw-bold">
+                {{r.AccountNo || 'MISSING'}}
+              </span>
+              <i *ngIf="!r.HasAccountNo" class="bi bi-exclamation-circle text-danger ms-1" title="Account number missing"></i>
+            </td>
+            <td>
+              <span [class.text-danger]="!r.IsValidIFSC" class="fw-semibold">
+                {{r.IFSCCode || 'MISSING'}}
+              </span>
+              <i *ngIf="!r.IsValidIFSC" class="bi bi-exclamation-circle text-warning ms-1" title="Invalid IFSC format"></i>
+            </td>
+            <td>
+              <span class="fw-semibold text-dark">{{r.BankName || '-'}}</span>
+            </td>
+            <td>
+              <span class="text-muted">{{r.BranchName || '-'}}</span>
+            </td>
+            <td class="text-end fw-bold text-success">
+              ₹{{r.Amount | number:'1.2-2'}}
+            </td>
+            <td class="text-center">
+              <div class="d-inline-flex align-items-center gap-2">
+                <button type="button" class="btn btn-link text-warning p-0" (click)="editRow(r)"
+                  title="Edit beneficiary details">
+                  <i class="bi bi-pencil-square fs-6"></i>
+                </button>
+                <button type="button" class="btn btn-link text-danger p-0" (click)="removeRow(r)"
+                  title="Remove from advice list">
+                  <i class="bi bi-trash3 fs-6"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+        <tfoot *ngIf="rows.length > 0">
+          <tr class="table-light fw-bold">
+            <td colspan="4" class="text-start">Total ({{rows.length}} Records):</td>
+            <td colspan="4" class="text-muted small">
+              {{amountToWords(totalAmount)}}
+            </td>
+            <td class="text-end text-success fs-6">
+              ₹{{totalAmount | number:'1.2-2'}}
+            </td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <!-- Table Pagination & Footer -->
+    <div class="card-footer bg-white border-top py-2 d-flex flex-wrap justify-content-between align-items-center"
+         *ngIf="filteredRows.length > 0">
+      <div class="text-muted small">
+        Showing {{filteredRows.length === 0 ? 0 : (currentPage - 1) * pageSize + 1}} to
+        {{currentPage * pageSize > filteredRows.length ? filteredRows.length : currentPage * pageSize}} of
+        {{filteredRows.length}} records
+      </div>
+
+      <ul class="pagination pagination-sm mb-0" *ngIf="totalPages > 1">
+        <li class="page-item" [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="goToPage(currentPage - 1)">Prev</a>
+        </li>
+        <li class="page-item" *ngFor="let p of [].constructor(totalPages); let i = index"
+          [class.active]="currentPage === (i + 1)">
+          <a class="page-link" (click)="goToPage(i + 1)">{{i + 1}}</a>
+        </li>
+        <li class="page-item" [class.disabled]="currentPage === totalPages">
+          <a class="page-link" (click)="goToPage(currentPage + 1)">Next</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MANUAL BENEFICIARY ENTRY FORM (BOTTOM)                                    -->
+  <!-- ========================================================================= -->
+  <div class="card shadow-sm border-0 mb-4 no-print" id="manualEntryCard">
+    <div class="card-header bg-white border-bottom py-2 d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <div class="rounded-circle p-1 d-flex align-items-center justify-content-center"
+             [ngClass]="isEditing ? 'bg-warning-subtle text-warning' : 'bg-primary-subtle text-primary'"
+             style="width: 28px; height: 28px;">
+          <i class="bi" [ngClass]="isEditing ? 'bi-pencil-square' : 'bi-person-plus-fill'"></i>
+        </div>
+        <div>
+          <span class="fw-bold small text-dark">
+            {{isEditing ? 'Edit Beneficiary Details' : 'Add Manual / Extra Beneficiary to Transfer Advice'}}
+          </span>
+          <span class="text-muted small ms-2 d-none d-md-inline" *ngIf="!isEditing">
+            &bull; Search member by Staff No to auto-fill bank details or enter custom same-bank transfer
+          </span>
+          <span class="badge bg-warning-subtle text-warning-emphasis small ms-2" *ngIf="isEditing">
+            Editing Staff: {{manualModel.StaffNo}}
+          </span>
+        </div>
+      </div>
+      <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2" (click)="cancelEdit()" *ngIf="isEditing">
+        <i class="bi bi-x me-1"></i>Cancel
+      </button>
+    </div>
+
+    <div class="card-body p-3">
+      <form (ngSubmit)="addOrUpdateEntry()">
+        <!-- ROW 1: BENEFICIARY IDENTITY & AMOUNT -->
+        <div class="row g-3 mb-2">
+          <!-- Staff No with Lookup -->
+          <div class="col-xl-3 col-lg-3 col-md-6 col-12 position-relative">
+            <label class="form-label small fw-semibold text-muted mb-1">
+              Staff No <span class="text-danger">*</span>
+            </label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="bi bi-person-badge text-muted"></i></span>
+              <input type="text" class="form-control" [(ngModel)]="manualModel.StaffNo" name="staffNo"
+                (input)="onStaffInput(manualModel.StaffNo)" placeholder="Search staff no..." autocomplete="off" required>
+              <span class="input-group-text bg-white" *ngIf="searchingMember">
+                <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+              </span>
+            </div>
+
+            <!-- Auto-complete Dropdown -->
+            <ul class="dropdown-menu show w-100 shadow border small member-lookup-menu"
+                *ngIf="showMemberDropdown && memberSearchResults.length > 0">
+              <li *ngFor="let m of memberSearchResults">
+                <a class="dropdown-item py-2 border-bottom" href="javascript:void(0)" (click)="selectMember(m)">
+                  <div class="fw-bold text-dark d-flex justify-content-between">
+                    <span>{{m.StaffNo}} - {{m.MemberName}}</span>
+                    <span class="badge bg-light text-secondary">Mem: {{m.MemberNo}}</span>
+                  </div>
+                  <div class="text-muted small text-truncate mt-1" style="font-size: 0.75rem;">
+                    <i class="bi bi-bank me-1"></i>{{m.BankName || (selectedBank ? selectedBank.BankName : 'No bank')}} &bull; A/c: {{m.AccountNo || '-'}} &bull; {{m.IFSCCode || '-'}}
+                  </div>
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Mem No -->
+          <div class="col-xl-2 col-lg-2 col-md-3 col-6">
+            <label class="form-label small fw-semibold text-muted mb-1">Member No</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light text-muted">#</span>
+              <input type="text" class="form-control bg-light" [(ngModel)]="manualModel.MemberNo"
+                name="memNo" placeholder="Auto">
+            </div>
+          </div>
+
+          <!-- Beneficiary Name -->
+          <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">
+              Beneficiary Name <span class="text-danger">*</span>
+            </label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="bi bi-person text-muted"></i></span>
+              <input type="text" class="form-control" [(ngModel)]="manualModel.MemberName"
+                name="memberName" placeholder="Full name of beneficiary" required>
+            </div>
+          </div>
+
+          <!-- Amount -->
+          <div class="col-xl-3 col-lg-3 col-md-6 col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">
+              Transfer Amount (₹) <span class="text-danger">*</span>
+            </label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white fw-bold text-success">₹</span>
+              <input type="number" class="form-control fw-bold text-success" [(ngModel)]="manualModel.Amount"
+                name="amount" placeholder="0.00" min="1" required>
+            </div>
+          </div>
+        </div>
+
+        <!-- ROW 2: BANKING DETAILS & ACTION BUTTONS -->
+        <div class="row g-3 align-items-end">
+          <!-- Bank Name -->
+          <div class="col-xl-3 col-lg-3 col-md-6 col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">Bank Name</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="bi bi-bank text-muted"></i></span>
+              <input type="text" class="form-control" [(ngModel)]="manualModel.BankName"
+                name="bankName" [placeholder]="selectedBank ? selectedBank.BankName : 'STATE BANK OF INDIA'">
+            </div>
+          </div>
+
+          <!-- Branch Name -->
+          <div class="col-xl-2 col-lg-2 col-md-6 col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">Branch Name</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="bi bi-geo-alt text-muted"></i></span>
+              <input type="text" class="form-control" [(ngModel)]="manualModel.BranchName"
+                name="branchName" placeholder="e.g. Sec-4, Bokaro">
+            </div>
+          </div>
+
+          <!-- Account No -->
+          <div class="col-xl-3 col-lg-3 col-md-6 col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">
+              Account No <span class="text-danger">*</span>
+            </label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="bi bi-credit-card-2-front text-muted"></i></span>
+              <input type="text" class="form-control fw-semibold" [(ngModel)]="manualModel.AccountNo"
+                name="accountNo" placeholder="Account number" required>
+            </div>
+          </div>
+
+          <!-- IFSC Code -->
+          <div class="col-xl-2 col-lg-2 col-md-6 col-12">
+            <label class="form-label small fw-semibold text-muted mb-1">
+              IFSC Code <span class="text-danger">*</span>
+            </label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-white"><i class="bi bi-upc-scan text-muted"></i></span>
+              <input type="text" class="form-control text-uppercase fw-semibold"
+                [(ngModel)]="manualModel.IFSCCode" name="ifscCode" placeholder="SBIN0000246" maxlength="11" required>
+            </div>
+          </div>
+
+          <!-- Action Submit & Clear Buttons -->
+          <div class="col-xl-2 col-lg-2 col-md-12 col-12">
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-sm flex-grow-1 shadow-sm d-flex align-items-center justify-content-center gap-1"
+                [ngClass]="isEditing ? 'btn-warning text-dark fw-semibold' : 'btn-primary'">
+                <i class="bi" [ngClass]="isEditing ? 'bi-check-circle-fill' : 'bi-plus-circle-fill'"></i>
+                <span>{{isEditing ? 'Update Entry' : 'Add to Advice'}}</span>
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm px-2" (click)="cancelEdit()"
+                title="Clear inputs / Reset">
+                <i class="bi bi-arrow-counterclockwise"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- OFFICIAL PRINT REPORT VIEW (MATCHING IMAGE 2 WITH 100% FIDELITY)          -->
+  <!-- ========================================================================= -->
+  <div class="print-container d-none d-print-block">
+    <div class="print-page-sheet">
+
+      <!-- Letterhead Section -->
+      <div class="print-header text-center">
+        <div class="company-name fw-bold fs-5 text-dark">
+          {{company.CompanyName || 'Bokaro Steel Employees (TA/Med./Mat.) Co-op. Cr. Soc. Ltd.'}}
+        </div>
+        <div class="company-hindi">
+          {{company.CompanyNameHindi || 'बोकारो इस्पात कर्मचारी (टी०ए० / मे० / मेट०) सहकारी साख समिति लिमिटेड'}}
+        </div>
+        <div class="company-sub">
+          (Regd. No.- {{company.RegistrationNo || 'BAGH-6/78'}}) &nbsp;&nbsp; {{company.CompanyAddress || 'Old Admn. Bldg., Bokaro Steel City-827001'}}
+        </div>
+        <div class="contact-line text-end" *ngIf="company.MobileNo">
+          Contact No: {{company.MobileNo}}
+        </div>
+      </div>
+
+      <!-- Report Title (Dynamic Bank Name Matching Image 2) -->
+      <div class="print-report-title text-center fw-bold">
+        Bank Advice - Transfer "{{selectedBank ? selectedBank.BankName : 'STATE BANK OF INDIA'}}"
+      </div>
+
+      <!-- Society Account & Report Date Subheader -->
+      <div class="print-sub-header d-flex justify-content-between align-items-center">
+        <span class="society-acc fw-bold">
+          Society A/c No: {{selectedBank?.AccountNo || '10225181204'}}
+        </span>
+        <span class="report-date">
+          Report Date: {{reportDate}}
+        </span>
+      </div>
+
+      <!-- Official Print Table -->
+      <table class="official-print-table table table-sm">
+        <thead>
+          <tr>
+            <th class="text-center" style="width: 30px;">#</th>
+            <th class="text-start">StaffNo Name</th>
+            <th class="text-start">A/c No.</th>
+            <th class="text-start">IFSC</th>
+            <th class="text-start">Bank</th>
+            <th class="text-end">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let r of rows; let idx = index">
+            <td class="text-center">{{idx + 1}}</td>
+            <td class="text-start fw-bold">{{r.StaffNo}} &nbsp;{{r.MemberName}}</td>
+            <td class="text-start fw-bold">{{r.AccountNo}}</td>
+            <td class="text-start fw-bold">{{r.IFSCCode}}</td>
+            <td class="text-start">{{r.BankBranch || (r.BranchName ? (r.BankName + ', ' + r.BranchName) : r.BankName)}}</td>
+            <td class="text-end fw-bold">{{r.Amount | number:'1.2-2'}}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <!-- Total Count & Grand Total -->
+          <tr class="fw-bold">
+            <td colspan="2" class="text-start">Total: &nbsp;&nbsp;<strong>{{rows.length}}</strong></td>
+            <td colspan="3"></td>
+            <td class="text-end fw-bold">{{totalAmount | number:'1.2-2'}}</td>
+          </tr>
+          <!-- Amount in Words -->
+          <tr class="words-row">
+            <td colspan="2" class="text-start">Amount in Words :</td>
+            <td colspan="4" class="text-start fw-bold">{{amountToWords(totalAmount)}}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Signatures Block -->
+      <div class="print-signatures-block">
+        <div class="sig-line-rule"></div>
+        <div class="d-flex justify-content-between align-items-center pt-2 px-3 fw-bold small">
+          <div class="text-center" style="width: 150px;">Comm. Member</div>
+          <div class="text-center" style="width: 150px;">Comm. Member</div>
+          <div class="text-center" style="width: 170px;">Secretary/Chairman</div>
+        </div>
+      </div>
+
+      <!-- Remarks Line -->
+      <div class="print-remarks-line fst-italic">
+        Remarks (if any)
+      </div>
+
+    </div>
+  </div>
+
+</main>

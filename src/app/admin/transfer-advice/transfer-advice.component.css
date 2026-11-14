@@ -1,0 +1,274 @@
+/* ==========================================================================
+   SAME BANK TRANSFER ADVICE STYLING (Screen & Print Engine)
+   ========================================================================== */
+
+/* Screen Styles */
+.stat-icon {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.filter-card .form-label {
+  margin-bottom: 0.25rem;
+}
+
+.filter-card .form-control-sm,
+.filter-card .form-select-sm,
+.filter-card .btn-sm {
+  font-size: 0.82rem;
+  height: 31px;
+}
+
+.table th {
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.3px;
+}
+
+.table td {
+  font-size: 0.82rem;
+}
+
+.member-lookup-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1050;
+  max-height: 250px;
+  overflow-y: auto;
+  min-width: 280px;
+}
+
+.member-lookup-menu li a:hover {
+  background-color: #f0f7ff;
+}
+
+/* Manual Entry Card Input Styling */
+#manualEntryCard .input-group-text {
+  font-size: 0.8rem;
+  color: #6c757d;
+  background-color: #f8f9fa;
+  border-right: none;
+}
+
+#manualEntryCard .form-control {
+  font-size: 0.82rem;
+  border-left: none;
+}
+
+#manualEntryCard .form-control:focus {
+  border-color: #86b7fe;
+  box-shadow: none;
+}
+
+#manualEntryCard .input-group:focus-within .input-group-text {
+  border-color: #86b7fe;
+}
+
+#manualEntryCard .form-label {
+  font-size: 0.75rem;
+  margin-bottom: 0.2rem;
+}
+
+/* ==========================================================================
+   OFFICIAL PRINT ENGINE STYLING (100% Fidelity to Image 2)
+   ========================================================================== */
+@media print {
+  @page {
+    size: portrait;
+    margin: 8mm 12mm 10mm 12mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .print-container,
+  .print-container * {
+    visibility: visible !important;
+  }
+
+  .print-container {
+    position: relative !important;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background: #fff !important;
+    color: #000 !important;
+    font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif !important;
+  }
+
+  /* Completely remove non-printable layout chrome */
+  .no-print,
+  #header,
+  #sidebar,
+  .sidebar,
+  .header,
+  #footer,
+  .footer,
+  footer,
+  aside,
+  nav,
+  .back-to-top,
+  .breadcrumb,
+  .filter-card {
+    display: none !important;
+  }
+
+  main#main,
+  main.main {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  .print-page-sheet {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    position: relative !important;
+    min-height: 250mm !important;
+    box-sizing: border-box !important;
+  }
+
+  .print-header {
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .print-header .company-name {
+    font-size: 13.5pt !important;
+    font-weight: bold !important;
+    text-decoration: underline !important;
+    margin-bottom: 2px !important;
+    color: #000 !important;
+  }
+
+  .print-header .company-hindi {
+    font-size: 10.5pt !important;
+    font-weight: normal !important;
+    margin-bottom: 2px !important;
+    color: #000 !important;
+  }
+
+  .print-header .company-sub {
+    font-size: 8.5pt !important;
+    color: #000 !important;
+  }
+
+  .print-header .contact-line {
+    font-size: 8.5pt !important;
+    color: #000 !important;
+    margin-top: -12px !important;
+  }
+
+  .print-report-title {
+    font-size: 12.5pt !important;
+    font-weight: bold !important;
+    text-decoration: underline !important;
+    text-align: center !important;
+    margin-top: 10px !important;
+    margin-bottom: 10px !important;
+    color: #000 !important;
+  }
+
+  .print-sub-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    font-size: 9.5pt !important;
+    margin-bottom: 6px !important;
+    color: #000 !important;
+  }
+
+  .print-sub-header .society-acc {
+    font-size: 10.5pt !important;
+    font-weight: bold !important;
+  }
+
+  .official-print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8.5pt !important;
+    color: #000 !important;
+    background: transparent !important;
+    margin-top: 4px !important;
+  }
+
+  .official-print-table thead tr th {
+    border-top: 1px solid #000 !important;
+    border-bottom: 1px solid #000 !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 3.5px 3px !important;
+    font-weight: bold !important;
+    background: transparent !important;
+    color: #000 !important;
+    line-height: 1.2 !important;
+  }
+
+  .official-print-table tbody tr td {
+    border: none !important;
+    padding: 4px 3px !important;
+    line-height: 1.25 !important;
+    background: transparent !important;
+    color: #000 !important;
+    vertical-align: middle !important;
+  }
+
+  .official-print-table tfoot tr td {
+    border-top: 1px solid #000 !important;
+    border-bottom: 1px solid #000 !important;
+    border-left: none !important;
+    border-right: none !important;
+    padding: 3.5px 3px !important;
+    font-weight: bold !important;
+    background: transparent !important;
+    color: #000 !important;
+  }
+
+  .official-print-table tfoot tr.words-row td {
+    border-top: none !important;
+    border-bottom: none !important;
+    padding-top: 4px !important;
+    font-size: 9pt !important;
+  }
+
+  .print-signatures-block {
+    margin-top: 45mm !important;
+    width: 100% !important;
+  }
+
+  .sig-line-rule {
+    border-top: 1px solid #000 !important;
+    width: 100% !important;
+  }
+
+  .print-remarks-line {
+    font-size: 8.5pt !important;
+    margin-top: 10px !important;
+    color: #000 !important;
+  }
+}
