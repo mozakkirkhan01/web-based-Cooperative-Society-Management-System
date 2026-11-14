@@ -366,4 +366,9 @@ export class AppService {
   edpAdvice(action: string, obj: any) {
     return this.http.post(this.apiUrl + 'EDPAdvice/' + action, obj, { headers: this.headers });
   }
+
+  // Bank Advice (RTGS / NEFT)
+  bankAdvice(action: string, obj: any) {
+    return this.http.post(this.apiUrl + 'BankAdvice/' + action, obj, { headers: this.headers });
+  }
 }
