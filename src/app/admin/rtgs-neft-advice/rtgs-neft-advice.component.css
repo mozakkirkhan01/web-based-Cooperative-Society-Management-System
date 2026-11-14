@@ -46,6 +46,33 @@
   background-color: #f0f7ff;
 }
 
+/* Manual Entry Card Input Styling */
+#manualEntryCard .input-group-text {
+  font-size: 0.8rem;
+  color: #6c757d;
+  background-color: #f8f9fa;
+  border-right: none;
+}
+
+#manualEntryCard .form-control {
+  font-size: 0.82rem;
+  border-left: none;
+}
+
+#manualEntryCard .form-control:focus {
+  border-color: #86b7fe;
+  box-shadow: none;
+}
+
+#manualEntryCard .input-group:focus-within .input-group-text {
+  border-color: #86b7fe;
+}
+
+#manualEntryCard .form-label {
+  font-size: 0.75rem;
+  margin-bottom: 0.2rem;
+}
+
 /* ==========================================================================
    OFFICIAL PRINT ENGINE STYLING (100% Fidelity to Image 2)
    ========================================================================== */
