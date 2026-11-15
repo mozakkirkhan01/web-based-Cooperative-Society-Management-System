@@ -66,6 +66,8 @@ import { RtgsNeftAdviceComponent } from './admin/rtgs-neft-advice/rtgs-neft-advi
 import { EdpP17Component } from './admin/edp-p17/edp-p17.component';
 import { EdpS05Component } from './admin/edp-s05/edp-s05.component';
 import { EdpS06Component } from './admin/edp-s06/edp-s06.component';
+import { StaffSalaryComponent } from './admin/staff-salary/staff-salary.component';
+import { TransferAdviceComponent } from './admin/transfer-advice/transfer-advice.component';
 
 @NgModule({
   declarations: [
@@ -117,7 +119,9 @@ import { EdpS06Component } from './admin/edp-s06/edp-s06.component';
     RtgsNeftAdviceComponent,
     EdpP17Component,
     EdpS05Component,
-    EdpS06Component
+    EdpS06Component,
+    StaffSalaryComponent,
+    TransferAdviceComponent
   ],
   imports: [
     BrowserModule,
