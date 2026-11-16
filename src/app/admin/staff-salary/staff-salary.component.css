@@ -1,0 +1,105 @@
+/* Modern Dashboard & Card Design */
+.pagetitle h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #012970;
+}
+
+.top-banner-card {
+  border-radius: 8px;
+  background: #ffffff;
+  border-left: 4px solid #4154f1 !important;
+}
+
+.card {
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05) !important;
+  background: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.card-header {
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+  padding: 0.75rem 1.25rem;
+}
+
+/* Custom Soft Badge Colors */
+.bg-primary-light {
+  background-color: #e7f1ff !important;
+  color: #0d6efd !important;
+}
+
+.bg-success-light {
+  background-color: #d1e7dd !important;
+  color: #0f5132 !important;
+}
+
+.bg-danger-light {
+  background-color: #f8d7da !important;
+  color: #842029 !important;
+}
+
+.bg-warning-light {
+  background-color: #fff3cd !important;
+  color: #664d03 !important;
+}
+
+.bg-secondary-light {
+  background-color: #f8f9fa !important;
+  color: #6c757d !important;
+  border: 1px solid #dee2e6;
+}
+
+/* Form Controls */
+.form-label {
+  font-size: 0.82rem;
+  color: #495057;
+}
+
+.form-control, .form-select {
+  border-radius: 5px;
+  border: 1px solid #ced4da;
+  font-size: 0.875rem;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: #86b7fe;
+  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+}
+
+.input-group-text {
+  border-radius: 5px 0 0 5px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Quick Info Box */
+.staff-quick-info {
+  min-height: 48px;
+}
+
+/* Tables */
+.table thead th {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+.table tbody td {
+  font-size: 0.875rem;
+  padding: 0.5rem;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: #4154f1;
+  border-color: #4154f1;
+}
+
+.btn-primary:hover {
+  background-color: #3142da;
+  border-color: #3142da;
+}
