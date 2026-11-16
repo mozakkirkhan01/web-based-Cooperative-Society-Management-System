@@ -67,6 +67,20 @@ export class AppService {
     return this.http.post(this.apiUrl + "Payment/deletePayment", obj, { headers: this.headers })
   }
 
+  // Staff Salary
+  getStaffSalaryInit(obj: any) {
+    return this.http.post(this.apiUrl + "StaffSalary/GetInitData", obj, { headers: this.headers });
+  }
+  getStaffSalaryDetails(obj: any) {
+    return this.http.post(this.apiUrl + "StaffSalary/GetStaffSalaryDetails", obj, { headers: this.headers });
+  }
+  getStaffSalaryBankBalance(obj: any) {
+    return this.http.post(this.apiUrl + "StaffSalary/GetBankBalance", obj, { headers: this.headers });
+  }
+  saveStaffSalary(obj: any) {
+    return this.http.post(this.apiUrl + "StaffSalary/SaveStaffSalary", obj, { headers: this.headers });
+  }
+
   //Bank
   getBankList(obj: any) {
     return this.http.post(this.apiUrl + "Bank/BankList", obj, { headers: this.headers })
