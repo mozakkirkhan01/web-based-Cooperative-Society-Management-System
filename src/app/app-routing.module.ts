@@ -8,6 +8,7 @@ import { EdpS05Component } from './admin/edp-s05/edp-s05.component';
 import { EdpS06Component } from './admin/edp-s06/edp-s06.component';
 import { RtgsNeftAdviceComponent } from './admin/rtgs-neft-advice/rtgs-neft-advice.component';
 import { TransferAdviceComponent } from './admin/transfer-advice/transfer-advice.component';
+import { StaffSalaryComponent } from './admin/staff-salary/staff-salary.component';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminLoginComponent } from './admin/admin-login/admin-login.component';
@@ -96,6 +97,7 @@ const routes: Routes = [
       { path: 'edp-s06', component: EdpS06Component },
       { path: 'rtgs-neft-advice', component: RtgsNeftAdviceComponent },
       { path: 'transfer-advice', component: TransferAdviceComponent },
+      { path: 'staff-salary', component: StaffSalaryComponent },
 
     ]
   },
