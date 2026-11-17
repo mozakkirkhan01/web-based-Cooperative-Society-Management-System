@@ -1,0 +1,336 @@
+/* ==========================================================================
+   Enterprise Dashboard Styles - Bokaro Steel Co-op Credit Society
+   ========================================================================== */
+
+.dashboard-wrapper {
+  padding-bottom: 2.5rem;
+}
+
+/* Header Banner */
+.dashboard-header {
+  background: linear-gradient(135deg, #012970 0%, #0d47a1 60%, #1565c0 100%);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dashboard-header::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0) 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.society-logo-badge {
+  width: 60px;
+  height: 60px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.society-title {
+  letter-spacing: -0.3px;
+  font-size: 1.45rem;
+}
+
+@media (max-width: 768px) {
+  .society-title {
+    font-size: 1.2rem;
+  }
+}
+
+/* KPI Cards */
+.kpi-card {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+  cursor: pointer;
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(1, 41, 112, 0.1) !important;
+}
+
+.border-start-primary {
+  border-left: 4px solid #0d6efd !important;
+}
+
+.border-start-success {
+  border-left: 4px solid #198754 !important;
+}
+
+.border-start-purple {
+  border-left: 4px solid #6f42c1 !important;
+}
+
+.border-start-info {
+  border-left: 4px solid #0dcaf0 !important;
+}
+
+.border-start-danger {
+  border-left: 4px solid #dc3545 !important;
+}
+
+.kpi-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.6px;
+}
+
+.kpi-value {
+  font-size: 1.65rem;
+  line-height: 1.15;
+  letter-spacing: -0.5px;
+}
+
+.kpi-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.35rem;
+}
+
+.bg-purple-subtle {
+  background-color: #f3e8ff !important;
+}
+
+.text-purple {
+  color: #6f42c1 !important;
+}
+
+.pulse-badge {
+  animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(220, 53, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
+}
+
+/* Legend Indicators */
+.legend-indicator {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Monthly Trends Chart */
+.chart-bars-wrapper {
+  height: 230px;
+  width: 100%;
+}
+
+.trend-grid {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.month-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-items: center;
+}
+
+.bars-container {
+  flex: 1;
+  width: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 3px;
+  padding-bottom: 6px;
+  cursor: pointer;
+}
+
+.bar {
+  width: 42%;
+  min-height: 4px;
+  border-radius: 4px 4px 0 0;
+  transition: height 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+  position: relative;
+}
+
+.bar-collection {
+  background: linear-gradient(180deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.bar-disbursement {
+  background: linear-gradient(180deg, #f87171 0%, #dc2626 100%);
+}
+
+.bars-container:hover .bar {
+  filter: brightness(1.18);
+}
+
+.month-label {
+  font-size: 0.72rem;
+  letter-spacing: 0.3px;
+  padding-top: 4px;
+  border-top: 1px solid #e9ecef;
+  width: 100%;
+  text-align: center;
+}
+
+/* Portfolio Donut SVG */
+.donut-chart-container {
+  position: relative;
+  width: 170px;
+  height: 170px;
+  margin: 0 auto;
+}
+
+.donut-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.donut-segment {
+  transition: stroke-dasharray 0.8s ease;
+}
+
+.donut-center-label {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  width: 120px;
+}
+
+/* Enterprise Tables */
+.enterprise-table {
+  font-size: 0.875rem;
+}
+
+.enterprise-table thead th {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #556270;
+  border-bottom: 1px solid #e9ecef;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+.enterprise-table tbody td {
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+}
+
+/* Voucher Badges */
+.badge-payment {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.badge-receipt {
+  background-color: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.badge-contra {
+  background-color: #fef9c3;
+  color: #854d0e;
+  border: 1px solid #fef08a;
+}
+
+.badge-journal {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.badge-secondary {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+/* Retirement Countdown Badges */
+.badge-retire-urgent {
+  background-color: #dc3545;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.badge-retire-warning {
+  background-color: #ffc107;
+  color: #212529;
+  font-weight: 600;
+}
+
+.badge-retire-info {
+  background-color: #0dcaf0;
+  color: #000000;
+  font-weight: 600;
+}
+
+/* Executive Command Center */
+.quick-action-btn {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px;
+  transition: all 0.22s ease;
+}
+
+.quick-action-btn:hover {
+  background-color: #f8fafc;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.06);
+}
+
+.quick-action-btn .action-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Cursor helper */
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Rotation Spin Animation */
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.spin-anim {
+  animation: spin 0.8s linear infinite;
+  display: inline-block;
+}

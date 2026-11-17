@@ -1,18 +1,707 @@
 <app-progress *ngIf="dataLoading"></app-progress>
-<main id="main" class="main">
 
-    <div class="pagetitle">
-      <h1>Dashboard</h1>
-      <nav>
-        <ol class="breadcrumb">
-          <li class="breadcrumb-item"><a>Home</a></li>
-          <li class="breadcrumb-item active">Dashboard</li>
-        </ol>
-      </nav>
+<main id="main" class="main dashboard-wrapper">
+  <!-- Society Executive Header Banner -->
+  <div class="dashboard-header mb-4 p-3 p-md-4 rounded-3 text-white shadow-sm">
+    <div class="row align-items-center">
+      <div class="col-lg-8 col-md-7">
+        <div class="d-flex align-items-center gap-3">
+          <div class="society-logo-badge d-flex align-items-center justify-content-center">
+            <i class="bi bi-bank fs-2 text-primary"></i>
+          </div>
+          <div>
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+              <span class="badge bg-light text-dark fw-bold px-2 py-1">
+                <i class="bi bi-calendar3 me-1"></i>FY {{ summary?.FinancialYearName || '2026-27' }}
+              </span>
+              <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+                <i class="bi bi-patch-check-fill me-1"></i>Reg. No: {{ summary?.SocietyRegNo || 'BAGH-6/78' }}
+              </span>
+            </div>
+            <h1 class="h3 fw-bold mb-1 text-white society-title">
+              {{ summary?.SocietyName || 'Bokaro Steel Employees Co-op. Credit Society Ltd.' }}
+            </h1>
+            <p class="text-white-50 mb-0 small">
+              Executive Financial & Governance Dashboard &bull; Live Enterprise Ledger View
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4 col-md-5 mt-3 mt-md-0 text-md-end">
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-end gap-2">
+          <div class="text-white-50 small text-md-end">
+            <div><i class="bi bi-clock-history me-1"></i>Updated: <strong class="text-white">{{ lastRefreshed || 'Just now' }}</strong></div>
+            <div class="fst-italic">Status: Active &bull; All Ledgers Synced</div>
+          </div>
+          <button type="button" class="btn btn-light btn-sm fw-semibold shadow-sm d-inline-flex align-items-center justify-content-center gap-1 px-3 py-2" (click)="loadDashboard(selectedPeriod)">
+            <i class="bi bi-arrow-clockwise" [class.spin-anim]="dataLoading"></i>
+            <span>Refresh</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="section dashboard">
+    <!-- Row 1: Executive KPI Metric Cards (5 Columns) -->
+    <div class="row g-3 mb-4">
+      <!-- KPI 1: Membership Portfolio -->
+      <div class="col-xxl-2 col-xl-4 col-md-6 col-sm-12 flex-grow-1">
+        <div class="card kpi-card h-100 border-0 shadow-sm border-start-primary" (click)="navigateTo('/admin/member')">
+          <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="kpi-label text-muted text-uppercase fw-semibold">Active Members</span>
+              <div class="kpi-icon-box bg-primary-subtle text-primary">
+                <i class="bi bi-people-fill"></i>
+              </div>
+            </div>
+            <div class="kpi-value text-primary fw-bold mb-1">
+              {{ (summary?.ActiveMembers | number) || '0' }}
+            </div>
+            <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+              <span>Total: <strong>{{ summary?.TotalMembers | number }}</strong></span>
+              <span class="badge bg-success-subtle text-success">+{{ summary?.EnrolledThisYear || 0 }} new</span>
+            </div>
+            <div class="kpi-pills-row d-flex gap-1 flex-wrap pt-2 border-top">
+              <span class="badge bg-light text-secondary border">BSL: {{ summary?.BslMembers || 0 }}</span>
+              <span class="badge bg-light text-secondary border">BPSCL: {{ summary?.BpsclMembers || 0 }}</span>
+              <span class="badge bg-light text-secondary border">Staff: {{ summary?.StaffMembers || 0 }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 2: Total Member Deposits -->
+      <div class="col-xxl-2 col-xl-4 col-md-6 col-sm-12 flex-grow-1">
+        <div class="card kpi-card h-100 border-0 shadow-sm border-start-success" (click)="navigateTo('/admin/head-book')">
+          <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="kpi-label text-muted text-uppercase fw-semibold">Member Deposits</span>
+              <div class="kpi-icon-box bg-success-subtle text-success">
+                <i class="bi bi-piggy-bank-fill"></i>
+              </div>
+            </div>
+            <div class="kpi-value text-success fw-bold mb-1">
+              {{ formatCompact(summary?.TotalDeposits) }}
+            </div>
+            <div class="text-muted small mb-2 text-truncate" title="Exact: {{ formatCurrency(summary?.TotalDeposits) }}">
+              {{ formatCurrency(summary?.TotalDeposits) }}
+            </div>
+            <div class="kpi-pills-row d-flex justify-content-between pt-2 border-top small">
+              <span class="text-secondary" title="Compulsory Deposit">CD: <strong>{{ formatCompact(summary?.CompulsoryDepositBalance) }}</strong> ({{ summary?.CdMemberCount }})</span>
+              <span class="text-secondary" title="Share Capital">SC: <strong>{{ formatCompact(summary?.ShareCapitalBalance) }}</strong> ({{ summary?.ScMemberCount }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 3: Loan Portfolio Outstanding -->
+      <div class="col-xxl-2 col-xl-4 col-md-6 col-sm-12 flex-grow-1">
+        <div class="card kpi-card h-100 border-0 shadow-sm border-start-purple" (click)="navigateTo('/admin/loan-application')">
+          <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="kpi-label text-muted text-uppercase fw-semibold">Loan Portfolio</span>
+              <div class="kpi-icon-box bg-purple-subtle text-purple">
+                <i class="bi bi-cash-stack"></i>
+              </div>
+            </div>
+            <div class="kpi-value text-purple fw-bold mb-1">
+              {{ formatCompact(summary?.TotalLoanOutstanding) }}
+            </div>
+            <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+              <span>Borrowers: <strong>{{ summary?.LoanMemberCount | number }}</strong></span>
+              <span class="badge bg-warning-subtle text-warning border border-warning-subtle" *ngIf="(summary?.PendingLoanApps || 0) > 0">
+                {{ summary?.PendingLoanApps }} App Pending
+              </span>
+            </div>
+            <div class="kpi-pills-row pt-2 border-top small text-muted text-truncate">
+              Principal + Int Active Outstanding
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 4: Liquid Funds (Bank & Cash) -->
+      <div class="col-xxl-2 col-xl-4 col-md-6 col-sm-12 flex-grow-1">
+        <div class="card kpi-card h-100 border-0 shadow-sm border-start-info" (click)="navigateTo('/admin/cash-bank-book')">
+          <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="kpi-label text-muted text-uppercase fw-semibold">Liquid Funds</span>
+              <div class="kpi-icon-box bg-info-subtle text-info">
+                <i class="bi bi-bank2"></i>
+              </div>
+            </div>
+            <div class="kpi-value text-info-emphasis fw-bold mb-1">
+              {{ formatCompact(summary?.TotalLiquidFunds) }}
+            </div>
+            <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+              <span>Banks: <strong>{{ summary?.BankAccounts?.length || 0 }} Accounts</strong></span>
+              <span>Cash: <strong>{{ formatCurrency(summary?.CashInHand) }}</strong></span>
+            </div>
+            <div class="kpi-pills-row pt-2 border-top small text-muted text-truncate">
+              Operating: SBI Adm. Bldg (...2365)
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI 5: Pending Verification Queue -->
+      <div class="col-xxl-2 col-xl-4 col-md-6 col-sm-12 flex-grow-1">
+        <div class="card kpi-card h-100 border-0 shadow-sm border-start-danger" (click)="navigateTo('/admin/verify-transactions')">
+          <div class="card-body p-3">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <span class="kpi-label text-muted text-uppercase fw-semibold">Verification Queue</span>
+              <div class="kpi-icon-box bg-danger-subtle text-danger position-relative">
+                <i class="bi bi-shield-check"></i>
+                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle" *ngIf="(summary?.PendingVerificationCount || 0) > 0"></span>
+              </div>
+            </div>
+            <div class="kpi-value text-danger fw-bold mb-1">
+              {{ summary?.PendingVerificationCount || 0 }}
+              <span class="fs-6 fw-normal text-muted">Vouchers</span>
+            </div>
+            <div class="d-flex align-items-center justify-content-between text-muted small mb-2">
+              <span>P: <strong>{{ summary?.PendingPayments || 0 }}</strong> &bull; R: <strong>{{ summary?.PendingReceipts || 0 }}</strong> &bull; J: <strong>{{ summary?.PendingJournals || 0 }}</strong></span>
+              <span class="badge bg-danger text-white pulse-badge" *ngIf="(summary?.PendingVerificationCount || 0) > 0">Action Req.</span>
+              <span class="badge bg-success-subtle text-success" *ngIf="(summary?.PendingVerificationCount || 0) === 0">Up to date</span>
+            </div>
+            <div class="kpi-pills-row pt-2 border-top small text-danger fw-semibold text-truncate">
+              Click to Open Verification Worklist &rarr;
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <section class="section dashboard">
-     
-    </section>
+    <!-- Row 2: Visual Analytics & Breakdown (Trends Bar Chart & Portfolio Donut) -->
+    <div class="row g-4 mb-4">
+      <!-- Left: Monthly Recovery & Disbursement Trends -->
+      <div class="col-xl-8 col-lg-7">
+        <div class="card border-0 shadow-sm h-100 chart-card">
+          <div class="card-header bg-white border-0 pt-3 pb-2 d-flex flex-wrap align-items-center justify-content-between">
+            <div>
+              <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="bi bi-bar-chart-fill text-primary me-2"></i>Monthly Recovery & Collection Trends
+              </h5>
+              <p class="text-muted small mb-0">Financial Year {{ summary?.FinancialYearName || '2026-27' }} Month-wise Cash Inflow vs Outflow</p>
+            </div>
+            <div class="d-flex align-items-center gap-3 mt-2 mt-sm-0">
+              <div class="d-flex align-items-center gap-1 small">
+                <span class="legend-indicator bg-primary"></span>
+                <span class="text-muted">Collections: <strong>{{ formatCompact(totalCollectionsFY) }}</strong></span>
+              </div>
+              <div class="d-flex align-items-center gap-1 small">
+                <span class="legend-indicator bg-danger"></span>
+                <span class="text-muted">Disbursements: <strong>{{ formatCompact(totalDisbursementsFY) }}</strong></span>
+              </div>
+            </div>
+          </div>
+          <div class="card-body pt-2 pb-3">
+            <!-- Responsive Bar Chart Container -->
+            <div class="chart-bars-wrapper mt-3">
+              <div class="trend-grid">
+                <div class="month-column" *ngFor="let item of summary?.MonthlyTrend">
+                  <div class="bars-container" [title]="item.MonthName + ': Collections ' + formatCurrency(item.Collections) + ' | Disbursements ' + formatCurrency(item.Disbursements)">
+                    <!-- Collection Bar -->
+                    <div class="bar bar-collection" [style.height.%]="getBarHeight(item.Collections)">
+                      <span class="bar-value" *ngIf="item.Collections > 0">{{ formatCompact(item.Collections) }}</span>
+                    </div>
+                    <!-- Disbursement Bar -->
+                    <div class="bar bar-disbursement" [style.height.%]="getBarHeight(item.Disbursements)">
+                      <span class="bar-value" *ngIf="item.Disbursements > 0">{{ formatCompact(item.Disbursements) }}</span>
+                    </div>
+                  </div>
+                  <div class="month-label fw-semibold text-secondary">{{ item.MonthName }}</div>
+                </div>
+              </div>
+            </div>
 
-  </main>
+            <!-- Recovery Insights Footer -->
+            <div class="row g-2 mt-3 pt-3 border-top text-center text-md-start">
+              <div class="col-md-4">
+                <div class="p-2 rounded bg-light">
+                  <div class="text-muted small">Peak Payroll Collection</div>
+                  <div class="fw-bold text-primary">{{ formatCurrency(totalCollectionsFY) }} (Apr '26)</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-2 rounded bg-light">
+                  <div class="text-muted small">Recovery Performance</div>
+                  <div class="fw-bold text-success">100% Payroll Deduction BSL/BPSCL</div>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="p-2 rounded bg-light">
+                  <div class="text-muted small">Audit Status</div>
+                  <div class="fw-bold text-secondary">Vouchers Reconciled via EDP</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Deposit Portfolio Structure & Capital Composition -->
+      <div class="col-xl-4 col-lg-5">
+        <div class="card border-0 shadow-sm h-100 composition-card">
+          <div class="card-header bg-white border-0 pt-3 pb-2">
+            <h5 class="card-title mb-0 fw-bold text-dark">
+              <i class="bi bi-pie-chart-fill text-success me-2"></i>Capital & Deposit Structure
+            </h5>
+            <p class="text-muted small mb-0">Portfolio distribution of member contributions</p>
+          </div>
+          <div class="card-body pt-2">
+            <!-- Visual SVG Donut Ring Representation -->
+            <div class="donut-chart-container text-center my-3">
+              <svg class="donut-svg" viewBox="0 0 160 160">
+                <!-- Background Circle -->
+                <circle cx="80" cy="80" r="60" fill="transparent" stroke="#f1f3f9" stroke-width="22"></circle>
+                <!-- Compulsory Deposit Segment (~66.6%) -->
+                <circle cx="80" cy="80" r="60" fill="transparent" stroke="#0d6efd" stroke-width="22"
+                  [attr.stroke-dasharray]="(cdPercent * 3.77) + ' 377'" stroke-dashoffset="0"
+                  stroke-linecap="round" class="donut-segment"></circle>
+                <!-- Share Capital Segment (~33.4%) -->
+                <circle cx="80" cy="80" r="60" fill="transparent" stroke="#198754" stroke-width="22"
+                  [attr.stroke-dasharray]="(scPercent * 3.77) + ' 377'"
+                  [attr.stroke-dashoffset]="-(cdPercent * 3.77)"
+                  stroke-linecap="round" class="donut-segment"></circle>
+              </svg>
+              <div class="donut-center-label">
+                <div class="text-muted small text-uppercase">Total Funds</div>
+                <div class="fw-bold fs-5 text-dark">{{ formatCompact(summary?.TotalDeposits) }}</div>
+                <div class="badge bg-primary-subtle text-primary border px-2 py-0">100% Member Owned</div>
+              </div>
+            </div>
+
+            <!-- Breakdown Cards -->
+            <div class="deposit-breakdown-list mt-3">
+              <!-- Compulsory Deposit Item -->
+              <div class="p-3 mb-2 rounded border bg-light-subtle">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="legend-indicator bg-primary"></span>
+                    <strong class="text-dark">Compulsory Deposit (Head 018)</strong>
+                  </div>
+                  <span class="badge bg-primary">{{ cdPercent }}%</span>
+                </div>
+                <div class="d-flex align-items-baseline justify-content-between">
+                  <span class="fs-6 fw-bold text-primary">{{ formatCurrency(summary?.CompulsoryDepositBalance) }}</span>
+                  <span class="text-muted small">{{ summary?.CdMemberCount | number }} Members</span>
+                </div>
+                <div class="progress mt-2" style="height: 6px;">
+                  <div class="progress-bar bg-primary" [style.width.%]="cdPercent"></div>
+                </div>
+              </div>
+
+              <!-- Share Capital Item -->
+              <div class="p-3 mb-2 rounded border bg-light-subtle">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="legend-indicator bg-success"></span>
+                    <strong class="text-dark">Share Capital (Head 095)</strong>
+                  </div>
+                  <span class="badge bg-success">{{ scPercent }}%</span>
+                </div>
+                <div class="d-flex align-items-baseline justify-content-between">
+                  <span class="fs-6 fw-bold text-success">{{ formatCurrency(summary?.ShareCapitalBalance) }}</span>
+                  <span class="text-muted small">{{ summary?.ScMemberCount | number }} Shareholders</span>
+                </div>
+                <div class="progress mt-2" style="height: 6px;">
+                  <div class="progress-bar bg-success" [style.width.%]="scPercent"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Regulatory Note -->
+            <div class="small text-muted p-2 rounded bg-light border mt-2">
+              <i class="bi bi-info-circle text-primary me-1"></i>
+              Dividend eligibility & voting rights aligned with Bihar & Jharkhand Co-op Societies Act.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 3: Actionable Operational Tables (Pending Verification & Bank Positions) -->
+    <div class="row g-4 mb-4">
+      <!-- Left: Pending Verification & Audit Worklist -->
+      <div class="col-xl-7 col-lg-12">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-0 pt-3 pb-2 d-flex align-items-center justify-content-between">
+            <div>
+              <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="bi bi-clock-history text-danger me-2"></i>Pending Verification & Audit Worklist
+              </h5>
+              <p class="text-muted small mb-0">Vouchers awaiting dual-control verification before permanent ledger posting</p>
+            </div>
+            <button class="btn btn-outline-danger btn-sm fw-semibold" (click)="openVerification()">
+              Open Full Verification ({{ summary?.PendingVerificationCount || 0 }})
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0 enterprise-table">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col" class="ps-3">Voucher No</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Date</th>
+                    <th scope="col">Prepared By</th>
+                    <th scope="col" class="text-end">Amount (₹)</th>
+                    <th scope="col" class="text-center pe-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let v of summary?.PendingVouchers">
+                    <td class="ps-3 fw-bold text-primary">
+                      <span class="cursor-pointer" (click)="openVerification()">{{ v.VoucherNumber }}</span>
+                    </td>
+                    <td>
+                      <span class="badge" [ngClass]="getVoucherBadgeClass(v.VoucherType)">
+                        {{ v.VoucherType }}
+                      </span>
+                    </td>
+                    <td class="text-secondary small">{{ v.VoucherDate | date:'dd-MMM-yyyy' }}</td>
+                    <td class="small">{{ v.CreatedByName || 'Admin' }}</td>
+                    <td class="text-end fw-bold text-dark">{{ formatCurrency(v.Amount) }}</td>
+                    <td class="text-center pe-3">
+                      <button class="btn btn-sm btn-primary px-2 py-1" (click)="openVerification()" title="Review voucher">
+                        <i class="bi bi-check2-circle me-1"></i>Review
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!summary?.PendingVouchers || summary?.PendingVouchers?.length === 0">
+                    <td colspan="6" class="text-center py-4 text-muted">
+                      <i class="bi bi-check-circle-fill text-success fs-3 d-block mb-1"></i>
+                      All vouchers are verified and posted! No pending items.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-top py-2 px-3 d-flex align-items-center justify-content-between small text-muted">
+            <span>Showing top pending items awaiting authorized post.</span>
+            <span class="text-danger fw-semibold cursor-pointer" (click)="openVerification()">Review All Vouchers &rarr;</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Society Bank Accounts & Liquid Balances -->
+      <div class="col-xl-5 col-lg-12">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-0 pt-3 pb-2 d-flex align-items-center justify-content-between">
+            <div>
+              <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="bi bi-bank text-info me-2"></i>Society Bank Accounts & Liquidity
+              </h5>
+              <p class="text-muted small mb-0">Real-time balances across institutional operating accounts</p>
+            </div>
+            <button class="btn btn-outline-info btn-sm fw-semibold" (click)="navigateTo('/admin/bank')">
+              Manage Banks
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0 enterprise-table">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col" class="ps-3">Bank & Branch</th>
+                    <th scope="col">Account No</th>
+                    <th scope="col" class="text-end pe-3">Balance (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let b of summary?.BankAccounts">
+                    <td class="ps-3">
+                      <div class="fw-semibold text-dark text-truncate" style="max-width: 220px;" [title]="b.BankName">
+                        {{ b.BankName }}
+                      </div>
+                      <div class="text-muted small text-truncate" style="max-width: 220px;">
+                        Branch: {{ b.Branch || '-' }}
+                      </div>
+                    </td>
+                    <td>
+                      <code class="text-secondary small">{{ b.AccountNo || '-' }}</code>
+                    </td>
+                    <td class="text-end pe-3">
+                      <span class="fw-bold" [ngClass]="b.CurrentBalance > 0 ? 'text-success' : 'text-muted'">
+                        {{ formatCurrency(b.CurrentBalance) }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+                <tfoot class="table-group-divider bg-light">
+                  <tr>
+                    <th colspan="2" class="ps-3 text-uppercase text-secondary small">Total Liquid Bank Funds</th>
+                    <th class="text-end pe-3 fw-bold text-success fs-6">
+                      {{ formatCurrency(summary?.TotalLiquidFunds) }}
+                    </th>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-top py-2 px-3 d-flex align-items-center justify-content-between small">
+            <span class="text-muted">Direct transfer capability available.</span>
+            <span class="text-primary fw-semibold cursor-pointer" (click)="navigateTo('/admin/rtgs-neft-advice')">
+              RTGS / NEFT Advice &rarr;
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 4: Executive Command Center & Quick Operations -->
+    <div class="card border-0 shadow-sm mb-4 command-center-card">
+      <div class="card-header bg-white border-0 pt-3 pb-2">
+        <h5 class="card-title mb-0 fw-bold text-dark">
+          <i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Executive Command Center & High-Frequency Operations
+        </h5>
+        <p class="text-muted small mb-0">Direct shortcuts for society operators, accountants, and system managers</p>
+      </div>
+      <div class="card-body pt-2 pb-4">
+        <div class="row g-3">
+          <!-- Action 1: New Member Enrollment -->
+          <div class="col-xl-3 col-lg-4 col-md-6">
+            <button type="button" class="btn btn-outline-primary w-100 p-3 text-start quick-action-btn h-100" (click)="navigateTo('/admin/member')">
+              <div class="d-flex align-items-center gap-3">
+                <div class="action-icon bg-primary-subtle text-primary">
+                  <i class="bi bi-person-plus-fill fs-4"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">New Member Enrollment</div>
+                  <div class="text-muted small">Register BSL / BPSCL / Staff</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Action 2: Loan Application -->
+          <div class="col-xl-3 col-lg-4 col-md-6">
+            <button type="button" class="btn btn-outline-success w-100 p-3 text-start quick-action-btn h-100" (click)="navigateTo('/admin/loan-application')">
+              <div class="d-flex align-items-center gap-3">
+                <div class="action-icon bg-success-subtle text-success">
+                  <i class="bi bi-file-earmark-text-fill fs-4"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">Loan Application</div>
+                  <div class="text-muted small">Sanction, surety & disbursement</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Action 3: Receipt Voucher -->
+          <div class="col-xl-3 col-lg-4 col-md-6">
+            <button type="button" class="btn btn-outline-info w-100 p-3 text-start quick-action-btn h-100" (click)="navigateTo('/admin/receipt')">
+              <div class="d-flex align-items-center gap-3">
+                <div class="action-icon bg-info-subtle text-info">
+                  <i class="bi bi-box-arrow-in-down-right fs-4"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">Post Receipt Voucher</div>
+                  <div class="text-muted small">Member recoveries & dues</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Action 4: Payment Voucher -->
+          <div class="col-xl-3 col-lg-4 col-md-6">
+            <button type="button" class="btn btn-outline-danger w-100 p-3 text-start quick-action-btn h-100" (click)="navigateTo('/admin/payment')">
+              <div class="d-flex align-items-center gap-3">
+                <div class="action-icon bg-danger-subtle text-danger">
+                  <i class="bi bi-box-arrow-up-right fs-4"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">Post Payment Voucher</div>
+                  <div class="text-muted small">Cheque, cash & online issues</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Action 5: Head Book & General Ledger -->
+          <div class="col-xl-3 col-lg-4 col-md-6">
+            <button type="button" class="btn btn-outline-secondary w-100 p-3 text-start quick-action-btn h-100" (click)="navigateTo('/admin/head-book')">
+              <div class="d-flex align-items-center gap-3">
+                <div class="action-icon bg-secondary-subtle text-secondary">
+                  <i class="bi bi-journal-bookmark-fill fs-4"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">Head Book & Ledgers</div>
+                  <div class="text-muted small">Member-wise deposit/loan audit</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Action 6: EDP Payroll Advice & Recovery -->
+          <div class="col-xl-3 col-lg-4 col-md-6">
+            <button type="button" class="btn btn-outline-dark w-100 p-3 text-start quick-action-btn h-100" (click)="navigateTo('/admin/schedule')">
+              <div class="d-flex align-items-center gap-3">
+                <div class="action-icon bg-dark-subtle text-dark">
+                  <i class="bi bi-cpu-fill fs-4"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">EDP Payroll Schedule</div>
+                  <div class="text-muted small">Process monthly deductions</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Action 7: RTGS / NEFT Advice -->
+          <div class="col-xl-3 col-lg-4 col-md-6">
+            <button type="button" class="btn btn-outline-primary w-100 p-3 text-start quick-action-btn h-100" (click)="navigateTo('/admin/rtgs-neft-advice')">
+              <div class="d-flex align-items-center gap-3">
+                <div class="action-icon bg-primary-subtle text-primary">
+                  <i class="bi bi-send-check-fill fs-4"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">Bank Advice (RTGS/NEFT)</div>
+                  <div class="text-muted small">Official bank transfer letters</div>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <!-- Action 8: Staff Salary Generation -->
+          <div class="col-xl-3 col-lg-4 col-md-6">
+            <button type="button" class="btn btn-outline-warning w-100 p-3 text-start quick-action-btn h-100" (click)="navigateTo('/admin/staff-salary')">
+              <div class="d-flex align-items-center gap-3">
+                <div class="action-icon bg-warning-subtle text-warning">
+                  <i class="bi bi-wallet2 fs-4"></i>
+                </div>
+                <div>
+                  <div class="fw-bold text-dark">Staff Salary & Dues</div>
+                  <div class="text-muted small">Monthly payroll vouchers</div>
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 5: Credit Risk Alerts (Upcoming Retirements) & Recent Audit Stream -->
+    <div class="row g-4 mb-4">
+      <!-- Left: Credit Risk - Upcoming Member Retirements (Next 90 Days) -->
+      <div class="col-xl-7 col-lg-12">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-0 pt-3 pb-2 d-flex align-items-center justify-content-between">
+            <div>
+              <div class="d-flex align-items-center gap-2">
+                <h5 class="card-title mb-0 fw-bold text-dark">
+                  <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i>Upcoming Member Retirements (Next 90 Days)
+                </h5>
+                <span class="badge bg-warning text-dark">{{ summary?.UpcomingRetirements?.length || 0 }} Members</span>
+              </div>
+              <p class="text-muted small mb-0">High-priority superannuation alerts for terminal loan recovery & share settlement</p>
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" (click)="navigateTo('/admin/member')">
+              All Members
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0 enterprise-table">
+                <thead class="table-light">
+                  <tr>
+                    <th scope="col" class="ps-3">Staff / Member No</th>
+                    <th scope="col">Member Name</th>
+                    <th scope="col">Designation</th>
+                    <th scope="col">Retirement Date</th>
+                    <th scope="col">Time Remaining</th>
+                    <th scope="col" class="text-center pe-3">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of summary?.UpcomingRetirements">
+                    <td class="ps-3">
+                      <div class="fw-bold text-primary">{{ m.StaffNo }}</div>
+                      <div class="text-muted small">Mem: {{ m.MemberNo }}</div>
+                    </td>
+                    <td>
+                      <div class="fw-semibold text-dark">{{ m.MemberName }}</div>
+                    </td>
+                    <td class="text-secondary small">{{ m.Designation || '-' }}</td>
+                    <td class="text-dark small fw-medium">{{ m.RetirementDate | date:'dd-MMM-yyyy' }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="getRetirementBadgeClass(m.DaysRemaining)">
+                        <i class="bi bi-hourglass-split me-1"></i>{{ m.DaysRemaining }} Days
+                      </span>
+                    </td>
+                    <td class="text-center pe-3">
+                      <button class="btn btn-sm btn-outline-primary px-2 py-1" (click)="openMemberPassbook(m)" title="View Member Passbook">
+                        <i class="bi bi-journal-text me-1"></i>Passbook
+                      </button>
+                    </td>
+                  </tr>
+                  <tr *ngIf="!summary?.UpcomingRetirements || summary?.UpcomingRetirements?.length === 0">
+                    <td colspan="6" class="text-center py-4 text-muted">
+                      <i class="bi bi-calendar-check text-success fs-3 d-block mb-1"></i>
+                      No member retirements due in the next 90 days.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-top py-2 px-3 small text-muted">
+            <i class="bi bi-shield-exclamation text-warning me-1"></i>
+            Ensure loan outstanding is communicated to SAIL/BSL personnel before release of final dues and gratuity.
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Recent System Audit Feed -->
+      <div class="col-xl-5 col-lg-12">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white border-0 pt-3 pb-2 d-flex align-items-center justify-content-between">
+            <div>
+              <h5 class="card-title mb-0 fw-bold text-dark">
+                <i class="bi bi-activity text-primary me-2"></i>Recent Transaction Feed
+              </h5>
+              <p class="text-muted small mb-0">Latest ledger postings & audit trail</p>
+            </div>
+            <button class="btn btn-outline-primary btn-sm" (click)="navigateTo('/admin/day-book')">
+              Day Book
+            </button>
+          </div>
+          <div class="card-body p-0">
+            <div class="list-group list-group-flush">
+              <div class="list-group-item p-3" *ngFor="let txn of summary?.RecentTransactions">
+                <div class="d-flex align-items-center justify-content-between mb-1">
+                  <div class="d-flex align-items-center gap-2">
+                    <span class="badge" [ngClass]="getVoucherBadgeClass(txn.VoucherType)">
+                      {{ txn.VoucherType }}
+                    </span>
+                    <strong class="text-dark">{{ txn.VoucherNumber }}</strong>
+                  </div>
+                  <span class="fw-bold text-dark">{{ formatCurrency(txn.Amount) }}</span>
+                </div>
+                <div class="text-secondary small text-truncate" [title]="txn.Narration">
+                  {{ txn.Narration || 'No narration provided' }}
+                </div>
+                <div class="d-flex align-items-center justify-content-between text-muted small mt-1">
+                  <span><i class="bi bi-calendar-event me-1"></i>{{ txn.VoucherDate | date:'dd-MMM-yyyy' }}</span>
+                  <span class="badge bg-light text-secondary border">{{ txn.Status || 'POSTED' }}</span>
+                </div>
+              </div>
+              <div class="p-4 text-center text-muted" *ngIf="!summary?.RecentTransactions || summary?.RecentTransactions?.length === 0">
+                No recent transactions recorded.
+              </div>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-top py-2 px-3 small text-muted text-end">
+            <span class="cursor-pointer text-primary fw-semibold" (click)="navigateTo('/admin/day-book')">
+              View Complete Day Book &rarr;
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
