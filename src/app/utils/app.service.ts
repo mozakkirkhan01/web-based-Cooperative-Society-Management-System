@@ -385,4 +385,9 @@ export class AppService {
   bankAdvice(action: string, obj: any) {
     return this.http.post(this.apiUrl + 'BankAdvice/' + action, obj, { headers: this.headers });
   }
+
+  // Dashboard
+  dashboard(action: string, obj: any) {
+    return this.http.post(this.apiUrl + 'Dashboard/' + action, obj, { headers: this.headers });
+  }
 }
