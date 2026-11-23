@@ -523,8 +523,9 @@
       <table class="official-print-table table table-sm">
         <thead>
           <tr>
-            <th class="text-center" style="width: 30px;">#</th>
-            <th class="text-start">StaffNo Name</th>
+            <th class="text-center" style="width: 25px;">#</th>
+            <th class="text-start" style="width: 75px;">Staff No</th>
+            <th class="text-start">Name</th>
             <th class="text-start">A/c No.</th>
             <th class="text-start">IFSC</th>
             <th class="text-start">Bank</th>
@@ -535,7 +536,8 @@
         <tbody>
           <tr *ngFor="let r of rows; let idx = index">
             <td class="text-center">{{idx + 1}}</td>
-            <td class="text-start fw-bold">{{r.StaffNo}} &nbsp;{{r.MemberName}}</td>
+            <td class="text-start fw-bold">{{r.StaffNo}}</td>
+            <td class="text-start fw-bold">{{r.MemberName}}</td>
             <td class="text-start fw-bold">{{r.AccountNo}}</td>
             <td class="text-start fw-bold">{{r.IFSCCode}}</td>
             <td class="text-start">{{r.BankName}}</td>
@@ -546,14 +548,14 @@
         <tfoot>
           <!-- Total Count & Grand Total -->
           <tr class="fw-bold">
-            <td colspan="2" class="text-start">Total: &nbsp;&nbsp;<strong>{{rows.length}}</strong></td>
+            <td colspan="3" class="text-start">Total: &nbsp;&nbsp;<strong>{{rows.length}}</strong></td>
             <td colspan="4"></td>
             <td class="text-end fw-bold">{{totalAmount | number:'1.2-2'}}</td>
           </tr>
           <!-- Amount in Words -->
           <tr class="words-row">
             <td colspan="2" class="text-start">Amount in Words :</td>
-            <td colspan="5" class="text-start fw-bold">{{amountToWords(totalAmount)}}</td>
+            <td colspan="6" class="text-start fw-bold">{{amountToWords(totalAmount)}}</td>
           </tr>
         </tfoot>
       </table>
