@@ -528,6 +528,7 @@
             <th class="text-start">A/c No.</th>
             <th class="text-start">IFSC</th>
             <th class="text-start">Bank</th>
+            <th class="text-start">Branch</th>
             <th class="text-end">Amount</th>
           </tr>
         </thead>
@@ -537,7 +538,8 @@
             <td class="text-start fw-bold">{{r.StaffNo}} &nbsp;{{r.MemberName}}</td>
             <td class="text-start fw-bold">{{r.AccountNo}}</td>
             <td class="text-start fw-bold">{{r.IFSCCode}}</td>
-            <td class="text-start">{{r.BankBranch || (r.BranchName ? (r.BankName + ', ' + r.BranchName) : r.BankName)}}</td>
+            <td class="text-start">{{r.BankName}}</td>
+            <td class="text-start">{{r.BranchName || '-'}}</td>
             <td class="text-end fw-bold">{{r.Amount | number:'1.2-2'}}</td>
           </tr>
         </tbody>
@@ -545,13 +547,13 @@
           <!-- Total Count & Grand Total -->
           <tr class="fw-bold">
             <td colspan="2" class="text-start">Total: &nbsp;&nbsp;<strong>{{rows.length}}</strong></td>
-            <td colspan="3"></td>
+            <td colspan="4"></td>
             <td class="text-end fw-bold">{{totalAmount | number:'1.2-2'}}</td>
           </tr>
           <!-- Amount in Words -->
           <tr class="words-row">
             <td colspan="2" class="text-start">Amount in Words :</td>
-            <td colspan="4" class="text-start fw-bold">{{amountToWords(totalAmount)}}</td>
+            <td colspan="5" class="text-start fw-bold">{{amountToWords(totalAmount)}}</td>
           </tr>
         </tfoot>
       </table>

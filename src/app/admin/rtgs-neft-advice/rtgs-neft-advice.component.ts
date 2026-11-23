@@ -731,13 +731,14 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
       doc.text(`Report Date: ${this.reportDate}`, pageWidth - 14, 44, { align: 'right' });
 
       // 4. Data Table (Image 2 structure)
-      // Headers: # | StaffNo Name | A/c No. | IFSC | Bank | Amount
+      // Headers: # | StaffNo Name | A/c No. | IFSC | Bank | Branch | Amount
       const bodyData = this.rows.map((r, idx) => [
         (idx + 1).toString(),
         `${r.StaffNo}  ${r.MemberName}`,
         r.AccountNo || '-',
         r.IFSCCode || '-',
-        r.BankBranch || r.BankName || '-',
+        r.BankName || '-',
+        r.BranchName || '-',
         Number(r.Amount || 0).toFixed(2)
       ]);
 
@@ -746,11 +747,11 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
 
       autoTable(doc, {
         startY: 47,
-        head: [['#', 'StaffNo Name', 'A/c No.', 'IFSC', 'Bank', 'Amount']],
+        head: [['#', 'StaffNo Name', 'A/c No.', 'IFSC', 'Bank', 'Branch', 'Amount']],
         body: bodyData,
         foot: [
-          ['Total:', `${this.rows.length}`, '', '', '', totalStr],
-          [{ content: `Amount in Words :  ${wordsStr}`, colSpan: 6, styles: { fontStyle: 'bold', halign: 'left' } }]
+          ['Total:', `${this.rows.length}`, '', '', '', '', totalStr],
+          [{ content: `Amount in Words :  ${wordsStr}`, colSpan: 7, styles: { fontStyle: 'bold', halign: 'left' } }]
         ],
         theme: 'plain',
         headStyles: {
@@ -763,12 +764,13 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
           cellPadding: 2
         },
         columnStyles: {
-          0: { cellWidth: 10, halign: 'center' },
-          1: { cellWidth: 55, fontStyle: 'bold' },
-          2: { cellWidth: 38, fontStyle: 'bold' },
-          3: { cellWidth: 30, fontStyle: 'bold' },
-          4: { cellWidth: 42 },
-          5: { cellWidth: 25, halign: 'right', fontStyle: 'bold' }
+          0: { cellWidth: 8, halign: 'center' },
+          1: { cellWidth: 48, fontStyle: 'bold' },
+          2: { cellWidth: 34, fontStyle: 'bold' },
+          3: { cellWidth: 26, fontStyle: 'bold' },
+          4: { cellWidth: 28 },
+          5: { cellWidth: 20 },
+          6: { cellWidth: 22, halign: 'right', fontStyle: 'bold' }
         },
         bodyStyles: {
           textColor: 0,
