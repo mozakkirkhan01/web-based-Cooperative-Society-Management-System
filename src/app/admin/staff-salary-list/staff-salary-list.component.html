@@ -1,1 +1,613 @@
-<p>staff-salary-list works!</p>
+<app-progress *ngIf="dataLoading"></app-progress>
+
+<main id="main" class="main" *ngIf="action.ResponseReceived">
+  <!-- Page Header & Action Bar -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom no-print">
+    <div class="pagetitle mb-2 mb-md-0">
+      <h1 class="h3 fw-bold text-dark mb-0">{{action.MenuTitle || 'Staff Salary List'}}</h1>
+      <nav>
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+          <li class="breadcrumb-item">{{action.ParentMenuTitle || 'Staff Management'}}</li>
+          <li class="breadcrumb-item active">{{action.MenuTitle || 'Staff Salary List'}}</li>
+        </ol>
+      </nav>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <a routerLink="/admin/staff-salary" class="btn btn-primary btn-sm px-3 shadow-sm fw-bold">
+        <i class="bi bi-plus-circle me-1"></i> Process / New Salary
+      </a>
+      <button type="button" class="btn btn-outline-secondary btn-sm px-3" (click)="resetFilters()">
+        <i class="bi bi-arrow-clockwise me-1"></i> Reset
+      </button>
+    </div>
+  </div>
+
+  <section class="section dashboard no-print">
+    <!-- Top Summary Metric Cards -->
+    <div class="row g-3 mb-3">
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-3 stat-card">
+          <div class="card-body p-3 d-flex align-items-center">
+            <div class="rounded-circle bg-primary-subtle text-primary p-3 me-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+              <i class="bi bi-people-fill fs-4"></i>
+            </div>
+            <div>
+              <div class="text-muted small fw-bold text-uppercase">Total Salaries Processed</div>
+              <div class="fs-4 fw-bold text-dark">{{ totalProcessed }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-3 stat-card">
+          <div class="card-body p-3 d-flex align-items-center">
+            <div class="rounded-circle bg-success-subtle text-success p-3 me-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+              <i class="bi bi-currency-rupee fs-4"></i>
+            </div>
+            <div>
+              <div class="text-muted small fw-bold text-uppercase">Total Amount Disbursed</div>
+              <div class="fs-4 fw-bold text-success">{{ totalDisbursed | currency:'INR':'symbol':'1.2-2' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm rounded-3 stat-card">
+          <div class="card-body p-3 d-flex align-items-center">
+            <div class="rounded-circle bg-info-subtle text-info p-3 me-3 d-flex align-items-center justify-content-center" style="width: 52px; height: 52px;">
+              <i class="bi bi-calculator fs-4"></i>
+            </div>
+            <div>
+              <div class="text-muted small fw-bold text-uppercase">Average Net Pay</div>
+              <div class="fs-4 fw-bold text-info">{{ averageSalary | currency:'INR':'symbol':'1.2-2' }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter Control Card -->
+    <div class="card border-0 shadow-sm rounded-3 mb-3">
+      <div class="card-body p-3">
+        <div class="row g-2 align-items-end">
+          <div class="col-md-2 col-sm-6">
+            <label class="form-label small text-muted fw-bold mb-1">FROM DATE</label>
+            <input type="date" class="form-control form-control-sm" [(ngModel)]="fromDate">
+          </div>
+
+          <div class="col-md-2 col-sm-6">
+            <label class="form-label small text-muted fw-bold mb-1">TO DATE</label>
+            <input type="date" class="form-control form-control-sm" [(ngModel)]="toDate">
+          </div>
+
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label small text-muted fw-bold mb-1">STAFF MEMBER</label>
+            <select class="form-select form-select-sm" [(ngModel)]="selectedMemberId">
+              <option [ngValue]="null">-- All Staff Members --</option>
+              <option *ngFor="let s of StaffList" [value]="s.MemberId">{{ s.DisplayText }}</option>
+            </select>
+          </div>
+
+          <div class="col-md-3 col-sm-6">
+            <label class="form-label small text-muted fw-bold mb-1">SEARCH</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light border-end-0"><i class="bi bi-search"></i></span>
+              <input type="text" class="form-control form-control-sm border-start-0" 
+                     placeholder="Staff No, Name, Bank, Chq..." 
+                     [(ngModel)]="searchText" (input)="applyFilter()">
+            </div>
+          </div>
+
+          <div class="col-md-2 col-sm-12 d-flex gap-2">
+            <button type="button" class="btn btn-primary btn-sm w-100 fw-bold" (click)="fetchSalaryList()">
+              <i class="bi bi-funnel-fill me-1"></i> Filter
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="card border-0 shadow-sm rounded-3">
+      <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0 fw-bold fs-6 text-dark">
+          <i class="bi bi-cash-stack text-primary me-2"></i>Paid Salaries
+        </h5>
+        <span class="badge bg-light text-dark border px-2 py-1">
+          Showing {{ filteredRecords.length }} record(s)
+        </span>
+      </div>
+
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0 custom-table">
+            <thead class="table-light">
+              <tr class="small text-muted text-uppercase text-nowrap">
+                <th style="width: 45px;" class="text-center">#</th>
+                <th>Salary Date</th>
+                <th>Staff No</th>
+                <th>Staff Name</th>
+                <th>Designation</th>
+                <th class="text-end">Gross (₹)</th>
+                <th class="text-end">Deductions (₹)</th>
+                <th class="text-end">Net Pay (₹)</th>
+                <th class="text-center">Mode</th>
+                <th>Bank / Cheque</th>
+                <th class="text-center" style="width: 140px;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of filteredRecords; let i = index">
+                <td class="text-center fw-semibold text-muted">{{ i + 1 }}</td>
+                <td class="text-nowrap fw-semibold">{{ item.SalaryDateDisplay }}</td>
+                <td>
+                  <span class="badge bg-secondary-subtle text-secondary-emphasis fw-bold px-2 py-1">
+                    {{ item.StaffNoFormatted }}
+                  </span>
+                </td>
+                <td class="fw-bold text-dark">{{ item.MemberName }}</td>
+                <td class="text-muted small">{{ item.Designation || '—' }}</td>
+                <td class="text-end fw-semibold text-dark">{{ item.TotalPayments | number:'1.2-2' }}</td>
+                <td class="text-end fw-semibold text-danger">{{ item.TotalDeductions | number:'1.2-2' }}</td>
+                <td class="text-end fw-bold text-success">{{ item.NetPayment | number:'1.2-2' }}</td>
+                <td class="text-center">
+                  <span class="badge" [ngClass]="item.PaymentMode === 1 ? 'bg-primary-subtle text-primary' : 'bg-warning-subtle text-dark'">
+                    {{ item.PaymentModeText }}
+                  </span>
+                </td>
+                <td>
+                  <div class="small fw-semibold text-truncate" style="max-width: 180px;">{{ item.BankName || 'Cash' }}</div>
+                  <div class="small text-muted" *ngIf="item.ChequeNo">Chq: {{ item.ChequeNo }}</div>
+                </td>
+                <td class="text-center text-nowrap">
+                  <div class="btn-group btn-group-sm" role="group">
+                    <!-- View Eye Icon Button -->
+                    <button type="button" class="btn btn-outline-info btn-sm" 
+                            title="View Salary Breakdown" 
+                            (click)="viewDetails(item)">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                    <!-- Print Button -->
+                    <button type="button" class="btn btn-outline-secondary btn-sm" 
+                            title="Print Payslip" 
+                            (click)="printPayslip(item)">
+                      <i class="bi bi-printer"></i>
+                    </button>
+                    <!-- Download PDF Button -->
+                    <button type="button" class="btn btn-outline-primary btn-sm" 
+                            title="Download PDF Payslip" 
+                            (click)="downloadPayslip(item)">
+                      <i class="bi bi-download"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+              <tr *ngIf="filteredRecords.length === 0">
+                <td colspan="11" class="text-center py-5 text-muted">
+                  <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                  No paid salary records found for the selected criteria.
+                </td>
+              </tr>
+            </tbody>
+            <tfoot class="table-light fw-bold" *ngIf="filteredRecords.length > 0">
+              <tr>
+                <td colspan="7" class="text-end">Total Disbursed:</td>
+                <td class="text-end text-success">{{ totalDisbursed | number:'1.2-2' }}</td>
+                <td colspan="3"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIEW SALARY DETAILS MODAL -->
+  <div class="modal fade no-print" id="modalSalaryDetails" tabindex="-1" aria-labelledby="modalSalaryDetailsLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content shadow border-0" *ngIf="selectedSalary">
+        <div class="modal-header bg-primary text-white py-2">
+          <h5 class="modal-title fs-6 fw-bold" id="modalSalaryDetailsLabel">
+            <i class="bi bi-file-earmark-person me-2"></i>Staff Salary Details — {{ selectedSalary.MemberName }} (Staff #{{ selectedSalary.StaffNoFormatted }})
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeModal()" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body p-3">
+          <!-- Summary Header Strip -->
+          <div class="row g-2 mb-3 bg-light rounded p-2 border">
+            <div class="col-md-3 col-6">
+              <span class="text-muted small d-block">Staff No</span>
+              <strong class="text-dark">{{ selectedSalary.StaffNoFormatted }}</strong>
+            </div>
+            <div class="col-md-3 col-6">
+              <span class="text-muted small d-block">Name</span>
+              <strong class="text-dark">{{ selectedSalary.MemberName }}</strong>
+            </div>
+            <div class="col-md-3 col-6">
+              <span class="text-muted small d-block">Salary Date</span>
+              <strong class="text-dark">{{ selectedSalary.SalaryDateDisplay }}</strong>
+            </div>
+            <div class="col-md-3 col-6">
+              <span class="text-muted small d-block">Designation</span>
+              <strong class="text-dark">{{ selectedSalary.Designation || '—' }}</strong>
+            </div>
+          </div>
+
+          <!-- 2 Columns: Payments & Deductions -->
+          <div class="row g-3 mb-3">
+            <!-- Payments Column -->
+            <div class="col-md-6">
+              <div class="card border-0 shadow-sm h-100 bg-white">
+                <div class="card-header bg-success-subtle py-2 border-bottom">
+                  <h6 class="mb-0 fw-bold text-success-emphasis fs-7">
+                    <i class="bi bi-wallet2 me-1"></i> PAYMENTS & EARNINGS
+                  </h6>
+                </div>
+                <div class="card-body p-2">
+                  <table class="table table-sm table-borderless mb-0">
+                    <tbody>
+                      <tr>
+                        <td class="text-muted">Basic Pay</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Payments ? selectedSalary.Payments.BasicPay : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Fixed DA</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Payments ? selectedSalary.Payments.FixedDA : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Variable DA</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Payments ? selectedSalary.Payments.VariableDA : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">House Rent Allowance</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Payments ? selectedSalary.Payments.HouseRent : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Conveyance Allowance</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Payments ? selectedSalary.Payments.Conveyance : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Medical Allowance</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Payments ? selectedSalary.Payments.Medical : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Other Payments</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Payments ? selectedSalary.Payments.OtherPayments : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                    </tbody>
+                    <tfoot class="border-top">
+                      <tr class="fw-bold">
+                        <td class="text-dark">Total Payments:</td>
+                        <td class="text-end text-success fs-6">₹ {{ (selectedSalary.TotalPayments || 0) | number:'1.2-2' }}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Deductions Column -->
+            <div class="col-md-6">
+              <div class="card border-0 shadow-sm h-100 bg-white">
+                <div class="card-header bg-danger-subtle py-2 border-bottom">
+                  <h6 class="mb-0 fw-bold text-danger-emphasis fs-7">
+                    <i class="bi bi-dash-circle me-1"></i> DEDUCTIONS & RECOVERIES
+                  </h6>
+                </div>
+                <div class="card-body p-2">
+                  <table class="table table-sm table-borderless mb-0">
+                    <tbody>
+                      <tr>
+                        <td class="text-muted">CPF Staff Cont.</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Deductions ? selectedSalary.Deductions.CPFStaffCont : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Medical Staff Cont.</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Deductions ? selectedSalary.Deductions.MedicalCont : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Staff Loan Principal</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Deductions ? selectedSalary.Deductions.StaffLoanPrincipal : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Staff Loan Interest</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Deductions ? selectedSalary.Deductions.StaffLoanInterest : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Quarter / House Rent</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Deductions ? selectedSalary.Deductions.HouseRentDeduction : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Salary Advance</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Deductions ? selectedSalary.Deductions.SalaryAdvanceRecovery : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Festival Advance</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Deductions ? selectedSalary.Deductions.FestivalAdvanceRecovery : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Variable DA Recovery</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Deductions ? selectedSalary.Deductions.VDARecovery : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                      <tr>
+                        <td class="text-muted">Income Tax (TDS)</td>
+                        <td class="text-end fw-semibold">{{ (selectedSalary.Deductions ? selectedSalary.Deductions.IncomeTaxStaff : 0) | number:'1.2-2' }}</td>
+                      </tr>
+                    </tbody>
+                    <tfoot class="border-top">
+                      <tr class="fw-bold">
+                        <td class="text-dark">Total Deductions:</td>
+                        <td class="text-end text-danger fs-6">₹ {{ (selectedSalary.TotalDeductions || 0) | number:'1.2-2' }}</td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Summary Section (Leaves, Balances, Net Salary) -->
+          <div class="row g-3">
+            <div class="col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <h6 class="fw-bold small text-muted text-uppercase mb-2">Leaves Used in Month</h6>
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Earned Leave (EL):</span>
+                  <strong>{{ selectedSalary.MonthEL || 0 }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Casual Leave (CL):</span>
+                  <strong>{{ selectedSalary.MonthCL || 0 }}</strong>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span>Half Pay Leave (HPL):</span>
+                  <strong>{{ selectedSalary.MonthHPL || 0 }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="border rounded p-2 bg-light">
+                <h6 class="fw-bold small text-muted text-uppercase mb-2">Balances</h6>
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Loan Balance:</span>
+                  <strong>₹ {{ (selectedSalary.LoanBalance || 0) | number:'1.2-2' }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Festival Adv Balance:</span>
+                  <strong>₹ {{ (selectedSalary.FestBalance || 0) | number:'1.2-2' }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-4">
+              <div class="border rounded p-2 bg-primary-subtle text-primary-emphasis">
+                <h6 class="fw-bold small text-uppercase mb-2">Payment Settlement</h6>
+                <div class="d-flex justify-content-between mb-1">
+                  <span>Paid By:</span>
+                  <strong>{{ selectedSalary.PaymentModeText }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mb-1" *ngIf="selectedSalary.BankName">
+                  <span>Bank:</span>
+                  <span class="text-truncate ms-2" style="max-width: 130px;">{{ selectedSalary.BankName }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-1" *ngIf="selectedSalary.ChequeNo">
+                  <span>Cheque No:</span>
+                  <strong>{{ selectedSalary.ChequeNo }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mt-2 pt-1 border-top fw-bold">
+                  <span>Net Salary:</span>
+                  <span class="fs-6 text-success">₹ {{ (selectedSalary.NetPayment || 0) | number:'1.2-2' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light py-2">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="closeModal()">Close</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="printPayslip(selectedSalary)">
+            <i class="bi bi-printer me-1"></i> Print Payslip
+          </button>
+          <button type="button" class="btn btn-primary btn-sm" (click)="downloadPayslip(selectedSalary)">
+            <i class="bi bi-download me-1"></i> Download PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRINT-ONLY SHEET (FOR PAPER PRINTING) -->
+  <div class="print-only-container" *ngIf="selectedSalary">
+    <div class="payslip-print-sheet">
+      <div class="payslip-header">
+        <h3 class="society-title">Bokaro Steel Employees (TA/Med./Mat.) Co-op. Cr. Soc. Ltd.</h3>
+        <p class="society-sub">(Regd. No.- BAGH-6/78) &nbsp;&nbsp; Old Admn. Bldg., Bokaro Steel City-827001</p>
+        <h4 class="payslip-title">Staff Payslip</h4>
+      </div>
+
+      <div class="staff-info-box">
+        <div class="info-row">
+          <div class="info-cell"><strong>Staff No.:</strong> {{ selectedSalary.StaffNoFormatted }}</div>
+          <div class="info-cell"><strong>Name:</strong> {{ selectedSalary.MemberName | uppercase }}</div>
+        </div>
+        <div class="info-row">
+          <div class="info-cell"><strong>Salary Dt.:</strong> {{ selectedSalary.SalaryDateDisplay }}</div>
+          <div class="info-cell"><strong>Desig.:</strong> {{ (selectedSalary.Designation || '') | uppercase }}</div>
+        </div>
+      </div>
+
+      <!-- MODERN PAYSLIP BODY -->
+      <div class="modern-payslip-body">
+        <!-- 1. Two-Column Modern Earnings & Deductions Table -->
+        <table class="modern-slip-table">
+          <thead>
+            <tr class="main-head-row">
+              <th colspan="2" class="text-start ps-2">EARNINGS / PAYMENTS</th>
+              <th colspan="2" class="text-start ps-2 border-left-rule">DEDUCTIONS & RECOVERIES</th>
+            </tr>
+            <tr class="sub-head-row">
+              <th class="ps-2 col-desc">Particulars</th>
+              <th class="text-end pe-2 col-amt">Amount (₹)</th>
+              <th class="ps-2 col-desc border-left-rule">Particulars</th>
+              <th class="text-end pe-2 col-amt">Amount (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="ps-2">Basic Pay</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Payments?.BasicPay) }}</td>
+              <td class="ps-2 border-left-rule">CPF Staff Contribution</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Deductions?.CPFStaffCont) }}</td>
+            </tr>
+            <tr>
+              <td class="ps-2">Fixed D.A.</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Payments?.FixedDA) }}</td>
+              <td class="ps-2 border-left-rule">Medical Fund (Staff Cont.)</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Deductions?.MedicalCont) }}</td>
+            </tr>
+            <tr>
+              <td class="ps-2">Variable D.A.</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Payments?.VariableDA) }}</td>
+              <td class="ps-2 border-left-rule">Staff Loan Principal Recovery</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Deductions?.StaffLoanPrincipal) }}</td>
+            </tr>
+            <tr>
+              <td class="ps-2">House Rent Allowance (HRA)</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Payments?.HouseRent) }}</td>
+              <td class="ps-2 border-left-rule">Staff Loan Interest</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Deductions?.StaffLoanInterest) }}</td>
+            </tr>
+            <tr>
+              <td class="ps-2">Conveyance Allowance</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Payments?.Conveyance) }}</td>
+              <td class="ps-2 border-left-rule">Quarter / House Rent Recovery</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Deductions?.HouseRentDeduction) }}</td>
+            </tr>
+            <tr>
+              <td class="ps-2">Medical Allowance</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Payments?.Medical) }}</td>
+              <td class="ps-2 border-left-rule">Salary Advance Recovery</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Deductions?.SalaryAdvanceRecovery) }}</td>
+            </tr>
+            <tr>
+              <td class="ps-2">Other Payments</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Payments?.OtherPayments) }}</td>
+              <td class="ps-2 border-left-rule">Festival Advance Recovery</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Deductions?.FestivalAdvanceRecovery) }}</td>
+            </tr>
+            <tr>
+              <td class="ps-2"></td>
+              <td class="text-end pe-2"></td>
+              <td class="ps-2 border-left-rule">Variable D.A. Recovery</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Deductions?.VDARecovery) }}</td>
+            </tr>
+            <tr>
+              <td class="ps-2"></td>
+              <td class="text-end pe-2"></td>
+              <td class="ps-2 border-left-rule">Income Tax (TDS)</td>
+              <td class="text-end pe-2">{{ num(selectedSalary.Deductions?.IncomeTaxStaff) }}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr class="total-summary-row">
+              <td class="ps-2 fw-bold">Total Earnings (Gross)</td>
+              <td class="text-end pe-2 fw-bold">₹ {{ num(selectedSalary.TotalPayments) }}</td>
+              <td class="ps-2 fw-bold border-left-rule">Total Deductions</td>
+              <td class="text-end pe-2 fw-bold">₹ {{ num(selectedSalary.TotalDeductions) }}</td>
+            </tr>
+          </tfoot>
+        </table>
+
+        <!-- 2. Bottom 3-Card Summary Strip -->
+        <div class="modern-bottom-strip">
+          <!-- Card 1: Leaves Used -->
+          <div class="summary-card">
+            <div class="card-head-title">LEAVES USED (MONTH)</div>
+            <table class="inner-summary-table">
+              <tr>
+                <td>Earned Leave (EL):</td>
+                <td class="text-end fw-bold">{{ selectedSalary.MonthEL || 0 }}</td>
+              </tr>
+              <tr>
+                <td>Casual Leave (CL):</td>
+                <td class="text-end fw-bold">{{ selectedSalary.MonthCL || 0 }}</td>
+              </tr>
+              <tr>
+                <td>Half Pay Leave (HPL):</td>
+                <td class="text-end fw-bold">{{ selectedSalary.MonthHPL || 0 }}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Card 2: Balances & Dues -->
+          <div class="summary-card">
+            <div class="card-head-title">BALANCES & DUES</div>
+            <table class="inner-summary-table">
+              <tr>
+                <td>Staff Loan Balance:</td>
+                <td class="text-end fw-bold">₹ {{ num(selectedSalary.LoanBalance) }}</td>
+              </tr>
+              <tr>
+                <td>Festival Adv. Balance:</td>
+                <td class="text-end fw-bold">₹ {{ num(selectedSalary.FestBalance) }}</td>
+              </tr>
+              <tr>
+                <td>Previous Dues:</td>
+                <td class="text-end fw-bold">₹ {{ num(selectedSalary.PrevDues) }}</td>
+              </tr>
+              <tr>
+                <td>Next Dues:</td>
+                <td class="text-end fw-bold">₹ {{ num(selectedSalary.NextDues) }}</td>
+              </tr>
+            </table>
+          </div>
+
+          <!-- Card 3: Net Salary & Payment Details -->
+          <div class="summary-card highlight-card">
+            <div class="card-head-title">NET SALARY & SETTLEMENT</div>
+            <div class="net-pay-box">
+              <div class="net-title">NET SALARY PAYABLE</div>
+              <div class="net-val">₹ {{ num(selectedSalary.NetPayment) }}</div>
+            </div>
+            <div class="settlement-details-list">
+              <div class="settle-line">
+                <span class="settle-label">Paid By:</span>
+                <span class="settle-value fw-bold">{{ selectedSalary.PaymentModeText }}</span>
+              </div>
+              <div class="settle-line" *ngIf="selectedSalary.ChequeNo">
+                <span class="settle-label">Cheque No:</span>
+                <span class="settle-value fw-bold">{{ selectedSalary.ChequeNo }}</span>
+              </div>
+              <div class="settle-line bank-line" *ngIf="selectedSalary.BankName">
+                <span class="settle-label">Bank Name:</span>
+                <span class="settle-value bank-name-val">{{ selectedSalary.BankName }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Official Signatures Strip -->
+        <div class="modern-signature-strip">
+          <div class="sig-box">
+            <div class="sig-border"></div>
+            <div class="sig-label">Employee Signature</div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-border"></div>
+            <div class="sig-label">Prepared By / Accountant</div>
+          </div>
+          <div class="sig-box">
+            <div class="sig-border"></div>
+            <div class="sig-label">Secretary / Chairman</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>

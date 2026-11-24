@@ -1,0 +1,351 @@
+/* Staff Salary List Styles */
+.custom-table th {
+  font-weight: 600;
+  font-size: 0.8rem;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+  padding: 0.65rem 0.75rem;
+}
+
+.custom-table td {
+  font-size: 0.875rem;
+  padding: 0.65rem 0.75rem;
+  vertical-align: middle;
+}
+
+.stat-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 .5rem 1rem rgba(0,0,0,.08)!important;
+}
+
+.fs-7 {
+  font-size: 0.85rem;
+}
+
+/* Hide print-only sheet on normal screen */
+.print-only-container {
+  display: none;
+}
+
+/* Print Styles */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 6mm 10mm 6mm 10mm;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    min-height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Completely remove non-printable layout chrome, modal dialogs & backdrops */
+  .no-print,
+  .modal,
+  .modal-backdrop,
+  .modal-dialog,
+  .modal-content,
+  #modalSalaryDetails,
+  .section,
+  .pagetitle,
+  nav,
+  .breadcrumb,
+  header,
+  footer,
+  aside,
+  #header,
+  #sidebar,
+  .sidebar,
+  .navbar,
+  .back-to-top {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  main#main,
+  main.main {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  .print-only-container {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 2mm 0 !important;
+    background: #fff !important;
+    color: #000 !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-only-container * {
+    visibility: visible !important;
+  }
+
+  .payslip-print-sheet {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    max-width: 185mm !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .payslip-header {
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .society-title {
+    font-size: 14pt !important;
+    font-weight: bold !important;
+    margin-bottom: 1px !important;
+    color: #000 !important;
+  }
+
+  .society-sub {
+    font-size: 8.5pt !important;
+    margin-bottom: 4px !important;
+    color: #000 !important;
+  }
+
+  .payslip-title {
+    font-size: 12.5pt !important;
+    font-weight: bold !important;
+    text-decoration: underline !important;
+    margin-top: 3px !important;
+    margin-bottom: 6px !important;
+    color: #000 !important;
+  }
+
+  .staff-info-box {
+    border: 1px solid #000 !important;
+    padding: 4px 8px !important;
+    margin-bottom: 6px !important;
+    font-family: Arial, sans-serif !important;
+    background: transparent !important;
+  }
+
+  .info-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    padding: 1.5px 0 !important;
+  }
+
+  .info-cell {
+    font-size: 9.5pt !important;
+    width: 48% !important;
+    color: #000 !important;
+  }
+
+  /* Modern Payslip Body Styles */
+  .modern-payslip-body {
+    width: 100% !important;
+    font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif !important;
+    color: #000 !important;
+  }
+
+  .modern-slip-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    border: 1px solid #000 !important;
+    margin-bottom: 6px !important;
+    font-size: 8.5pt !important;
+  }
+
+  .modern-slip-table th,
+  .modern-slip-table td {
+    padding: 2.5px 4px !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+    line-height: 1.25 !important;
+    color: #000 !important;
+  }
+
+  .modern-slip-table thead .main-head-row th {
+    background-color: #f1f5f9 !important;
+    font-weight: bold !important;
+    font-size: 8.5pt !important;
+    border-bottom: 1px solid #000 !important;
+    padding: 3.5px 6px !important;
+    letter-spacing: 0.3px !important;
+    color: #000 !important;
+  }
+
+  .modern-slip-table thead .sub-head-row th {
+    background-color: #f8fafc !important;
+    font-size: 7.8pt !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    border-bottom: 1px solid #000 !important;
+    padding: 2px 6px !important;
+  }
+
+  .modern-slip-table tfoot .total-summary-row td {
+    background-color: #f8fafc !important;
+    border-top: 1.5px solid #000 !important;
+    border-bottom: none !important;
+    font-size: 9pt !important;
+    font-weight: bold !important;
+    padding: 3.5px 6px !important;
+    color: #000 !important;
+  }
+
+  .border-left-rule {
+    border-left: 1px solid #000 !important;
+  }
+
+  .col-desc {
+    width: 32% !important;
+  }
+
+  .col-amt {
+    width: 18% !important;
+  }
+
+  /* Bottom 3-Card Summary Strip */
+  .modern-bottom-strip {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .summary-card {
+    flex: 1 !important;
+    border: 1px solid #000 !important;
+    padding: 4px 6px !important;
+    box-sizing: border-box !important;
+    background: #fff !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+  }
+
+  .card-head-title {
+    font-size: 7.8pt !important;
+    font-weight: bold !important;
+    color: #0f172a !important;
+    text-transform: uppercase !important;
+    border-bottom: 1px solid #000 !important;
+    padding-bottom: 2px !important;
+    margin-bottom: 3px !important;
+    letter-spacing: 0.2px !important;
+  }
+
+  .inner-summary-table {
+    width: 100% !important;
+    font-size: 8pt !important;
+    border-collapse: collapse !important;
+  }
+
+  .inner-summary-table td {
+    padding: 1.5px 0 !important;
+    color: #000 !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Highlight card for Net Salary */
+  .highlight-card {
+    border: 1.5px solid #000 !important;
+    background: #fafafa !important;
+  }
+
+  .net-pay-box {
+    background: #f1f5f9 !important;
+    border: 1px solid #000 !important;
+    padding: 2.5px 5px !important;
+    text-align: center !important;
+    margin-bottom: 3px !important;
+  }
+
+  .net-pay-box .net-title {
+    font-size: 7.2pt !important;
+    font-weight: bold !important;
+    color: #334155 !important;
+    letter-spacing: 0.3px !important;
+  }
+
+  .net-pay-box .net-val {
+    font-size: 11pt !important;
+    font-weight: bold !important;
+    color: #000 !important;
+  }
+
+  .settlement-details-list {
+    font-size: 7.5pt !important;
+  }
+
+  .settle-line {
+    display: flex !important;
+    justify-content: space-between !important;
+    padding: 1px 0 !important;
+  }
+
+  .settle-label {
+    color: #475569 !important;
+  }
+
+  .bank-name-val {
+    max-width: 65% !important;
+    text-align: right !important;
+    word-break: break-word !important;
+    line-height: 1.15 !important;
+    font-weight: bold !important;
+    color: #000 !important;
+  }
+
+  /* Signatures Strip */
+  .modern-signature-strip {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin-top: 15mm !important;
+    padding: 0 4mm !important;
+  }
+
+  .sig-box {
+    text-align: center !important;
+    width: 28% !important;
+  }
+
+  .sig-border {
+    border-top: 1px solid #000 !important;
+    margin-bottom: 3px !important;
+    width: 100% !important;
+  }
+
+  .sig-label {
+    font-size: 8pt !important;
+    font-weight: 600 !important;
+    color: #000 !important;
+  }
+}
