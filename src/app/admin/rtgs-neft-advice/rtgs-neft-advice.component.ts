@@ -41,6 +41,7 @@ export interface BankAdviceItem {
   BranchName: string;
   BankBranch: string;
   Amount: number;
+  BankCommission?: number;
   ApplicationNumber?: string;
   VerifiedDate?: string;
   Remarks?: string;
@@ -69,6 +70,7 @@ export interface ManualEntryModel {
   AccountNo: string;
   IFSCCode: string;
   Amount: number | null;
+  BankCommission: number | null;
   Remarks: string;
 }
 
@@ -247,6 +249,11 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
         this.dataLoading = false;
         if (res.Message === ConstantData.SuccessMessage) {
           const fetched: BankAdviceItem[] = res.Advices || [];
+          fetched.forEach(item => {
+            if (item.BankCommission === undefined || item.BankCommission === null) {
+              item.BankCommission = this.calculateBankCharges(item.Amount) ?? 0;
+            }
+          });
           this.rows = fetched;
           this.currentPage = 1;
           this.applyFilterAndSort();
@@ -282,8 +289,33 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
       AccountNo: '',
       IFSCCode: '',
       Amount: null,
+      BankCommission: null,
       Remarks: ''
     };
+  }
+
+  calculateBankCharges(amount: number | null): number | null {
+    if (amount === null || amount === undefined || isNaN(amount) || amount <= 0) {
+      return null;
+    }
+    const val = Number(amount);
+    // Standard Bank Slab based on SBI NEFT/RTGS Schedule
+    if (val <= 10000) {
+      return 2.36;
+    } else if (val <= 100000) {
+      return 4.72;
+    } else if (val <= 200000) {
+      return 14.16;
+    } else if (val <= 500000) {
+      return 23.60;
+    } else {
+      return 47.20;
+    }
+  }
+
+  onAmountChange(): void {
+    const charge = this.calculateBankCharges(this.manualModel.Amount);
+    this.manualModel.BankCommission = charge;
   }
 
   onStaffInput(term: string): void {
@@ -334,6 +366,7 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
       AccountNo: item.AccountNo || '',
       IFSCCode: item.IFSCCode || '',
       Amount: item.Amount || null,
+      BankCommission: item.BankCommission !== undefined && item.BankCommission !== null ? item.BankCommission : this.calculateBankCharges(item.Amount || null),
       Remarks: item.Remarks || ''
     };
     this.showMemberDropdown = false;
@@ -395,6 +428,7 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
         this.rows[idx].AccountNo = cleanAcc;
         this.rows[idx].IFSCCode = ifsc;
         this.rows[idx].Amount = Number(m.Amount);
+        this.rows[idx].BankCommission = m.BankCommission !== null && m.BankCommission !== undefined ? Number(m.BankCommission) : (this.calculateBankCharges(Number(m.Amount)) ?? 0);
         this.rows[idx].Remarks = m.Remarks ? m.Remarks.trim() : '';
         this.rows[idx].IsValidIFSC = this.validateIFSC(ifsc);
         this.rows[idx].HasAccountNo = cleanAcc.length > 0;
@@ -427,6 +461,7 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
       BranchName: branch,
       BankBranch: combinedBank,
       Amount: Number(m.Amount),
+      BankCommission: m.BankCommission !== null && m.BankCommission !== undefined ? Number(m.BankCommission) : (this.calculateBankCharges(Number(m.Amount)) ?? 0),
       Remarks: m.Remarks ? m.Remarks.trim() : '',
       Source: 'MANUAL',
       IsValidIFSC: this.validateIFSC(ifsc),
@@ -512,6 +547,10 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
   // ---------------------------------------------------------------------------
   get totalAmount(): number {
     return this.rows.reduce((sum, r) => sum + (Number(r.Amount) || 0), 0);
+  }
+
+  get totalCommission(): number {
+    return this.rows.reduce((sum, r) => sum + (Number(r.BankCommission) || 0), 0);
   }
 
   get invalidIfscCount(): number {
@@ -626,6 +665,11 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
       if (raw) {
         const draft = JSON.parse(raw);
         if (draft && draft.rows && draft.rows.length > 0) {
+          draft.rows.forEach((item: BankAdviceItem) => {
+            if (item.BankCommission === undefined || item.BankCommission === null) {
+              item.BankCommission = this.calculateBankCharges(item.Amount) ?? 0;
+            }
+          });
           this.rows = draft.rows;
           this.selectedBankId = draft.selectedBankId || this.selectedBankId;
           this.selectedBank = this.banks.find(b => b.BankId === Number(this.selectedBankId)) || this.selectedBank;
@@ -731,7 +775,7 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
       doc.text(`Report Date: ${this.reportDate}`, pageWidth - 14, 44, { align: 'right' });
 
       // 4. Data Table (Image 2 structure)
-      // Headers: # | Staff No | Name | A/c No. | IFSC | Bank | Branch | Amount
+      // Headers: # | Staff No | Name | A/c No. | IFSC | Bank | Branch | Amount | NEFT/RTGS Charges
       const bodyData = this.rows.map((r, idx) => [
         (idx + 1).toString(),
         r.StaffNo || '-',
@@ -740,19 +784,21 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
         r.IFSCCode || '-',
         r.BankName || '-',
         r.BranchName || '-',
-        Number(r.Amount || 0).toFixed(2)
+        Number(r.Amount || 0).toFixed(2),
+        Number(r.BankCommission ?? (this.calculateBankCharges(r.Amount) || 0)).toFixed(2)
       ]);
 
       const totalStr = this.totalAmount.toFixed(2);
+      const totalCommStr = this.totalCommission.toFixed(2);
       const wordsStr = this.amountToWords(this.totalAmount);
 
       autoTable(doc, {
         startY: 47,
-        head: [['#', 'Staff No', 'Name', 'A/c No.', 'IFSC', 'Bank', 'Branch', 'Amount']],
+        head: [['#', 'Staff No', 'Name', 'A/c No.', 'IFSC', 'Bank', 'Branch', 'Amount', 'NEFT/RTGS Charges']],
         body: bodyData,
         foot: [
-          ['Total:', `${this.rows.length}`, '', '', '', '', '', totalStr],
-          [{ content: `Amount in Words :  ${wordsStr}`, colSpan: 8, styles: { fontStyle: 'bold', halign: 'left' } }]
+          ['Total:', `${this.rows.length}`, '', '', '', '', '', totalStr, totalCommStr],
+          [{ content: `Amount in Words :  ${wordsStr}`, colSpan: 9, styles: { fontStyle: 'bold', halign: 'left' } }]
         ],
         theme: 'plain',
         headStyles: {
@@ -766,13 +812,14 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
         },
         columnStyles: {
           0: { cellWidth: 7, halign: 'center' },
-          1: { cellWidth: 18, fontStyle: 'bold' },
-          2: { cellWidth: 35, fontStyle: 'bold' },
-          3: { cellWidth: 32, fontStyle: 'bold' },
-          4: { cellWidth: 25, fontStyle: 'bold' },
-          5: { cellWidth: 25 },
-          6: { cellWidth: 18 },
-          7: { cellWidth: 22, halign: 'right', fontStyle: 'bold' }
+          1: { cellWidth: 16, fontStyle: 'bold' },
+          2: { cellWidth: 32, fontStyle: 'bold' },
+          3: { cellWidth: 28, fontStyle: 'bold' },
+          4: { cellWidth: 23, fontStyle: 'bold' },
+          5: { cellWidth: 22 },
+          6: { cellWidth: 16 },
+          7: { cellWidth: 20, halign: 'right', fontStyle: 'bold' },
+          8: { cellWidth: 18, halign: 'right', fontStyle: 'bold' }
         },
         bodyStyles: {
           textColor: 0,

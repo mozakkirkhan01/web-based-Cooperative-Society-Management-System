@@ -214,13 +214,14 @@
             <th>Bank Name</th>
             <th>Branch</th>
             <th class="text-end">Amount (₹)</th>
+            <th class="text-end">Charges (₹)</th>
             <th class="text-center" style="width: 70px;">Action</th>
           </tr>
         </thead>
         <tbody>
           <!-- Empty State -->
           <tr *ngIf="paginatedRows.length === 0">
-            <td colspan="10" class="text-center py-5 text-muted">
+            <td colspan="11" class="text-center py-5 text-muted">
               <i class="bi bi-inbox fs-2 d-block mb-2 text-secondary"></i>
               <span class="fw-semibold">No advice records loaded.</span>
               <div class="small mt-1 text-muted">
@@ -266,6 +267,9 @@
             <td class="text-end fw-bold text-success ">
               ₹{{r.Amount | number:'1.2-2'}}
             </td>
+            <td class="text-end fw-semibold text-secondary">
+              ₹{{(r.BankCommission ?? (calculateBankCharges(r.Amount) || 0)) | number:'1.2-2'}}
+            </td>
             <td class="text-center">
               <div class="d-inline-flex align-items-center gap-2">
                 <button type="button" class="btn btn-link text-warning p-0" (click)="editRow(r)"
@@ -286,8 +290,11 @@
             <td colspan="4" class="text-muted small">
               {{amountToWords(totalAmount)}}
             </td>
-            <td class="text-end text-success  fs-6">
+            <td class="text-end text-success fs-6">
               ₹{{totalAmount | number:'1.2-2'}}
+            </td>
+            <td class="text-end text-secondary fs-6">
+              ₹{{totalCommission | number:'1.2-2'}}
             </td>
             <td></td>
           </tr>
@@ -393,7 +400,7 @@
           </div>
 
           <!-- Beneficiary Name -->
-          <div class="col-xl-4 col-lg-4 col-md-6 col-12">
+          <div class="col-xl-3 col-lg-3 col-md-6 col-12">
             <label class="form-label small fw-semibold text-muted mb-1">
               Beneficiary Name <span class="text-danger">*</span>
             </label>
@@ -404,15 +411,27 @@
             </div>
           </div>
 
-          <!-- Amount -->
-          <div class="col-xl-3 col-lg-3 col-md-6 col-12">
+          <!-- Disbursement Amount -->
+          <div class="col-xl-2 col-lg-2 col-md-6 col-12">
             <label class="form-label small fw-semibold text-muted mb-1">
               Disbursement Amount (₹) <span class="text-danger">*</span>
             </label>
             <div class="input-group input-group-sm">
               <span class="input-group-text bg-white fw-bold text-success">₹</span>
-              <input type="number" class="form-control  fw-bold text-success" [(ngModel)]="manualModel.Amount"
-                name="amount" placeholder="0.00" min="1" required>
+              <input type="number" class="form-control fw-bold text-success" [(ngModel)]="manualModel.Amount"
+                (ngModelChange)="onAmountChange()" name="amount" placeholder="0.00" min="1" required>
+            </div>
+          </div>
+
+          <!-- NEFT/RTGS Charges (Bank Commission) -->
+          <div class="col-xl-2 col-lg-2 col-md-6 col-12">
+            <label class="form-label small fw-semibold text-muted mb-1" title="NEFT / RTGS Bank Commission Charges">
+              NEFT/RTGS Charges <span class="badge bg-secondary-subtle text-secondary" style="font-size: 0.65rem;">Bank Comm.</span>
+            </label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text bg-light fw-bold text-secondary">₹</span>
+              <input type="number" class="form-control bg-light fw-bold text-dark" [(ngModel)]="manualModel.BankCommission"
+                name="bankCommission" placeholder="0.00" step="0.01">
             </div>
           </div>
         </div>
@@ -531,6 +550,7 @@
             <th class="text-start">Bank</th>
             <th class="text-start">Branch</th>
             <th class="text-end">Amount</th>
+            <th class="text-end">Charges</th>
           </tr>
         </thead>
         <tbody>
@@ -543,6 +563,7 @@
             <td class="text-start">{{r.BankName}}</td>
             <td class="text-start">{{r.BranchName || '-'}}</td>
             <td class="text-end fw-bold">{{r.Amount | number:'1.2-2'}}</td>
+            <td class="text-end fw-bold">{{(r.BankCommission ?? (calculateBankCharges(r.Amount) || 0)) | number:'1.2-2'}}</td>
           </tr>
         </tbody>
         <tfoot>
@@ -551,11 +572,12 @@
             <td colspan="3" class="text-start">Total: &nbsp;&nbsp;<strong>{{rows.length}}</strong></td>
             <td colspan="4"></td>
             <td class="text-end fw-bold">{{totalAmount | number:'1.2-2'}}</td>
+            <td class="text-end fw-bold">{{totalCommission | number:'1.2-2'}}</td>
           </tr>
           <!-- Amount in Words -->
           <tr class="words-row">
             <td colspan="2" class="text-start">Amount in Words :</td>
-            <td colspan="6" class="text-start fw-bold">{{amountToWords(totalAmount)}}</td>
+            <td colspan="7" class="text-start fw-bold">{{amountToWords(totalAmount)}}</td>
           </tr>
         </tfoot>
       </table>
