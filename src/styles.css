@@ -765,6 +765,37 @@
   top: 60px !important;
 }
 
+/* Toast Notification Close Button Styling */
+#toast-container .toast-close-button,
+.toast-close-button {
+  position: relative;
+  right: -0.2em;
+  top: -0.2em;
+  float: right;
+  font-size: 20px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  color: #ffffff !important;
+  opacity: 0.85 !important;
+  text-shadow: none !important;
+  background: transparent !important;
+  border: 0 !important;
+  outline: none !important;
+  cursor: pointer !important;
+  padding: 0 4px !important;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#toast-container .toast-close-button:hover,
+#toast-container .toast-close-button:focus,
+.toast-close-button:hover,
+.toast-close-button:focus {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  text-decoration: none !important;
+  transform: scale(1.15);
+}
+
 @media print {
   /* Globally hide navigation, admin chrome, sidebars, backdrops, and footers */
   #header,
