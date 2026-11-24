@@ -229,6 +229,8 @@ export class AdminDashboardComponent implements OnInit {
         return 'badge-contra';
       case 'JOURNAL':
         return 'badge-journal';
+      case 'SALARY':
+        return 'badge-salary';
       default:
         return 'badge-secondary';
     }

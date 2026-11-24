@@ -269,6 +269,12 @@
   border: 1px solid #bfdbfe;
 }
 
+.badge-salary {
+  background-color: #f3e8ff;
+  color: #6b21a8;
+  border: 1px solid #e9d5ff;
+}
+
 .badge-secondary {
   background-color: #f1f5f9;
   color: #475569;
