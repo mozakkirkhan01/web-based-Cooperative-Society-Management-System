@@ -1,1 +1,121 @@
-<p>member-login works!</p>
+<app-progress *ngIf="dataLoading"></app-progress>
+<main class="member-login-bg min-vh-100 d-flex align-items-center py-4">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-xl-4 col-lg-5 col-md-7 col-sm-10">
+
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+          <!-- Society Header Banner -->
+          <div class="member-login-header text-center p-4 text-white">
+            <img *ngIf="company?.LogoPNG" [src]="imageUrl + company.LogoPNG" alt="Society Logo"
+                 class="bg-white rounded-3 p-1 shadow-sm mb-2"
+                 style="height: 70px; width: auto; object-fit: contain;">
+            <div class="fw-bold fs-6 lh-sm">
+              {{company?.CompanyName || 'Bokaro Steel Employees (TA/Med./Mat.) Co-op. Cr. Soc. Ltd.'}}
+            </div>
+            <div class="small text-white-50 mt-1" *ngIf="company?.CompanyNameHindi" style="font-size: 0.78rem;">
+              {{company.CompanyNameHindi}}
+            </div>
+            <span class="badge bg-white text-primary fw-semibold mt-2 px-3 py-1 rounded-pill shadow-sm">
+              <i class="bi bi-shield-lock me-1"></i> Member Self-Service Portal
+            </span>
+          </div>
+
+          <div class="card-body p-4">
+            <div class="text-center mb-3">
+              <h5 class="fw-bold text-dark mb-1">Member Sign In</h5>
+              <p class="text-muted small mb-0">Enter your Staff Number &amp; Date of Birth</p>
+            </div>
+
+            <!-- Inline Error Alert -->
+            <div *ngIf="errorMessage" class="alert alert-danger py-2 px-3 small d-flex align-items-start gap-2 mb-3">
+              <i class="bi bi-exclamation-triangle-fill mt-1 flex-shrink-0"></i>
+              <span>{{errorMessage}}</span>
+            </div>
+
+            <form #loginForm="ngForm" (ngSubmit)="memberLogin(loginForm)" novalidate>
+              <!-- Staff Number -->
+              <div class="mb-2">
+                <label for="memberStaffNo" class="form-label small fw-semibold text-dark mb-1">
+                  Staff Number <span class="text-danger">*</span>
+                </label>
+                <mat-form-field appearance="outline" class="w-100">
+                  <mat-icon matPrefix>badge</mat-icon>
+                  <input matInput
+                         id="memberStaffNo"
+                         type="text"
+                         inputmode="numeric"
+                         name="staffNo"
+                         maxlength="10"
+                         autocomplete="username"
+                         placeholder="e.g. 805294"
+                         [(ngModel)]="staffNo"
+                         (input)="onStaffNoInput()"
+                         #staffNoModel="ngModel"
+                         required>
+                  <mat-error *ngIf="staffNoModel.invalid && (staffNoModel.dirty || staffNoModel.touched || submitted)">
+                    Staff Number is required.
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <!-- Masked Date of Birth Password -->
+              <div class="mb-2">
+                <label for="memberDob" class="form-label small fw-semibold text-dark mb-1">
+                  Date of Birth (Password) <span class="text-danger">*</span>
+                </label>
+                <mat-form-field appearance="outline" class="w-100">
+                  <mat-icon matPrefix>lock</mat-icon>
+                  <input matInput
+                         id="memberDob"
+                         [type]="hidePassword ? 'password' : 'text'"
+                         inputmode="numeric"
+                         name="dateOfBirth"
+                         maxlength="10"
+                         autocomplete="current-password"
+                         placeholder="DDMMYYYY (e.g. 21011984)"
+                         [(ngModel)]="dateOfBirth"
+                         #dobModel="ngModel"
+                         required>
+                  <button mat-icon-button matSuffix type="button"
+                          (click)="hidePassword = !hidePassword"
+                          [attr.aria-label]="hidePassword ? 'Show Date of Birth' : 'Hide Date of Birth'">
+                    <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+                  </button>
+                  <mat-hint>Enter 8 digits: DDMMYYYY (e.g. 21011984)</mat-hint>
+                  <mat-error *ngIf="dobModel.invalid && (dobModel.dirty || dobModel.touched || submitted)">
+                    Date of Birth is required.
+                  </mat-error>
+                </mat-form-field>
+              </div>
+
+              <div class="d-grid mt-4">
+                <button mat-raised-button color="primary" type="submit"
+                        class="py-2 fw-semibold fs-6"
+                        [disabled]="dataLoading">
+                  <span *ngIf="dataLoading" class="spinner-border spinner-border-sm me-2"></span>
+                  Sign In to Member Portal
+                </button>
+              </div>
+            </form>
+
+            <hr class="my-3 text-muted opacity-25">
+
+            <div class="text-center small text-muted">
+              <div class="mb-1" *ngIf="company?.MobileNo">
+                <i class="bi bi-telephone me-1 text-primary"></i> Helpline: <strong>{{company.MobileNo}}</strong>
+              </div>
+              <div>
+                Office Staff?
+                <a routerLink="/admin-login" class="fw-semibold text-decoration-none text-primary">
+                  Admin Login <i class="bi bi-arrow-right-short"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</main>
