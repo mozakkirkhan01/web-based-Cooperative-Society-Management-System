@@ -295,6 +295,38 @@ export class LocalService {
     this.removeData(this.employeeDetail);
   }
 
+  // Member Portal Session (isolated in sessionStorage so Admin/Member never collide)
+  private readonly memberTokenKey = "member_auth_token_v1";
+  private readonly memberDetailKey = "member_auth_detail_v1";
+
+  setMemberSession(token: string, detail: any): void {
+    this.saveSessionData(this.memberTokenKey, token);
+    this.saveSessionData(this.memberDetailKey, JSON.stringify(detail));
+  }
+
+  getMemberToken(): string {
+    return this.getSessionData(this.memberTokenKey) || '';
+  }
+
+  getMemberDetail(): any {
+    const raw = this.getSessionData(this.memberDetailKey);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  isMemberLoggedIn(): boolean {
+    return !!(this.getMemberToken() && this.getMemberDetail());
+  }
+
+  clearMemberSession(): void {
+    this.removeSessionData(this.memberTokenKey);
+    this.removeSessionData(this.memberDetailKey);
+  }
+
   
 
   // public async generatePdf(data: any) {

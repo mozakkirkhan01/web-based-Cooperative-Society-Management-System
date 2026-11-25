@@ -25,6 +25,15 @@ export interface StaffLoginModel {
     DesignationName: string
 }
 
+export interface MemberLoginDetailModel {
+    StaffNo: number;
+    MemberNo: number;
+    MemberName: string;
+    DepartmentName: string;
+    Designation: string;
+    MobileNo: string;
+}
+
 export interface Filter {
     FromMonth: number;
     FromYear: number;
