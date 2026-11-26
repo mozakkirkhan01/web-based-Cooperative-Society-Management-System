@@ -13,7 +13,7 @@
   <div class="card">
     <div class="card-body">
       <h5 class="card-title">{{ isReadOnly ? ('View Schedule (Read-Only) — ' + TrnNo) : (editingVoucherId ? ('Edit Schedule — ' + TrnNo) : 'New Schedule') }}</h5>
-      <p>Enter monthly member allocations manually or import Excel/recovery files. The total amount is cut from the selected Source Head (e.g. RECOVERY FROM BSP) and credited to each member's head.</p>
+      <p>Enter monthly member allocations manually or import Excel/recovery files. In normal recovery, the amount is cut from the Source Head (e.g. RECOVERY FROM BSP) and credited to member accounts. In dividend recovery (CPD), the amount is cut from each member's Dividend Head and credited to RECOVERY FROM BSP.</p>
 
       <div class="alert alert-secondary border border-dark d-flex align-items-center justify-content-between p-3 mb-3 shadow-sm" *ngIf="isLockedFinancialYear">
         <div class="d-flex align-items-center">
@@ -92,7 +92,7 @@
           <mat-form-field appearance="outline" class="col-md-8"><mat-label>Unique schedule reference
               (required)</mat-label><input matInput [(ngModel)]="ExternalReference" [readonly]="!!SourceMonth"
               maxlength="100"></mat-form-field>
-          <mat-form-field appearance="outline" class="col-md-8" id="sourceHeadField"><mat-label>Source head (cut from) e.g. RECOVERY FROM BSP</mat-label><mat-select
+          <mat-form-field appearance="outline" class="col-md-8" id="sourceHeadField"><mat-label>Source / Settlement head (e.g. RECOVERY FROM BSP)</mat-label><mat-select
               [(ngModel)]="SettlementHeadId" (selectionChange)="getContext()" (openedChange)="sourceHeadSearchText = ''" [disabled]="isSaving || !!pendingTransaction || !CanCreate" placeholder="Select source head manually"><div class="p-2" style="position: sticky; top: 0; background: white; z-index: 1000; border-bottom: 1px solid #e0e0e0;" (click)="$event.stopPropagation()"><input type="text" class="form-control form-control-sm" placeholder="Search head..." [(ngModel)]="sourceHeadSearchText" (keydown)="$event.stopPropagation()"></div><mat-option [value]="null">-- Select head manually --</mat-option><mat-option
                 *ngFor="let head of filteredSourceHeadList"
                 [value]="head.HeadId">{{head.HeadName}}</mat-option></mat-select></mat-form-field>
@@ -175,7 +175,7 @@
                 <th>Recovery code</th>
                 <th>Rows</th>
                 <th>Amount</th>
-                <th>Credit head</th>
+                <th>Assigned Head</th>
               </tr>
             </thead>
             <tbody>
@@ -184,9 +184,12 @@
                 <td><mat-radio-button [value]="mapping.Code" [checked]="SelectedRecoveryCode === mapping.Code"
                     (change)="SelectedRecoveryCode = mapping.Code; Lines=[]; Reviewed=false"
                     [disabled]="dataLoading || isSaving || !!pendingTransaction"></mat-radio-button></td>
-                <td>{{mapping.Code}}</td>
+                <td><strong>{{mapping.Code}}</strong></td>
                 <td>{{mapping.Count}}</td>
-                <td>{{mapping.Amount | number:'1.2-2'}}</td>
+                <td>
+                  {{(mapping.Amount < 0 ? -mapping.Amount : mapping.Amount) | number:'1.2-2'}}
+                  <span class="badge bg-info text-dark ms-1" *ngIf="mapping.Code === 'CPD'">Dividend (Dr)</span>
+                </td>
                 <td><mat-form-field appearance="outline"><mat-label>Select head</mat-label><mat-select
                       [(ngModel)]="mapping.HeadId" (selectionChange)="Lines=[]; Reviewed=false"
                       [disabled]="dataLoading || isSaving || !!pendingTransaction" placeholder="Select credit head manually"><mat-option [value]="null">-- Select head manually --</mat-option><mat-option
@@ -250,8 +253,11 @@
         <pagination-controls id="schedule-preview" (pageChange)="PreviewPage=$event"
           class="my-pagination"></pagination-controls>
         <div class="text-end mb-3">Total debits: <strong>{{total('Debit') | number:'1.2-2'}}</strong> · Total credits:
-          <strong>{{total('Credit') | number:'1.2-2'}}</strong><br>Amount to cut from {{headName(SettlementHeadId)}}:
-          <strong>{{formatBalance(total('Credit') - total('Debit'))}}</strong>
+          <strong>{{total('Credit') | number:'1.2-2'}}</strong><br>
+          <span *ngIf="total('Credit') >= total('Debit')">Amount to cut from {{headName(SettlementHeadId)}}:
+            <strong>{{formatBalance(total('Credit') - total('Debit'))}}</strong></span>
+          <span *ngIf="total('Debit') > total('Credit')">Amount to credit to {{headName(SettlementHeadId)}}:
+            <strong class="text-success">{{formatBalance(total('Debit') - total('Credit'))}}</strong> (Dividend Offset)</span>
         </div>
         <button mat-stroked-button (click)="clearImport()" *ngIf="!isReadOnly" [disabled]="isSaving || !!pendingTransaction">Clear import /
           rows</button>

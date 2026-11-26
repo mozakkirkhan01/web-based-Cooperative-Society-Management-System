@@ -331,8 +331,11 @@ export class ScheduleComponent implements OnInit, OnDestroy {
     if (this.RecoverySociety && this.SourceMonth) {
       const codeSuffix = this.SelectedRecoveryCode ? '-' + this.SelectedRecoveryCode : '';
       const narrSuffix = this.SelectedRecoveryCode ? ' / ' + this.SelectedRecoveryCode : '';
-      this.ExternalReference = this.ImportKind + '-' + this.RecoverySociety + '-' + this.SourceMonth + codeSuffix;
-      this.Narration = 'Payroll recovery ' + this.SourceMonth + ' / society ' + this.RecoverySociety + narrSuffix;
+      const isDiv = this.SelectedRecoveryCode === 'CPD';
+      const kind = isDiv ? 'DIVIDEND-RECOVERY' : (this.ImportKind || 'PAYROLL-RECOVERY');
+      this.ExternalReference = kind + '-' + this.RecoverySociety + '-' + this.SourceMonth + codeSuffix;
+      const narrPrefix = isDiv ? 'Dividend recovery ' : 'Payroll recovery ';
+      this.Narration = narrPrefix + this.SourceMonth + ' / society ' + this.RecoverySociety + narrSuffix;
     }
   }
 
@@ -350,10 +353,28 @@ export class ScheduleComponent implements OnInit, OnDestroy {
     const rows = this.RecoveryRows.filter(x => String(x.COOP_SOCNO) == this.RecoverySociety);
     this.SourceMonth = this.getSelectedMonth();
     if (!this.SourceMonth) { this.toastr.warning('Please select a transaction date above for the recovery month'); }
-    this.RecoveryMappings = Array.from(new Set(rows.map(x => String(x.REC_CODE).trim()))).map(code => ({
-      Code: code, HeadId: null, Count: rows.filter(x => String(x.REC_CODE).trim() == code).length,
-      Amount: rows.filter(x => String(x.REC_CODE).trim() == code).reduce((sum, x) => sum + Number(x.AMOUNT), 0)
-    }));
+    this.RecoveryMappings = Array.from(new Set(rows.map(x => String(x.REC_CODE).trim()))).map(code => {
+      let defaultHeadId: any = null;
+      if (code === 'COM') {
+        defaultHeadId = this.HeadList.find(h => /compul/i.test(h.HeadName))?.HeadId || null;
+      } else if (code === 'CPL') {
+        defaultHeadId = this.HeadList.find(h => /loan to member/i.test(h.HeadName) && !/int/i.test(h.HeadName) && !/unresolved/i.test(h.HeadName))?.HeadId || null;
+      } else if (code === 'CPI') {
+        defaultHeadId = this.HeadList.find(h => /int.*loan to member/i.test(h.HeadName) || /int-loan to mem/i.test(h.HeadName))?.HeadId || null;
+      } else if (code === 'CPD') {
+        defaultHeadId = this.HeadList.find(h => /dividend/i.test(h.HeadName) && !/dccb/i.test(h.HeadName))?.HeadId || null;
+      }
+      return {
+        Code: code,
+        HeadId: defaultHeadId,
+        Count: rows.filter(x => String(x.REC_CODE).trim() == code).length,
+        Amount: rows.filter(x => String(x.REC_CODE).trim() == code).reduce((sum, x) => sum + Number(x.AMOUNT), 0)
+      };
+    });
+    if (!this.SettlementHeadId) {
+      const bspHead = this.SourceHeadList.find(h => /recovery from bsp/i.test(h.HeadName));
+      if (bspHead) this.SettlementHeadId = bspHead.HeadId;
+    }
     this.updateScheduleReferenceAndNarration();
   }
   previewRecovery() {
@@ -363,12 +384,22 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       if (!this.SourceMonth) throw new Error('Select a transaction date above for the recovery month');
       if (!this.SelectedRecoveryCode) throw new Error('Select the society and choose a recovery code row to load');
       const selectedMapping = this.RecoveryMappings.find(m => m.Code === this.SelectedRecoveryCode);
-      if (!selectedMapping?.HeadId) throw new Error('Select the credit head for the chosen recovery code');
+      if (!selectedMapping?.HeadId) throw new Error('Select the head for the chosen recovery code');
       this.updateScheduleReferenceAndNarration();
       const source = this.RecoveryRows.filter(x => String(x.COOP_SOCNO) == this.RecoverySociety && String(x.REC_CODE).trim() === this.SelectedRecoveryCode);
+      const isDividend = this.SelectedRecoveryCode === 'CPD' || selectedMapping.HeadId === 27;
       const rows = source.map(x => {
-        if (!/^\d+$/.test(String(x.STAFF).trim()) || !Number.isFinite(Number(x.AMOUNT)) || Number(x.AMOUNT) < 0) throw new Error('Invalid staff number or recovery amount for ' + x.STAFF);
-        return { StaffNo: Number(x.STAFF), MemberNo: 0, HeadName: this.headName(selectedMapping.HeadId), Debit: 0, Credit: Number(x.AMOUNT), Narration: String(x.REC_CODE) + ' / ' + x.NAME };
+        const rawAmt = Number(x.AMOUNT);
+        if (!/^\d+$/.test(String(x.STAFF).trim()) || !Number.isFinite(rawAmt)) throw new Error('Invalid staff number or recovery amount for ' + x.STAFF);
+        const amount = Math.abs(rawAmt);
+        return {
+          StaffNo: Number(x.STAFF),
+          MemberNo: 0,
+          HeadName: this.headName(selectedMapping.HeadId),
+          Debit: isDividend ? amount : 0,
+          Credit: isDividend ? 0 : amount,
+          Narration: String(x.REC_CODE) + ' / ' + x.NAME
+        };
       });
       this.loadImportPreview(rows);
     } catch (error: any) { this.toastr.error(error.message); }
@@ -440,7 +471,8 @@ export class ScheduleComponent implements OnInit, OnDestroy {
       if (!this.SocietyId || !this.VoucherDate) { this.toastr.error('Select society and date'); return; }
       const payload = this.buildPayload();
       if (!payload) return;
-      const defaultNarr = this.SourceMonth ? 'Payroll recovery ' + this.SourceMonth : 'Schedule entry';
+      const isDiv = this.SelectedRecoveryCode === 'CPD' || this.Lines.some(l => l.HeadId === 27 && l.Debit > 0);
+      const defaultNarr = this.SourceMonth ? (isDiv ? 'Dividend recovery ' : 'Payroll recovery ') + this.SourceMonth : 'Schedule entry';
       const narration = this.Narration && this.Narration.trim() ? this.Narration.trim() : defaultNarr;
       this.pendingTransaction = { 
         ...payload, 
@@ -571,7 +603,7 @@ export class ScheduleComponent implements OnInit, OnDestroy {
         this.closeViewModal();
         return;
       }
-      this.selectedVoucher = response;
+      this.selectedVoucher = response.Voucher || response;
     }, () => {
       this.viewLoading = false;
       this.toastr.error('Unable to load schedule details');
