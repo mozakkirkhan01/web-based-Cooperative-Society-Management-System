@@ -1,6 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { ToastrService } from 'ngx-toastr';
+import { Subscription } from 'rxjs';
 import { ConstantData } from '../../utils/constant-data';
 import { MemberLoginDetailModel } from '../../utils/interface';
 import { LocalService } from '../../utils/local.service';
@@ -11,13 +12,15 @@ import { MemberPortalService } from '../services/member-portal.service';
   templateUrl: './member-master.component.html',
   styleUrls: ['./member-master.component.css']
 })
-export class MemberMasterComponent implements OnInit {
+export class MemberMasterComponent implements OnInit, OnDestroy {
   memberDetail: MemberLoginDetailModel = {} as MemberLoginDetailModel;
   company: any = {};
   imageUrl: string = ConstantData.getBaseUrl();
   noImageUrl: string = ConstantData.getNoImage();
   isLoggingOut: boolean = false;
   currentYear: number = new Date().getFullYear();
+  unreadNoticeCount: number = 0;
+  private unreadSub?: Subscription;
 
   constructor(
     private localService: LocalService,
@@ -34,7 +37,17 @@ export class MemberMasterComponent implements OnInit {
       return;
     }
     this.memberDetail = detail;
+    this.unreadSub = this.memberService.unreadNoticeCount$.subscribe(count => {
+      this.unreadNoticeCount = count;
+    });
     this.loadMeta();
+    this.loadUnreadNotices();
+  }
+
+  ngOnDestroy(): void {
+    if (this.unreadSub) {
+      this.unreadSub.unsubscribe();
+    }
   }
 
   loadMeta(): void {
@@ -44,6 +57,12 @@ export class MemberMasterComponent implements OnInit {
           this.company = res.Company;
         }
       },
+      error: () => {}
+    });
+  }
+
+  loadUnreadNotices(): void {
+    this.memberService.getUnreadNoticeCount().subscribe({
       error: () => {}
     });
   }

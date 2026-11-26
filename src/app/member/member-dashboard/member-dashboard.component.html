@@ -1,1 +1,393 @@
-<p>member-dashboard works!</p>
+<app-progress *ngIf="isLoading"></app-progress>
+
+<!-- Welcome Banner & Financial Year Filter -->
+<div class="card border-0 shadow-sm mb-4 rounded-3 bg-white">
+  <div class="card-body p-3 p-md-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+    <div>
+      <div class="text-muted small fw-semibold text-uppercase mb-1">Member Financial Overview</div>
+      <h4 class="fw-bold text-dark mb-1">
+        Welcome, {{member?.MemberName || 'Member'}}
+      </h4>
+      <div class="d-flex flex-wrap gap-2 small text-secondary" *ngIf="member">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+          Staff No: {{member.StaffNo}}
+        </span>
+        <span class="badge bg-secondary-subtle text-dark border border-secondary-subtle px-2 py-1">
+          Member No: {{member.MemberNo}}
+        </span>
+        <span class="badge bg-light text-dark border px-2 py-1" *ngIf="member.DepartmentName">
+          {{member.DepartmentName}}
+        </span>
+      </div>
+    </div>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+      <div *ngIf="financialYears.length > 0" class="d-flex align-items-center gap-2">
+        <label for="memberFySelect" class="small fw-semibold text-muted mb-0 text-nowrap">
+          Financial Year:
+        </label>
+        <select id="memberFySelect" class="form-select form-select-sm fw-semibold"
+                style="min-width: 125px;" [(ngModel)]="selectedYearId" (change)="onYearChange()">
+          <option *ngFor="let fy of financialYears" [ngValue]="fy.YearId">
+            {{fy.YearName}}
+          </option>
+        </select>
+      </div>
+
+      <a routerLink="/member/profile" class="btn btn-outline-primary btn-sm px-3">
+        <i class="bi bi-person-vcard me-1"></i> My Profile
+      </a>
+      <a routerLink="/member/notice" class="btn btn-outline-dark btn-sm px-3 position-relative">
+        <i class="bi bi-megaphone me-1"></i> Notices
+        <span *ngIf="unreadNoticeCount > 0" class="badge bg-danger ms-1">{{unreadNoticeCount}}</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Compact Latest Notices Strip -->
+<div *ngIf="!isLoading && recentNotices.length > 0" class="card border-0 shadow-sm mb-4 border-start border-4 border-primary">
+  <div class="card-body py-2 px-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="d-flex align-items-center gap-2 flex-wrap small">
+      <span class="badge bg-primary text-white">
+        <i class="bi bi-megaphone-fill me-1"></i> Latest Notices
+      </span>
+      <ng-container *ngFor="let n of recentNotices; let last = last">
+        <a routerLink="/member/notice" class="text-decoration-none fw-semibold text-dark">
+          <span *ngIf="n.IsPersonal" class="badge bg-info-subtle text-info border border-info-subtle me-1">Personal</span>
+          <span *ngIf="n.Priority === 3" class="badge bg-danger me-1">Urgent</span>
+          {{n.Title}}
+        </a>
+        <span *ngIf="!last" class="text-muted">&bull;</span>
+      </ng-container>
+    </div>
+    <a routerLink="/member/notice" class="btn btn-link btn-sm text-decoration-none fw-semibold p-0">
+      View All Notices <i class="bi bi-arrow-right-short"></i>
+    </a>
+  </div>
+</div>
+
+<!-- Error State -->
+<div *ngIf="!isLoading && errorMessage" class="alert alert-danger shadow-sm">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i> {{errorMessage}}
+</div>
+
+<div *ngIf="!isLoading && member">
+  <!-- KPI Summary Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-xl-3 col-md-6">
+      <div class="card kpi-card border-0 shadow-sm h-100">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="kpi-icon bg-danger-subtle text-danger rounded-3 p-3 me-3">
+            <i class="bi bi-cash-coin fs-4"></i>
+          </div>
+          <div>
+            <div class="small text-muted fw-semibold text-uppercase">Loan Balance</div>
+            <div class="fs-5 fw-bold text-dark">
+              ₹ {{getHeadBalance('053', 'LOAN TO MEMBER').amount | number:'1.2-2'}}
+              <small class="text-muted fs-6" *ngIf="getHeadBalance('053', 'LOAN TO MEMBER').type">
+                {{getHeadBalance('053', 'LOAN TO MEMBER').type}}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card kpi-card border-0 shadow-sm h-100">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="kpi-icon bg-primary-subtle text-primary rounded-3 p-3 me-3">
+            <i class="bi bi-piggy-bank fs-4"></i>
+          </div>
+          <div>
+            <div class="small text-muted fw-semibold text-uppercase">Compulsory Deposit</div>
+            <div class="fs-5 fw-bold text-dark">
+              ₹ {{getHeadBalance('018', 'COMPULS').amount | number:'1.2-2'}}
+              <small class="text-muted fs-6" *ngIf="getHeadBalance('018', 'COMPULS').type">
+                {{getHeadBalance('018', 'COMPULS').type}}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card kpi-card border-0 shadow-sm h-100">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="kpi-icon bg-success-subtle text-success rounded-3 p-3 me-3">
+            <i class="bi bi-award fs-4"></i>
+          </div>
+          <div>
+            <div class="small text-muted fw-semibold text-uppercase">Share Capital</div>
+            <div class="fs-5 fw-bold text-dark">
+              ₹ {{getHeadBalance('083', 'SHARE CAPITAL').amount | number:'1.2-2'}}
+              <small class="text-muted fs-6" *ngIf="getHeadBalance('083', 'SHARE CAPITAL').type">
+                {{getHeadBalance('083', 'SHARE CAPITAL').type}}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6">
+      <div class="card kpi-card border-0 shadow-sm h-100">
+        <div class="card-body p-3 d-flex align-items-center">
+          <div class="kpi-icon bg-warning-subtle text-warning rounded-3 p-3 me-3">
+            <i class="bi bi-shield-check fs-4"></i>
+          </div>
+          <div>
+            <div class="small text-muted fw-semibold text-uppercase">RD Balance</div>
+            <div class="fs-5 fw-bold text-dark">
+              ₹ {{getHeadBalance('080', 'RECURRING').amount | number:'1.2-2'}}
+              <small class="text-muted fs-6" *ngIf="getHeadBalance('080', 'RECURRING').type">
+                {{getHeadBalance('080', 'RECURRING').type}}
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: Account Balances + Last Loan & Guarantors -->
+  <div class="row g-3 mb-4">
+    <!-- Account Head Balances -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-primary">
+            <i class="bi bi-journal-text me-2"></i>Account Balances ({{financialYearName}})
+          </span>
+          <span class="badge bg-light text-dark border">{{balances.length}} Heads</span>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 small">
+              <thead class="table-light">
+                <tr>
+                  <th class="ps-3">#</th>
+                  <th>Account Head</th>
+                  <th class="text-end">Opening (₹)</th>
+                  <th class="text-end">Debit (₹)</th>
+                  <th class="text-end">Credit (₹)</th>
+                  <th class="text-end pe-3">Closing (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let b of balances">
+                  <td class="ps-3 text-muted">{{b.SlNo}}</td>
+                  <td>
+                    <div class="fw-semibold text-dark">{{b.HeadName}}</div>
+                    <div class="text-muted" style="font-size: 0.72rem;">Code: {{b.HeadCode}}</div>
+                  </td>
+                  <td class="text-end text-nowrap">
+                    {{b.Opening | number:'1.2-2'}} <span class="text-muted">{{b.OpeningType}}</span>
+                  </td>
+                  <td class="text-end text-nowrap">{{b.Debit | number:'1.2-2'}}</td>
+                  <td class="text-end text-nowrap">{{b.Credit | number:'1.2-2'}}</td>
+                  <td class="text-end pe-3 fw-bold text-nowrap">
+                    {{b.Balance | number:'1.2-2'}}
+                    <span class="badge ms-1"
+                          [ngClass]="b.BalanceType === 'Dr' ? 'bg-danger-subtle text-danger' : 'bg-success-subtle text-success'">
+                      {{b.BalanceType}}
+                    </span>
+                  </td>
+                </tr>
+                <tr *ngIf="balances.length === 0">
+                  <td colspan="6" class="text-center text-muted py-4">
+                    No balance activity found for {{financialYearName}}.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Last Loan Details & Guarantors -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+          <span class="fw-bold text-primary">
+            <i class="bi bi-clock-history me-2"></i>Last Loan &amp; Guarantors
+          </span>
+          <span class="badge bg-secondary-subtle text-secondary border" *ngIf="lastLoan?.ApplicationNumber">
+            App #{{lastLoan.ApplicationNumber}}
+          </span>
+        </div>
+        <div class="card-body p-3">
+          <div class="row g-2 mb-3">
+            <div class="col-4">
+              <div class="p-2 border rounded bg-light text-center">
+                <div class="text-muted small">Loan Date</div>
+                <div class="fw-bold text-dark small mt-1">
+                  {{(lastLoan?.VerifiedDate | date:'dd-MMM-yyyy') || 'N/A'}}
+                </div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-2 border rounded bg-light text-center">
+                <div class="text-muted small">Applied</div>
+                <div class="fw-bold text-dark small mt-1">
+                  ₹ {{(lastLoan?.Requested || 0) | number:'1.2-2'}}
+                </div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-2 border rounded bg-light text-center">
+                <div class="text-muted small">Payable</div>
+                <div class="fw-bold text-success small mt-1">
+                  ₹ {{(lastLoan?.Payable || 0) | number:'1.2-2'}}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="border rounded overflow-hidden">
+            <div class="px-3 py-2 bg-light border-bottom small fw-bold text-secondary">
+              <i class="bi bi-people-fill me-1"></i> Guarantors for This Loan ({{lastLoan?.Sureties?.length || 0}})
+            </div>
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+              <table class="table table-sm table-hover align-middle mb-0 small">
+                <thead class="table-light">
+                  <tr>
+                    <th class="ps-3">Staff No</th>
+                    <th>Member Name</th>
+                    <th class="text-end pe-3">Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let s of lastLoan?.Sureties">
+                    <td class="ps-3 fw-semibold">{{s.StaffNo}}</td>
+                    <td>{{s.Name}}</td>
+                    <td class="text-end pe-3 fw-semibold">{{s.Amount | number:'1.2-2'}}</td>
+                  </tr>
+                  <tr *ngIf="!lastLoan?.Sureties || lastLoan.Sureties.length === 0">
+                    <td colspan="3" class="text-center text-muted py-3">
+                      No guarantor records found for the last loan.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 3: Monthly Recoveries & Loans Guaranteed By Me -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-white py-3 border-bottom d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div class="d-flex flex-wrap gap-2">
+        <button *ngFor="let tab of detailTabs"
+                type="button"
+                class="btn btn-sm rounded-pill px-3"
+                [ngClass]="selectedDetailTab === tab ? 'btn-primary' : 'btn-outline-secondary'"
+                (click)="selectedDetailTab = tab">
+          {{tab}}
+          <span *ngIf="tab === 'Guaranteed By Me' && recoveries?.SuretyList?.length > 0"
+                class="badge bg-warning text-dark ms-1">
+            {{recoveries.SuretyList.length}}
+          </span>
+        </button>
+      </div>
+
+      <span *ngIf="selectedDetailTab === 'Guaranteed By Me'" class="small fw-semibold text-danger">
+        Active Guarantee Exposure: ₹ {{getTotalGuaranteed() | number:'1.2-2'}}
+      </span>
+    </div>
+
+    <div class="card-body p-0">
+      <!-- Monthly Recovery Table (Loan / CD / RD) -->
+      <div class="table-responsive" *ngIf="selectedDetailTab !== 'Guaranteed By Me'">
+        <table class="table table-sm table-hover table-striped align-middle mb-0 small text-nowrap">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Year</th>
+              <th class="text-end">Open</th>
+              <th class="text-end">Apr</th>
+              <th class="text-end">May</th>
+              <th class="text-end">Jun</th>
+              <th class="text-end">Jul</th>
+              <th class="text-end">Aug</th>
+              <th class="text-end">Sep</th>
+              <th class="text-end">Oct</th>
+              <th class="text-end">Nov</th>
+              <th class="text-end">Dec</th>
+              <th class="text-end">Jan</th>
+              <th class="text-end">Feb</th>
+              <th class="text-end">Mar</th>
+              <th class="text-end">Tot Cr</th>
+              <th class="text-end">Tot Dr</th>
+              <th class="text-end pe-3">Closing</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let r of getActiveRecoveryRows()">
+              <td class="ps-3 fw-bold text-primary">{{r.Year}}</td>
+              <td class="text-end">{{r.Open | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Apr | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.May | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Jun | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Jul | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Aug | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Sep | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Oct | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Nov | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Dec | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Jan | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Feb | number:'1.0-0'}}</td>
+              <td class="text-end">{{r.Mar | number:'1.0-0'}}</td>
+              <td class="text-end text-success fw-semibold">{{r.TotCr | number:'1.0-0'}}</td>
+              <td class="text-end text-danger fw-semibold">{{r.TotDr | number:'1.0-0'}}</td>
+              <td class="text-end pe-3 fw-bold">{{r.Closing | number:'1.0-0'}}</td>
+            </tr>
+            <tr *ngIf="getActiveRecoveryRows().length === 0">
+              <td colspan="17" class="text-center text-muted py-4">
+                No {{selectedDetailTab}} records available.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Guaranteed By Me Table -->
+      <div class="table-responsive" *ngIf="selectedDetailTab === 'Guaranteed By Me'">
+        <table class="table table-hover align-middle mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th class="ps-3">Loan Date</th>
+              <th>App No</th>
+              <th>Borrower Staff No</th>
+              <th>Member No</th>
+              <th>Borrower Name</th>
+              <th>Department</th>
+              <th class="text-end pe-3">Guaranteed Amount (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let g of recoveries?.SuretyList">
+              <td class="ps-3">{{g.Date || '-'}}</td>
+              <td>{{g.ApplicationNumber || '-'}}</td>
+              <td class="fw-semibold">{{g.StaffNo}}</td>
+              <td>{{g.MemberNo}}</td>
+              <td class="fw-semibold text-dark">{{g.Name}}</td>
+              <td>{{g.DepartmentName || '-'}}</td>
+              <td class="text-end pe-3 fw-bold text-primary">{{g.Amount | number:'1.2-2'}}</td>
+            </tr>
+            <tr *ngIf="!recoveries?.SuretyList || recoveries.SuretyList.length === 0">
+              <td colspan="7" class="text-center text-muted py-4">
+                You are not currently standing as guarantor for any active loan.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

@@ -80,6 +80,9 @@ export class AppService {
   saveStaffSalary(obj: any) {
     return this.http.post(this.apiUrl + "StaffSalary/SaveStaffSalary", obj, { headers: this.headers });
   }
+  getStaffSalaryList(obj: any) {
+    return this.http.post(this.apiUrl + "StaffSalary/GetStaffSalaryList", obj, { headers: this.headers });
+  }
 
   //Bank
   getBankList(obj: any) {
@@ -389,5 +392,10 @@ export class AppService {
   // Dashboard
   dashboard(action: string, obj: any) {
     return this.http.post(this.apiUrl + 'Dashboard/' + action, obj, { headers: this.headers });
+  }
+
+  // Notice (Admin)
+  notice(action: string, obj: any) {
+    return this.http.post(this.apiUrl + 'Notice/' + action, obj, { headers: this.headers });
   }
 }

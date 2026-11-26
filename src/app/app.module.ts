@@ -68,6 +68,14 @@ import { EdpS05Component } from './admin/edp-s05/edp-s05.component';
 import { EdpS06Component } from './admin/edp-s06/edp-s06.component';
 import { StaffSalaryComponent } from './admin/staff-salary/staff-salary.component';
 import { TransferAdviceComponent } from './admin/transfer-advice/transfer-advice.component';
+import { MemberDashboardComponent } from './member/member-dashboard/member-dashboard.component';
+import { MemberProfileComponent } from './member/member-profile/member-profile.component';
+import { StaffSalaryListComponent } from './admin/staff-salary-list/staff-salary-list.component';
+import { MemberLoginComponent } from './member/member-login/member-login.component';
+import { MemberMasterComponent } from './member/member-master/member-master.component';
+import { MemberNoticeComponent } from './member/member-notice/member-notice.component';
+import { NoticeMasterComponent } from './admin/notice-master/notice-master.component';
+import { NoticeCategoryComponent } from './admin/notice-category/notice-category.component';
 
 @NgModule({
   declarations: [
@@ -121,7 +129,15 @@ import { TransferAdviceComponent } from './admin/transfer-advice/transfer-advice
     EdpS05Component,
     EdpS06Component,
     StaffSalaryComponent,
-    TransferAdviceComponent
+    TransferAdviceComponent,
+    MemberDashboardComponent,
+    MemberProfileComponent,
+    StaffSalaryListComponent,
+    MemberLoginComponent,
+    MemberMasterComponent,
+    MemberNoticeComponent,
+    NoticeMasterComponent,
+    NoticeCategoryComponent
   ],
   imports: [
     BrowserModule,
@@ -132,7 +148,13 @@ import { TransferAdviceComponent } from './admin/transfer-advice/transfer-advice
     ToastrModule,
     BrowserAnimationsModule,
     MaterialModule,
-    ToastrModule.forRoot(),
+    ToastrModule.forRoot({
+      closeButton: true,
+      timeOut: 4000,
+      extendedTimeOut: 1500,
+      preventDuplicates: true,
+      positionClass: 'toast-top-right',
+    }),
     NgxPaginationModule,
     MatDatepickerModule,
     MatInputModule,
@@ -153,7 +175,13 @@ import { TransferAdviceComponent } from './admin/transfer-advice/transfer-advice
   providers: [AppService, { provide: LocationStrategy, useClass: HashLocationStrategy },
     { provide: MAT_DATE_LOCALE, useValue: 'en-GB' },
     provideAnimations(),
-    provideToastr(),
+    provideToastr({
+      closeButton: true,
+      timeOut: 4000,
+      extendedTimeOut: 1500,
+      preventDuplicates: true,
+      positionClass: 'toast-top-right',
+    }),
     provideNgxMask(),
     {
       provide: DateAdapter,

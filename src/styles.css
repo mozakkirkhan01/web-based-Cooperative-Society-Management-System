@@ -804,7 +804,10 @@
   .sidebar,
   .navbar,
   .back-to-top,
+  .modal,
   .modal-backdrop,
+  .modal-dialog,
+  .modal-content,
   .no-print {
     display: none !important;
     visibility: hidden !important;
@@ -824,11 +827,52 @@
   .member-passbook th, .member-passbook td { padding: 3px !important; }
   .member-passbook tr { break-inside: avoid; }
 
-  /* Member Info & Final Settlement Statement Print Rules */
+    /* Member Info & Final Settlement Statement Print Rules */
   body:has(#printable_settlement_sheet),
   body:has(.settlement-print-sheet) {
     background: #ffffff !important;
     color: #000000 !important;
+  }
+
+  /* Staff Payslip Print Rules (Strict 1-Page Layout) */
+  body:has(.payslip-print-sheet) {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
+  }
+
+  body:has(.payslip-print-sheet) #header,
+  body:has(.payslip-print-sheet) #sidebar,
+  body:has(.payslip-print-sheet) #footer,
+  body:has(.payslip-print-sheet) .sidebar,
+  body:has(.payslip-print-sheet) .navbar,
+  body:has(.payslip-print-sheet) .back-to-top,
+  body:has(.payslip-print-sheet) .modal,
+  body:has(.payslip-print-sheet) .modal-backdrop,
+  body:has(.payslip-print-sheet) aside,
+  body:has(.payslip-print-sheet) footer {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body:has(.payslip-print-sheet) #main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+  }
+
+  body:has(.payslip-print-sheet) #main > :not(.print-only-container) {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   body:has(#printable_settlement_sheet) #main {

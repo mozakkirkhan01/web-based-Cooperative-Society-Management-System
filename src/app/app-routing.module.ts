@@ -9,6 +9,7 @@ import { EdpS06Component } from './admin/edp-s06/edp-s06.component';
 import { RtgsNeftAdviceComponent } from './admin/rtgs-neft-advice/rtgs-neft-advice.component';
 import { TransferAdviceComponent } from './admin/transfer-advice/transfer-advice.component';
 import { StaffSalaryComponent } from './admin/staff-salary/staff-salary.component';
+import { StaffSalaryListComponent } from './admin/staff-salary-list/staff-salary-list.component';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { AdminLoginComponent } from './admin/admin-login/admin-login.component';
@@ -44,9 +45,31 @@ import { ContraComponent } from './admin/contra/contra.component';
 import { TransferComponent } from './admin/transfer/transfer.component';
 import { ScheduleComponent } from './admin/schedule/schedule.component';
 import { VerifyTransactionsComponent } from './admin/verify-transactions/verify-transactions.component';
+import { MemberLoginComponent } from './member/member-login/member-login.component';
+import { MemberMasterComponent } from './member/member-master/member-master.component';
+import { MemberDashboardComponent } from './member/member-dashboard/member-dashboard.component';
+import { MemberProfileComponent } from './member/member-profile/member-profile.component';
+import { MemberNoticeComponent } from './member/member-notice/member-notice.component';
+import { NoticeMasterComponent } from './admin/notice-master/notice-master.component';
+import { NoticeCategoryComponent } from './admin/notice-category/notice-category.component';
+import { memberAuthGuard, memberAuthChildGuard } from './member/guards/member-auth.guard';
+import { memberGuestGuard } from './member/guards/member-guest.guard';
 const routes: Routes = [
   { path: '', redirectTo: "/admin-login", pathMatch: 'full' },
   { path: 'admin-login', component: AdminLoginComponent },
+  { path: 'member/login', component: MemberLoginComponent, canActivate: [memberGuestGuard] },
+  {
+    path: 'member',
+    component: MemberMasterComponent,
+    canActivate: [memberAuthGuard],
+    canActivateChild: [memberAuthChildGuard],
+    children: [
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      { path: 'dashboard', component: MemberDashboardComponent },
+      { path: 'profile', component: MemberProfileComponent },
+      { path: 'notice', component: MemberNoticeComponent }
+    ]
+  },
   {
     path: 'admin', component: AdminMasterComponent, children: [
       { path: 'admin-dashboard', component: AdminDashboardComponent },
@@ -98,6 +121,9 @@ const routes: Routes = [
       { path: 'rtgs-neft-advice', component: RtgsNeftAdviceComponent },
       { path: 'transfer-advice', component: TransferAdviceComponent },
       { path: 'staff-salary', component: StaffSalaryComponent },
+      { path: 'staff-salary-list', component: StaffSalaryListComponent },
+      { path: 'notice-master', component: NoticeMasterComponent },
+      { path: 'notice-category', component: NoticeCategoryComponent },
 
     ]
   },

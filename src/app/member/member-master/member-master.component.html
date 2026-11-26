@@ -32,6 +32,14 @@
               <i class="bi bi-person-vcard me-1"></i> My Profile
             </a>
           </li>
+          <li class="nav-item">
+            <a class="nav-link px-3 rounded-pill d-inline-flex align-items-center" routerLink="/member/notice" routerLinkActive="active">
+              <i class="bi bi-megaphone me-1"></i> Notices
+              <span *ngIf="unreadNoticeCount > 0" class="badge rounded-pill bg-danger ms-2">
+                {{unreadNoticeCount}}
+              </span>
+            </a>
+          </li>
         </ul>
 
         <!-- Right Member Profile & Logout -->

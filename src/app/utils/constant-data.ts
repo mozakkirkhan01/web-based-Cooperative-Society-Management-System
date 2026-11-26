@@ -23,6 +23,7 @@ export class ConstantData {
     public static DestinationTypeList = [{ Key: 1, Value: "Domestic" }, { Key: 2, Value: "International" }];
     public static BoolList = [{ Key: true, Value: "Yes" }, { Key: false, Value: "No" }];
     private static readonly adminKey = "52F4785C-7EE7-426E-A1AE-C2300972E70A";
+    private static readonly memberKey = "3BCDD8C7-C8DA-4DD1-9EFB-3728BA2556B9";
     private static readonly baseUrl: string = RuntimeConfig.apiUrl;
     // private static readonly baseUrl: string = "https://intranetapi.apjcop.com/";
 
@@ -37,6 +38,9 @@ export class ConstantData {
     }
     public static getAdminKey(): string {
         return this.adminKey;
+    }
+    public static getMemberKey(): string {
+        return this.memberKey;
     }
     public static getNoImage(): string {
         return this.baseUrl + this.noImageUrl;

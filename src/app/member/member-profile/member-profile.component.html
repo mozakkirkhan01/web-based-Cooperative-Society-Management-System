@@ -1,1 +1,189 @@
-<p>member-profile works!</p>
+<app-progress *ngIf="isLoading"></app-progress>
+
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+  <div>
+    <h4 class="fw-bold text-dark mb-0">My Profile</h4>
+    <div class="small text-muted">Registered personal, employment, banking &amp; nominee records</div>
+  </div>
+  <a routerLink="/member/dashboard" class="btn btn-outline-primary btn-sm px-3">
+    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+  </a>
+</div>
+
+<!-- Error State -->
+<div *ngIf="!isLoading && errorMessage" class="alert alert-danger shadow-sm">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i> {{errorMessage}}
+</div>
+
+<div class="row g-4" *ngIf="!isLoading && profile">
+  <!-- Left Identity Card -->
+  <div class="col-lg-4">
+    <div class="card border-0 shadow-sm text-center p-4 h-100">
+      <div class="mx-auto mb-3">
+        <img [src]="getPhotoUrl()" (error)="onPhotoError($event)" alt="Member Photo"
+             class="rounded-circle border border-3 border-primary-subtle shadow-sm"
+             style="width: 120px; height: 120px; object-fit: cover;">
+      </div>
+
+      <h5 class="fw-bold text-dark mb-1">{{profile.MemberName}}</h5>
+      <div class="text-muted small mb-2">{{profile.Designation || 'Member'}}</div>
+
+      <div class="mb-3">
+        <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
+          <i class="bi bi-check-circle-fill me-1"></i> Active Member
+        </span>
+      </div>
+
+      <ul class="list-group list-group-flush text-start small border-top">
+        <li class="list-group-item d-flex justify-content-between px-0">
+          <span class="text-muted">Staff Number</span>
+          <span class="fw-bold text-primary">{{profile.StaffNo}}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between px-0">
+          <span class="text-muted">Member Number</span>
+          <span class="fw-bold text-dark">{{profile.MemberNo}}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between px-0" *ngIf="profile.SailPersonalNo">
+          <span class="text-muted">SAIL Personal No</span>
+          <span class="fw-semibold">{{profile.SailPersonalNo}}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between px-0">
+          <span class="text-muted">Unit</span>
+          <span class="fw-semibold">{{getPsuUnitLabel(profile.PsuUnit)}}</span>
+        </li>
+        <li class="list-group-item d-flex justify-content-between px-0">
+          <span class="text-muted">Department</span>
+          <span class="fw-semibold text-end">{{profile.DepartmentName || 'N/A'}}</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Right Detailed Cards -->
+  <div class="col-lg-8">
+    <!-- Personal & Contact Info -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-white py-3 border-bottom fw-bold text-primary">
+        <i class="bi bi-person-lines-fill me-2"></i> Personal &amp; Contact Information
+      </div>
+      <div class="card-body p-3">
+        <div class="row g-3 small">
+          <div class="col-md-6">
+            <label class="text-muted fw-semibold d-block">
+              {{profile.GuardianType === 2 ? "Husband's Name" : "Father's Name"}}
+            </label>
+            <div class="fw-semibold text-dark">{{profile.FatherName || profile.HusbandName || 'N/A'}}</div>
+          </div>
+          <div class="col-md-3">
+            <label class="text-muted fw-semibold d-block">Date of Birth</label>
+            <div class="fw-semibold text-dark">{{(profile.DateofBirth | date:'dd-MMM-yyyy') || 'N/A'}}</div>
+          </div>
+          <div class="col-md-3">
+            <label class="text-muted fw-semibold d-block">Gender</label>
+            <div class="fw-semibold text-dark">{{getGenderLabel(profile.Gender)}}</div>
+          </div>
+
+          <div class="col-md-4">
+            <label class="text-muted fw-semibold d-block">Mobile Number</label>
+            <div class="fw-semibold text-dark">{{profile.MobileNo || 'N/A'}}</div>
+          </div>
+          <div class="col-md-4">
+            <label class="text-muted fw-semibold d-block">WhatsApp Number</label>
+            <div class="fw-semibold text-dark">{{profile.WhatsappNo || 'N/A'}}</div>
+          </div>
+          <div class="col-md-4">
+            <label class="text-muted fw-semibold d-block">Email</label>
+            <div class="fw-semibold text-dark text-break">{{profile.Email || 'N/A'}}</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="text-muted fw-semibold d-block">Aadhaar Number</label>
+            <div class="fw-semibold text-dark">{{profile.AadharNo || 'N/A'}}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted fw-semibold d-block">PAN Number</label>
+            <div class="fw-semibold text-dark">{{profile.PanNo || 'N/A'}}</div>
+          </div>
+
+          <div class="col-md-6">
+            <label class="text-muted fw-semibold d-block">Present Address</label>
+            <div class="text-dark">{{profile.PresentAddress || 'N/A'}}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="text-muted fw-semibold d-block">Permanent Address</label>
+            <div class="text-dark">{{profile.PermanentAddress || 'N/A'}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Service Dates & Bank + Nominee -->
+    <div class="row g-4">
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white py-3 border-bottom fw-bold text-primary">
+            <i class="bi bi-calendar-event me-2"></i> Service &amp; Membership Dates
+          </div>
+          <div class="card-body p-3 small">
+            <div class="d-flex justify-content-between py-2 border-bottom">
+              <span class="text-muted">Society Joining Date</span>
+              <span class="fw-semibold">{{(profile.MembershipDate | date:'dd-MMM-yyyy') || 'N/A'}}</span>
+            </div>
+            <div class="d-flex justify-content-between py-2 border-bottom">
+              <span class="text-muted">SAIL Joining Date</span>
+              <span class="fw-semibold">{{(profile.JoiningDate | date:'dd-MMM-yyyy') || 'N/A'}}</span>
+            </div>
+            <div class="d-flex justify-content-between py-2">
+              <span class="text-muted">Retirement Date</span>
+              <span class="fw-bold text-danger">{{(profile.RetirementDate | date:'dd-MMM-yyyy') || 'N/A'}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm h-100">
+          <div class="card-header bg-white py-3 border-bottom fw-bold text-primary">
+            <i class="bi bi-bank me-2"></i> Bank &amp; Nominee Details
+          </div>
+          <div class="card-body p-3 small">
+            <div class="d-flex justify-content-between py-1 border-bottom">
+              <span class="text-muted">Bank Name</span>
+              <span class="fw-semibold text-end">{{profile.BankName || 'N/A'}}</span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom">
+              <span class="text-muted">Account No</span>
+              <span class="fw-bold text-dark">{{profile.AccountNo || 'N/A'}}</span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom">
+              <span class="text-muted">IFSC / Branch</span>
+              <span class="fw-semibold text-end">
+                {{profile.IFSCCode || 'N/A'}} {{profile.BranchName ? '(' + profile.BranchName + ')' : ''}}
+              </span>
+            </div>
+            <div class="d-flex justify-content-between py-1 border-bottom">
+              <span class="text-muted">Nominee</span>
+              <span class="fw-semibold">{{profile.NomineeName || 'N/A'}}</span>
+            </div>
+            <div class="d-flex justify-content-between py-1">
+              <span class="text-muted">Relation</span>
+              <span class="fw-semibold">{{getNomineeRelationLabel(profile.NomineeRelation)}}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Read-Only Record Update Guidance -->
+    <div class="alert alert-info border-0 shadow-sm mt-4 mb-0 small d-flex align-items-start gap-2">
+      <i class="bi bi-info-circle-fill fs-5 text-primary mt-1"></i>
+      <div>
+        <strong>Need to update your mobile number, bank account, or nominee?</strong><br>
+        For security, member master details are read-only online. Please visit the society office
+        <span *ngIf="helpdesk?.Address">({{helpdesk.Address}})</span> or call
+        <strong>{{helpdesk?.MobileNo || '6205771796'}}</strong> with supporting KYC documents.
+      </div>
+    </div>
+  </div>
+</div>
