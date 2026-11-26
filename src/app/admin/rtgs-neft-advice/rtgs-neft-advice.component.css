@@ -249,11 +249,31 @@
     color: #000 !important;
   }
 
+  .official-print-table tfoot tr.grand-total-row td {
+    border-top: 1px solid #000 !important;
+    border-bottom: 2px solid #000 !important;
+    padding: 3.5px 3px !important;
+    font-weight: bold !important;
+    font-size: 8.8pt !important;
+  }
+
   .official-print-table tfoot tr.words-row td {
     border-top: none !important;
     border-bottom: none !important;
-    padding-top: 4px !important;
+    padding-top: 6px !important;
     font-size: 9pt !important;
+    vertical-align: top !important;
+  }
+
+  .official-print-table tfoot tr.words-row .words-label-cell {
+    white-space: nowrap !important;
+    line-height: 1.25 !important;
+    width: 85px !important;
+  }
+
+  .official-print-table tfoot tr.words-row .words-value-cell {
+    padding-left: 6px !important;
+    line-height: 1.35 !important;
   }
 
   .print-signatures-block {

@@ -70,7 +70,7 @@ export interface ManualEntryModel {
   AccountNo: string;
   IFSCCode: string;
   Amount: number | null;
-  BankCommission: number | null;
+  BankCommission: number | string | null;
   Remarks: string;
 }
 
@@ -106,6 +106,7 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
   rows: BankAdviceItem[] = [];
   filteredRows: BankAdviceItem[] = [];
   searchText: string = '';
+  includeBankCharges: boolean = false;
 
   // Pagination
   currentPage: number = 1;
@@ -180,6 +181,7 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
           if (this.banks.length > 0 && !this.selectedBankId) {
             this.selectedBankId = this.banks[0].BankId;
             this.selectedBank = this.banks[0];
+            this.updateChargesInclusionForBank();
           }
 
           if (res.DefaultFromDate && !this.fromDate) {
@@ -207,10 +209,16 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
   onBankChange(): void {
     if (this.selectedBankId) {
       this.selectedBank = this.banks.find(b => b.BankId === Number(this.selectedBankId)) || null;
+      this.updateChargesInclusionForBank();
       this.saveToSession();
     } else {
       this.selectedBank = null;
     }
+  }
+
+  updateChargesInclusionForBank(): void {
+    const bName = (this.selectedBank?.BankName || '').toUpperCase();
+    this.includeBankCharges = bName.includes('SBI') || bName.includes('STATE BANK');
   }
 
   // ---------------------------------------------------------------------------
@@ -315,7 +323,16 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
 
   onAmountChange(): void {
     const charge = this.calculateBankCharges(this.manualModel.Amount);
-    this.manualModel.BankCommission = charge;
+    this.manualModel.BankCommission = charge !== null && charge !== undefined ? charge.toFixed(2) : null;
+  }
+
+  formatCommissionOnBlur(): void {
+    if (this.manualModel.BankCommission !== null && this.manualModel.BankCommission !== undefined && this.manualModel.BankCommission !== '') {
+      const num = Number(this.manualModel.BankCommission);
+      if (!isNaN(num) && num >= 0) {
+        this.manualModel.BankCommission = num.toFixed(2);
+      }
+    }
   }
 
   onStaffInput(term: string): void {
@@ -366,7 +383,9 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
       AccountNo: item.AccountNo || '',
       IFSCCode: item.IFSCCode || '',
       Amount: item.Amount || null,
-      BankCommission: item.BankCommission !== undefined && item.BankCommission !== null ? item.BankCommission : this.calculateBankCharges(item.Amount || null),
+      BankCommission: item.BankCommission !== undefined && item.BankCommission !== null
+        ? Number(item.BankCommission).toFixed(2)
+        : (this.calculateBankCharges(item.Amount || null)?.toFixed(2) ?? null),
       Remarks: item.Remarks || ''
     };
     this.showMemberDropdown = false;
@@ -550,7 +569,11 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
   }
 
   get totalCommission(): number {
-    return this.rows.reduce((sum, r) => sum + (Number(r.BankCommission) || 0), 0);
+    return Number(this.rows.reduce((sum, r) => sum + (Number(r.BankCommission ?? (this.calculateBankCharges(r.Amount) || 0)) || 0), 0).toFixed(2));
+  }
+
+  get grandTotal(): number {
+    return Number((this.totalAmount + (this.includeBankCharges ? this.totalCommission : 0)).toFixed(2));
   }
 
   get invalidIfscCount(): number {
@@ -570,14 +593,20 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
     const fractionPart = Math.round((amount - wholePart) * 100);
 
     const words = this.convertWholeNumberToWords(wholePart);
-    let result = `Rupees ${words}`;
+    let result = '';
 
-    if (fractionPart > 0) {
+    if (wholePart > 0 && fractionPart > 0) {
       const paiseWords = this.convertWholeNumberToWords(fractionPart);
-      result += ` and ${paiseWords} Paise`;
+      result = `${words} Rupees and ${paiseWords} Paise Only`;
+    } else if (wholePart > 0) {
+      result = `${words} Rupees Only`;
+    } else if (fractionPart > 0) {
+      const paiseWords = this.convertWholeNumberToWords(fractionPart);
+      result = `${paiseWords} Paise Only`;
+    } else {
+      result = 'Rupees Zero Only';
     }
 
-    result += ' Only';
     return result;
   }
 
@@ -595,10 +624,14 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
         num %= 100;
       }
       if (num >= 20) {
-        str += tens[Math.floor(num / 10)] + ' ';
+        const t = tens[Math.floor(num / 10)];
         num %= 10;
-      }
-      if (num > 0) {
+        if (num > 0) {
+          str += t + '-' + units[num] + ' ';
+        } else {
+          str += t + ' ';
+        }
+      } else if (num > 0) {
         str += units[num] + ' ';
       }
       return str.trim();
@@ -647,6 +680,7 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
       const draft = {
         savedAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }),
         selectedBankId: this.selectedBankId,
+        includeBankCharges: this.includeBankCharges,
         fromDate: this.fromDate,
         toDate: this.toDate,
         rows: this.rows
@@ -673,6 +707,11 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
           this.rows = draft.rows;
           this.selectedBankId = draft.selectedBankId || this.selectedBankId;
           this.selectedBank = this.banks.find(b => b.BankId === Number(this.selectedBankId)) || this.selectedBank;
+          if (draft.includeBankCharges !== undefined && draft.includeBankCharges !== null) {
+            this.includeBankCharges = draft.includeBankCharges;
+          } else {
+            this.updateChargesInclusionForBank();
+          }
           this.fromDate = draft.fromDate || this.fromDate;
           this.toDate = draft.toDate || this.toDate;
           this.hasSessionDraft = true;
@@ -747,59 +786,126 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
       doc.setLineWidth(0.3);
       doc.line(centerX - titleWidth / 2, 15, centerX + titleWidth / 2, 15);
 
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.text(this.company.CompanyNameHindi || 'बोकारो इस्पात कर्मचारी (टी०ए० / मे० / मेट०) सहकारी साख समिति लिमिटेड', centerX, 20, { align: 'center' });
+      const hindiName = this.company.CompanyNameHindi || 'बोकारो इस्पात कर्मचारी (टी०ए० / मे० / मेट०) सहकारी साख समिति लिमिटेड';
+      const hindiImg = this.createHindiTextImage(hindiName);
+      let nextY = 17;
+      if (hindiImg) {
+        doc.addImage(hindiImg.dataUrl, 'PNG', centerX - hindiImg.widthMm / 2, nextY, hindiImg.widthMm, hindiImg.heightMm);
+        nextY += hindiImg.heightMm + 1;
+      } else {
+        nextY += 4;
+      }
 
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
       const regdText = `(Regd. No.- ${this.company.RegistrationNo || 'BAGH-6/78'})   ${this.company.CompanyAddress || 'Old Admn. Bldg., Bokaro Steel City-827001'}`;
-      doc.text(regdText, centerX, 24.5, { align: 'center' });
+      doc.text(regdText, centerX, nextY + 3, { align: 'center' });
 
       if (this.company.MobileNo) {
-        doc.text(`Contact No: ${this.company.MobileNo}`, pageWidth - 14, 29, { align: 'right' });
+        doc.text(`Contact No: ${this.company.MobileNo}`, pageWidth - 14, nextY + 7.5, { align: 'right' });
       }
 
       // 2. Title: Bank Advice - RTGS/NEFT
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
-      doc.text('Bank Advice - RTGS/NEFT', centerX, 36, { align: 'center' });
+      const titleY = nextY + 12;
+      doc.text('Bank Advice - RTGS/NEFT', centerX, titleY, { align: 'center' });
       const adviceTitleWidth = doc.getTextWidth('Bank Advice - RTGS/NEFT');
-      doc.line(centerX - adviceTitleWidth / 2, 37, centerX + adviceTitleWidth / 2, 37);
+      doc.line(centerX - adviceTitleWidth / 2, titleY + 1, centerX + adviceTitleWidth / 2, titleY + 1);
 
       // 3. Sub-header: Society A/c No and Report Date
       doc.setFontSize(10);
       const socAcc = this.selectedBank ? this.selectedBank.AccountNo : '2426000100027527';
-      doc.text(`Society A/c No: ${socAcc}`, 14, 44);
+      doc.text(`Society A/c No: ${socAcc}`, 14, titleY + 8);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.text(`Report Date: ${this.reportDate}`, pageWidth - 14, 44, { align: 'right' });
+      doc.text(`Report Date: ${this.reportDate}`, pageWidth - 14, titleY + 8, { align: 'right' });
 
       // 4. Data Table (Image 2 structure)
-      // Headers: # | Staff No | Name | A/c No. | IFSC | Bank | Branch | Amount | NEFT/RTGS Charges
-      const bodyData = this.rows.map((r, idx) => [
-        (idx + 1).toString(),
-        r.StaffNo || '-',
-        r.MemberName || '-',
-        r.AccountNo || '-',
-        r.IFSCCode || '-',
-        r.BankName || '-',
-        r.BranchName || '-',
-        Number(r.Amount || 0).toFixed(2),
-        Number(r.BankCommission ?? (this.calculateBankCharges(r.Amount) || 0)).toFixed(2)
-      ]);
+      // Headers: # | Staff No | Name | A/c No. | IFSC | Bank | Branch | Amount [| Charges]
+      const headers = this.includeBankCharges
+        ? [['#', 'Staff No', 'Name', 'A/c No.', 'IFSC', 'Bank', 'Branch', 'Amount', 'Charges']]
+        : [['#', 'Staff No', 'Name', 'A/c No.', 'IFSC', 'Bank', 'Branch', 'Amount']];
 
-      const totalStr = this.totalAmount.toFixed(2);
-      const totalCommStr = this.totalCommission.toFixed(2);
-      const wordsStr = this.amountToWords(this.totalAmount);
+      const bodyData = this.rows.map((r, idx) => {
+        const row = [
+          (idx + 1).toString(),
+          r.StaffNo || '-',
+          r.MemberName || '-',
+          r.AccountNo || '-',
+          r.IFSCCode || '-',
+          r.BankName || '-',
+          r.BranchName || '-',
+          this.formatNumber(r.Amount)
+        ];
+        if (this.includeBankCharges) {
+          row.push(this.formatNumber(r.BankCommission ?? (this.calculateBankCharges(r.Amount) || 0)));
+        }
+        return row;
+      });
+
+      const totalStr = this.formatNumber(this.totalAmount);
+      const totalCommStr = this.formatNumber(this.totalCommission);
+      const grandTotalStr = this.formatNumber(this.grandTotal);
+      const wordsStr = this.amountToWords(this.grandTotal);
+
+      const footData: any = this.includeBankCharges
+        ? [
+            [
+              { content: `Total:   ${this.rows.length}`, colSpan: 7, styles: { fontStyle: 'bold', halign: 'left' } },
+              { content: totalStr, styles: { fontStyle: 'bold', halign: 'right' } },
+              { content: totalCommStr, styles: { fontStyle: 'bold', halign: 'right' } }
+            ],
+            [
+              { content: `Grand Total:   ${this.rows.length}`, colSpan: 7, styles: { fontStyle: 'bold', halign: 'left', lineWidth: { top: 0.3, bottom: 0.8 } } },
+              { content: grandTotalStr, colSpan: 2, styles: { fontStyle: 'bold', halign: 'right', lineWidth: { top: 0.3, bottom: 0.8 } } }
+            ],
+            [
+              { content: `Amount in\nWords :   ${wordsStr}`, colSpan: 9, styles: { fontStyle: 'bold', halign: 'left', lineWidth: { top: 0, bottom: 0, left: 0, right: 0 } } }
+            ]
+          ]
+        : [
+            [
+              { content: `Total:   ${this.rows.length}`, colSpan: 7, styles: { fontStyle: 'bold', halign: 'left' } },
+              { content: totalStr, styles: { fontStyle: 'bold', halign: 'right' } }
+            ],
+            [
+              { content: `Grand Total:   ${this.rows.length}`, colSpan: 7, styles: { fontStyle: 'bold', halign: 'left', lineWidth: { top: 0.3, bottom: 0.8 } } },
+              { content: grandTotalStr, styles: { fontStyle: 'bold', halign: 'right', lineWidth: { top: 0.3, bottom: 0.8 } } }
+            ],
+            [
+              { content: `Amount in\nWords :   ${wordsStr}`, colSpan: 8, styles: { fontStyle: 'bold', halign: 'left', lineWidth: { top: 0, bottom: 0, left: 0, right: 0 } } }
+            ]
+          ];
+
+      const columnStyles: any = this.includeBankCharges
+        ? {
+            0: { cellWidth: 7, halign: 'center' },
+            1: { cellWidth: 16, fontStyle: 'bold' },
+            2: { cellWidth: 32, fontStyle: 'bold' },
+            3: { cellWidth: 28, fontStyle: 'bold' },
+            4: { cellWidth: 23, fontStyle: 'bold' },
+            5: { cellWidth: 22 },
+            6: { cellWidth: 16 },
+            7: { cellWidth: 20, halign: 'right', fontStyle: 'bold' },
+            8: { cellWidth: 18, halign: 'right', fontStyle: 'bold' }
+          }
+        : {
+            0: { cellWidth: 8, halign: 'center' },
+            1: { cellWidth: 18, fontStyle: 'bold' },
+            2: { cellWidth: 36, fontStyle: 'bold' },
+            3: { cellWidth: 30, fontStyle: 'bold' },
+            4: { cellWidth: 26, fontStyle: 'bold' },
+            5: { cellWidth: 24 },
+            6: { cellWidth: 18 },
+            7: { cellWidth: 22, halign: 'right', fontStyle: 'bold' }
+          };
 
       autoTable(doc, {
-        startY: 47,
-        head: [['#', 'Staff No', 'Name', 'A/c No.', 'IFSC', 'Bank', 'Branch', 'Amount', 'NEFT/RTGS Charges']],
+        startY: titleY + 11,
+        head: headers,
         body: bodyData,
-        foot: [
-          ['Total:', `${this.rows.length}`, '', '', '', '', '', totalStr, totalCommStr],
-          [{ content: `Amount in Words :  ${wordsStr}`, colSpan: 9, styles: { fontStyle: 'bold', halign: 'left' } }]
-        ],
+        foot: footData,
         theme: 'plain',
         headStyles: {
           fontStyle: 'bold',
@@ -810,17 +916,7 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
           halign: 'left',
           cellPadding: 2
         },
-        columnStyles: {
-          0: { cellWidth: 7, halign: 'center' },
-          1: { cellWidth: 16, fontStyle: 'bold' },
-          2: { cellWidth: 32, fontStyle: 'bold' },
-          3: { cellWidth: 28, fontStyle: 'bold' },
-          4: { cellWidth: 23, fontStyle: 'bold' },
-          5: { cellWidth: 22 },
-          6: { cellWidth: 16 },
-          7: { cellWidth: 20, halign: 'right', fontStyle: 'bold' },
-          8: { cellWidth: 18, halign: 'right', fontStyle: 'bold' }
-        },
+        columnStyles: columnStyles,
         bodyStyles: {
           textColor: 0,
           fontSize: 8.5,
@@ -928,6 +1024,51 @@ export class RtgsNeftAdviceComponent implements OnInit, OnDestroy {
     const m = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
+  }
+
+  formatNumber(n: number | null | undefined): string {
+    if (n === null || n === undefined || isNaN(n)) return '0.00';
+    const parts = Number(n).toFixed(2).split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  }
+
+  private createHindiTextImage(text: string): { dataUrl: string; widthMm: number; heightMm: number } | null {
+    if (!text || !text.trim()) return null;
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
+      const fontSize = 18;
+      const font = `bold ${fontSize}px "Nirmala UI", "Mangal", "Arial Unicode MS", "Devanagari Sangam MN", sans-serif`;
+      ctx.font = font;
+      const textMetrics = ctx.measureText(text);
+      const textWidth = Math.ceil(textMetrics.width);
+      const textHeight = Math.ceil(fontSize * 1.5);
+
+      const scale = 3;
+      canvas.width = (textWidth + 24) * scale;
+      canvas.height = (textHeight + 12) * scale;
+
+      ctx.scale(scale, scale);
+      ctx.font = font;
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, (textWidth + 24) / 2, (textHeight + 12) / 2);
+
+      const widthMm = (textWidth + 24) * 0.264583 * (11 / fontSize);
+      const heightMm = (textHeight + 12) * 0.264583 * (11 / fontSize);
+
+      return {
+        dataUrl: canvas.toDataURL('image/png'),
+        widthMm,
+        heightMm
+      };
+    } catch {
+      return null;
+    }
   }
 
   private formatDateDisplay(d: Date): string {
