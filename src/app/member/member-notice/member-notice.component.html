@@ -1,1 +1,176 @@
-<p>member-notice works!</p>
+<app-progress *ngIf="isLoading"></app-progress>
+
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-2 border-bottom">
+  <div>
+    <h4 class="fw-bold text-dark mb-0">Notices &amp; Circulars</h4>
+    <div class="small text-muted">Society announcements &amp; personal notifications addressed to you</div>
+  </div>
+  <a routerLink="/member/dashboard" class="btn btn-outline-primary btn-sm px-3">
+    <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+  </a>
+</div>
+
+<!-- Filter & Category Toolbar -->
+<div class="card border-0 shadow-sm mb-4">
+  <div class="card-body p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-sm rounded-pill px-3"
+              [ngClass]="activeFilter === 'ALL' ? 'btn-primary' : 'btn-outline-secondary'"
+              (click)="setFilter('ALL')">
+        All Notices
+        <span class="badge bg-white text-dark ms-1">{{totalCount}}</span>
+      </button>
+
+      <button type="button" class="btn btn-sm rounded-pill px-3"
+              [ngClass]="activeFilter === 'PERSONAL' ? 'btn-info text-white' : 'btn-outline-info'"
+              (click)="setFilter('PERSONAL')">
+        <i class="bi bi-person-badge me-1"></i> Personal For Me
+        <span class="badge bg-white text-dark ms-1">{{personalCount}}</span>
+      </button>
+
+      <button type="button" class="btn btn-sm rounded-pill px-3"
+              [ngClass]="activeFilter === 'UNREAD' ? 'btn-danger' : 'btn-outline-danger'"
+              (click)="setFilter('UNREAD')">
+        Unread
+        <span class="badge bg-white text-danger ms-1">{{unreadCount}}</span>
+      </button>
+    </div>
+
+    <div class="d-flex align-items-center gap-2" *ngIf="categories.length > 0">
+      <label for="memberNoticeCategory" class="small fw-semibold text-muted mb-0">Category:</label>
+      <select id="memberNoticeCategory" class="form-select form-select-sm" style="min-width: 170px;"
+              [(ngModel)]="selectedCategory" (change)="onCategoryChange()">
+        <option value="">All Categories</option>
+        <option *ngFor="let c of categories" [value]="c">{{c}}</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- Error Alert -->
+<div *ngIf="!isLoading && errorMessage" class="alert alert-danger shadow-sm">
+  <i class="bi bi-exclamation-triangle-fill me-2"></i> {{errorMessage}}
+</div>
+
+<!-- Notices Feed -->
+<div class="row g-3" *ngIf="!isLoading && notices.length > 0">
+  <div class="col-12" *ngFor="let n of notices">
+    <div class="card border-0 shadow-sm notice-card"
+         [ngClass]="{
+           'notice-card-unread': !n.IsRead,
+           'notice-card-pinned': n.IsPinned
+         }"
+         (click)="openNoticeDetail(n)">
+      <div class="card-body p-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+          <div class="d-flex flex-wrap align-items-center gap-2">
+            <span *ngIf="!n.IsRead" class="badge bg-danger rounded-pill">New</span>
+            <span *ngIf="n.IsPinned" class="badge bg-warning text-dark">
+              <i class="bi bi-pin-angle-fill me-1"></i>Pinned
+            </span>
+            <span *ngIf="n.IsPersonal" class="badge bg-info text-white">
+              <i class="bi bi-person-check-fill me-1"></i>Personal Notice
+            </span>
+            <span *ngIf="!n.IsPersonal" class="badge bg-primary-subtle text-primary border border-primary-subtle">
+              All Members
+            </span>
+            <span class="badge bg-light text-dark border">{{n.Category}}</span>
+            <span class="badge"
+                  [ngClass]="n.Priority === 3 ? 'bg-danger-subtle text-danger border border-danger-subtle' : (n.Priority === 2 ? 'bg-warning-subtle text-warning border border-warning-subtle' : 'bg-secondary-subtle text-secondary')">
+              {{getPriorityLabel(n.Priority)}}
+            </span>
+          </div>
+
+          <div class="small text-muted text-nowrap">
+            <span class="me-2">{{n.NoticeNumber}}</span>
+            <i class="bi bi-calendar3 me-1"></i>{{n.PublishDate | date:'dd-MMM-yyyy'}}
+          </div>
+        </div>
+
+        <h6 class="fw-bold text-dark mb-1">{{n.Title}}</h6>
+        <p class="text-secondary small mb-2 notice-preview-text">{{n.Message}}</p>
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 pt-2 border-top small">
+          <div class="text-muted">
+            <span *ngIf="n.ExpiryDate">Valid until {{n.ExpiryDate | date:'dd-MMM-yyyy'}}</span>
+            <span *ngIf="!n.ExpiryDate">Active Circular</span>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <button *ngIf="n.HasAttachment" type="button" class="btn btn-outline-secondary btn-sm py-0 px-2"
+                    (click)="downloadAttachment(n, $event)">
+              <i class="bi bi-paperclip me-1"></i> {{n.AttachmentName || 'View Attachment'}}
+            </button>
+            <button type="button" class="btn btn-outline-primary btn-sm py-0 px-2">
+              Read Notice <i class="bi bi-arrow-right-short"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Empty State -->
+<div *ngIf="!isLoading && notices.length === 0 && !errorMessage" class="card border-0 shadow-sm text-center py-5">
+  <div class="card-body">
+    <i class="bi bi-bell-slash fs-1 text-muted opacity-50 d-block mb-2"></i>
+    <h6 class="fw-bold text-dark mb-1">No Notices Found</h6>
+    <p class="small text-muted mb-0">
+      There are currently no notices matching this filter.
+    </p>
+  </div>
+</div>
+
+<!-- Notice Detail Modal -->
+<div class="modal fade" id="modal_member_notice_detail" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow" *ngIf="selectedNotice">
+      <div class="modal-header bg-primary text-white py-2">
+        <h5 class="modal-title fs-6 fw-bold mb-0">
+          <i class="bi bi-megaphone-fill me-2"></i>{{selectedNotice.NoticeNumber}} &bull; {{selectedNotice.Category}}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body p-4">
+        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+          <span *ngIf="selectedNotice.IsPersonal" class="badge bg-info text-white">
+            <i class="bi bi-person-check-fill me-1"></i>Personal Notice
+          </span>
+          <span *ngIf="!selectedNotice.IsPersonal" class="badge bg-primary-subtle text-primary border">
+            All Members
+          </span>
+          <span class="badge"
+                [ngClass]="selectedNotice.Priority === 3 ? 'bg-danger' : (selectedNotice.Priority === 2 ? 'bg-warning text-dark' : 'bg-secondary-subtle text-secondary')">
+            {{getPriorityLabel(selectedNotice.Priority)}}
+          </span>
+          <span class="small text-muted ms-auto">
+            Published: {{selectedNotice.PublishDate | date:'dd-MMM-yyyy'}}
+            <span *ngIf="selectedNotice.ExpiryDate"> | Expires: {{selectedNotice.ExpiryDate | date:'dd-MMM-yyyy'}}</span>
+          </span>
+        </div>
+
+        <h5 class="fw-bold text-dark mb-3">{{selectedNotice.Title}}</h5>
+        <div class="p-3 bg-light rounded border notice-full-message text-dark">
+          {{selectedNotice.Message}}
+        </div>
+
+        <div *ngIf="selectedNotice.HasAttachment" class="mt-3 p-3 border rounded d-flex justify-content-between align-items-center bg-white">
+          <div class="small">
+            <i class="bi bi-file-earmark-text text-primary fs-5 me-2"></i>
+            <strong>{{selectedNotice.AttachmentName || 'Attachment'}}</strong>
+          </div>
+          <button type="button" class="btn btn-primary btn-sm px-3" (click)="downloadAttachment(selectedNotice)">
+            <i class="bi bi-download me-1"></i> View / Download
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light py-2">
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
