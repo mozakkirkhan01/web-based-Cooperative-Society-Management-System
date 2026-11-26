@@ -22,14 +22,7 @@ export class NoticeMasterComponent implements OnInit {
   action: ActionModel = {} as ActionModel;
 
   NoticeList: any[] = [];
-  Categories: string[] = [
-    'General Circular',
-    'Loan & EMI',
-    'EDP / Salary',
-    'AGM / Meeting',
-    'KYC / Document',
-    'Urgent Alert'
-  ];
+  Categories: string[] = [];
   Priorities: any[] = [
     { Key: 1, Value: 'Normal' },
     { Key: 2, Value: 'Important' },
@@ -41,6 +34,14 @@ export class NoticeMasterComponent implements OnInit {
   suggestedNoticeNo: string = '';
   defaultPublishDate: string = '';
   selectedTargets: any[] = [];
+
+  // Quick-Add Notice Category (inline in modal)
+  showQuickCategoryForm: boolean = false;
+  quickCategoryName: string = '';
+  isSavingQuickCategory: boolean = false;
+
+  // View Notice Details Modal
+  selectedViewNotice: any = null;
 
   // Member Autocomplete (when TargetType === 2)
   memberSearchQuery: string = '';
@@ -104,13 +105,20 @@ export class NoticeMasterComponent implements OnInit {
         if (res && res.Message === ConstantData.SuccessMessage) {
           this.suggestedNoticeNo = res.SuggestedNoticeNumber || '';
           this.defaultPublishDate = res.DefaultPublishDate || this.loadData.loadDateYMD(new Date()) || '';
-          if (res.Categories && res.Categories.length > 0) this.Categories = res.Categories;
+          if (res.Categories && res.Categories.length > 0) {
+            this.Categories = res.Categories;
+          }
           if (res.Priorities && res.Priorities.length > 0) this.Priorities = res.Priorities;
           if (!this.Notice.NoticeId) {
             this.Notice.NoticeNumber = this.suggestedNoticeNo;
             if (!this.Notice.PublishDate) {
               this.Notice.PublishDate = this.defaultPublishDate;
             }
+            if (!this.Notice.Category || !this.Categories.includes(this.Notice.Category)) {
+              this.Notice.Category = this.getDefaultCategory();
+            }
+          } else if (this.Notice.Category && !this.Categories.includes(this.Notice.Category)) {
+            this.Categories = [this.Notice.Category, ...this.Categories];
           }
         }
       }
@@ -144,12 +152,17 @@ export class NoticeMasterComponent implements OnInit {
     });
   }
 
+  private getDefaultCategory(): string {
+    if (this.Categories.includes('General Circular')) return 'General Circular';
+    return this.Categories.length > 0 ? this.Categories[0] : '';
+  }
+
   resetForm(): void {
     this.Notice = {
       NoticeId: 0,
       NoticeNumber: this.suggestedNoticeNo || '',
       TargetType: 1,
-      Category: 'General Circular',
+      Category: this.getDefaultCategory(),
       Priority: 1,
       Title: '',
       Message: '',
@@ -166,6 +179,7 @@ export class NoticeMasterComponent implements OnInit {
     this.selectedTargets = [];
     this.memberSearchQuery = '';
     this.memberSearchResults = [];
+    this.closeQuickCategoryForm();
     this.isSubmitted = false;
     if (this.fileInput && this.fileInput.nativeElement) {
       this.fileInput.nativeElement.value = '';
@@ -184,11 +198,15 @@ export class NoticeMasterComponent implements OnInit {
 
   editNotice(item: any): void {
     this.isSubmitted = false;
+    const itemCategory = item.Category || this.getDefaultCategory();
+    if (itemCategory && !this.Categories.includes(itemCategory)) {
+      this.Categories = [itemCategory, ...this.Categories];
+    }
     this.Notice = {
       NoticeId: item.NoticeId,
       NoticeNumber: item.NoticeNumber || '',
       TargetType: item.TargetType,
-      Category: item.Category || 'General Circular',
+      Category: itemCategory,
       Priority: item.Priority || 1,
       Title: item.Title || '',
       Message: item.Message || '',
@@ -211,10 +229,64 @@ export class NoticeMasterComponent implements OnInit {
     }));
     this.memberSearchQuery = '';
     this.memberSearchResults = [];
+    this.closeQuickCategoryForm();
     if (this.fileInput && this.fileInput.nativeElement) {
       this.fileInput.nativeElement.value = '';
     }
     $('#modal_notice_form').modal('show');
+  }
+
+  toggleQuickCategoryForm(): void {
+    this.showQuickCategoryForm = !this.showQuickCategoryForm;
+    if (!this.showQuickCategoryForm) {
+      this.quickCategoryName = '';
+    }
+  }
+
+  closeQuickCategoryForm(): void {
+    this.showQuickCategoryForm = false;
+    this.quickCategoryName = '';
+  }
+
+  saveQuickCategory(): void {
+    const categoryName = (this.quickCategoryName || '').trim();
+    if (!categoryName) {
+      this.toastr.error('Please enter category name.');
+      return;
+    }
+
+    const obj: RequestModel = {
+      request: this.localService.encrypt(JSON.stringify({
+        NoticeCategoryId: 0,
+        CategoryName: categoryName,
+        Status: 1,
+        StaffLoginId: this.staffLogin?.StaffLoginId || 0
+      })).toString()
+    };
+
+    this.isSavingQuickCategory = true;
+    this.service.notice('SaveNoticeCategory', obj).subscribe({
+      next: (res: any) => {
+        this.isSavingQuickCategory = false;
+        if (res && res.Message === ConstantData.SuccessMessage) {
+          const savedName = res.CategoryName || categoryName;
+          if (res.Categories && res.Categories.length > 0) {
+            this.Categories = res.Categories;
+          } else if (!this.Categories.includes(savedName)) {
+            this.Categories = [...this.Categories, savedName].sort();
+          }
+          this.Notice.Category = savedName;
+          this.closeQuickCategoryForm();
+          this.toastr.success('Notice category added successfully.');
+        } else {
+          this.toastr.error((res && res.Message) || 'Unable to add category.');
+        }
+      },
+      error: () => {
+        this.isSavingQuickCategory = false;
+        this.toastr.error('Error occurred while adding category.');
+      }
+    });
   }
 
   onTargetTypeChange(): void {
@@ -444,5 +516,19 @@ export class NoticeMasterComponent implements OnInit {
 
   getPreviewTargets(item: any): any[] {
     return (item && item.Targets ? item.Targets : []).slice(0, 2);
+  }
+
+  viewNoticeDetails(item: any): void {
+    this.selectedViewNotice = item;
+    $('#modal_notice_view').modal('show');
+  }
+
+  editFromViewModal(): void {
+    if (!this.selectedViewNotice) return;
+    const noticeToEdit = this.selectedViewNotice;
+    $('#modal_notice_view').modal('hide');
+    setTimeout(() => {
+      this.editNotice(noticeToEdit);
+    }, 200);
   }
 }

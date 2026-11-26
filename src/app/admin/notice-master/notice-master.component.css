@@ -16,3 +16,21 @@
 .notice-autocomplete-item:hover {
   background-color: #eff6ff;
 }
+
+#modal_notice_form .modal-body,
+#modal_notice_view .modal-body {
+  overflow-y: auto;
+  max-height: calc(100vh - 170px);
+  padding-bottom: 1rem !important;
+}
+
+#modal_notice_form .modal-header .modal-title,
+#modal_notice_view .modal-header .modal-title {
+  color: #ffffff;
+}
+
+.notice-view-message {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.55;
+}
