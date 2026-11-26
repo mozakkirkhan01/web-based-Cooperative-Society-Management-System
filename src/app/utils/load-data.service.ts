@@ -156,4 +156,31 @@ export class LoadDataService {
     return date;
   }
 
+  openBase64File(fileName: string, contentType: string, base64Data: string): void {
+    const byteChars = atob(base64Data);
+    const byteNums = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) {
+      byteNums[i] = byteChars.charCodeAt(i);
+    }
+    const blob = new Blob([new Uint8Array(byteNums)], { type: contentType || 'application/octet-stream' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    if (contentType === 'application/pdf' || (contentType && contentType.startsWith('image/'))) {
+      const win = window.open(blobUrl, '_blank');
+      if (!win) {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = fileName || 'attachment';
+        a.click();
+      }
+    } else {
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName || 'attachment';
+      a.click();
+    }
+
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+  }
+
 }
