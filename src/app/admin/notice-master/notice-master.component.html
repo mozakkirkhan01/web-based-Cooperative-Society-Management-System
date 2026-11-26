@@ -1,1 +1,359 @@
-<p>notice-master works!</p>
+<app-progress *ngIf="dataLoading"></app-progress>
+
+<main id="main" class="main" *ngIf="action.ResponseReceived">
+  <!-- Page Header -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 pb-2 border-bottom">
+    <div class="pagetitle mb-0">
+      <h1 class="h3 fw-bold text-dark mb-0">{{action.MenuTitle || 'Manage Notice'}}</h1>
+      <nav>
+        <ol class="breadcrumb mb-0 small">
+          <li class="breadcrumb-item"><a routerLink="/admin/admin-dashboard">Home</a></li>
+          <li class="breadcrumb-item">{{action.ParentMenuTitle || 'Notice'}}</li>
+          <li class="breadcrumb-item active">{{action.MenuTitle || 'Manage Notice'}}</li>
+        </ol>
+      </nav>
+    </div>
+
+    <button *ngIf="action.CanCreate" type="button" class="btn btn-primary btn-sm px-3 shadow-sm"
+            (click)="openNewNoticeModal()">
+      <i class="bi bi-plus-circle me-1"></i> Create Notice
+    </button>
+  </div>
+
+  <!-- Filter & Table Card -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-body p-3">
+      <div class="row g-2 align-items-end mb-3">
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold text-muted mb-1">Search</label>
+          <div class="input-group input-group-sm">
+            <span class="input-group-text bg-white"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control" [(ngModel)]="Search" (keyup.enter)="getNoticeList()"
+                   placeholder="Title, Notice No, Staff No, Member Name...">
+          </div>
+        </div>
+
+        <div class="col-md-3 col-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Audience</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterTargetType" (change)="getNoticeList()">
+            <option [ngValue]="0">All Audiences</option>
+            <option [ngValue]="1">All Members</option>
+            <option [ngValue]="2">Particular Member(s)</option>
+          </select>
+        </div>
+
+        <div class="col-md-2 col-6">
+          <label class="form-label small fw-semibold text-muted mb-1">Status</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filterStatus" (change)="getNoticeList()">
+            <option [ngValue]="0">All Statuses</option>
+            <option [ngValue]="1">Published</option>
+            <option [ngValue]="2">Draft / Inactive</option>
+          </select>
+        </div>
+
+        <div class="col-md-3 d-flex align-items-center justify-content-md-end gap-2">
+          <button type="button" class="btn btn-outline-primary btn-sm" (click)="getNoticeList()">
+            <i class="bi bi-arrow-clockwise me-1"></i> Refresh
+          </button>
+          <select class="form-select form-select-sm" style="width: auto;" [(ngModel)]="itemPerPage" (change)="p = 1">
+            <option *ngFor="let opt of PageSize" [ngValue]="opt">{{opt}}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Notice List Table -->
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+          <thead class="table-light">
+            <tr>
+              <th style="width: 45px;">#</th>
+              <th>Notice Details</th>
+              <th>Category &amp; Priority</th>
+              <th>Target Audience</th>
+              <th>Publish / Expiry</th>
+              <th class="text-center">Reads</th>
+              <th class="text-center">Status</th>
+              <th class="text-center" style="width: 120px;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of NoticeList | paginate: { itemsPerPage: itemPerPage, currentPage: p }; let i = index">
+              <td class="text-muted">{{(p - 1) * itemPerPage + i + 1}}</td>
+              <td>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span class="badge bg-light text-dark border">{{item.NoticeNumber}}</span>
+                  <span *ngIf="item.IsPinned" class="badge bg-warning-subtle text-warning border border-warning-subtle">
+                    <i class="bi bi-pin-angle-fill me-1"></i>Pinned
+                  </span>
+                </div>
+                <div class="fw-bold text-dark mt-1">{{item.Title}}</div>
+                <div class="text-muted text-truncate" style="max-width: 280px;" [title]="item.Message">
+                  {{item.Message}}
+                </div>
+              </td>
+              <td>
+                <div class="fw-semibold text-secondary">{{item.Category}}</div>
+                <span class="badge mt-1"
+                      [ngClass]="item.Priority === 3 ? 'bg-danger' : (item.Priority === 2 ? 'bg-warning text-dark' : 'bg-info-subtle text-info border border-info-subtle')">
+                  {{getPriorityLabel(item.Priority)}}
+                </span>
+              </td>
+              <td>
+                <span *ngIf="item.TargetType === 1"
+                      class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                  <i class="bi bi-people-fill me-1"></i> All Members
+                </span>
+                <div *ngIf="item.TargetType === 2">
+                  <span class="badge bg-info-subtle text-dark border border-info-subtle mb-1">
+                    <i class="bi bi-person-check-fill me-1"></i> {{item.Targets?.length || 0}} Member(s)
+                  </span>
+                  <div *ngFor="let t of getPreviewTargets(item)" class="text-muted" style="font-size: 0.74rem;">
+                    {{t.MemberName}} ({{t.StaffNo}})
+                  </div>
+                  <div *ngIf="item.Targets?.length > 2" class="text-primary fw-semibold" style="font-size: 0.72rem;">
+                    +{{item.Targets.length - 2}} more
+                  </div>
+                </div>
+              </td>
+              <td class="text-nowrap">
+                <div><strong>From:</strong> {{item.PublishDate | date:'dd-MMM-yyyy'}}</div>
+                <div class="text-muted">
+                  <strong>Until:</strong> {{item.ExpiryDate ? (item.ExpiryDate | date:'dd-MMM-yyyy') : 'No Expiry'}}
+                </div>
+              </td>
+              <td class="text-center">
+                <span class="badge bg-light text-dark border">{{item.ReadCount}}</span>
+              </td>
+              <td class="text-center">
+                <span class="badge"
+                      [ngClass]="item.Status === 1 ? 'bg-success-subtle text-success border border-success-subtle' : 'bg-secondary-subtle text-secondary border'">
+                  {{item.Status === 1 ? 'Published' : 'Draft'}}
+                </span>
+              </td>
+              <td class="text-center text-nowrap">
+                <button *ngIf="item.HasAttachment" type="button" class="btn btn-sm btn-outline-secondary me-1"
+                        (click)="viewAttachment(item)" [title]="item.AttachmentName || 'View Attachment'">
+                  <i class="bi bi-paperclip"></i>
+                </button>
+                <button *ngIf="action.CanEdit" type="button" class="btn btn-sm btn-outline-primary me-1"
+                        (click)="editNotice(item)" title="Edit Notice">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button *ngIf="action.CanDelete" type="button" class="btn btn-sm btn-outline-danger"
+                        (click)="deleteNotice(item)" title="Delete Notice">
+                  <i class="bi bi-trash3"></i>
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="NoticeList.length === 0">
+              <td colspan="8" class="text-center text-muted py-5">
+                <i class="bi bi-megaphone fs-2 d-block mb-2 opacity-50"></i>
+                No notices found. Click <strong>Create Notice</strong> to publish your first announcement.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="d-flex justify-content-end mt-3" *ngIf="NoticeList.length > 0">
+        <pagination-controls (pageChange)="p = $event"></pagination-controls>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Create / Edit Notice Modal -->
+<div class="modal fade" id="modal_notice_form" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-primary text-white py-2">
+        <h5 class="modal-title fs-6 fw-bold mb-0">
+          <i class="bi bi-megaphone-fill me-2"></i>
+          {{Notice.NoticeId > 0 ? 'Edit Notice' : 'Create & Publish Notice'}}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <form #formNotice="ngForm" (ngSubmit)="saveNotice()" novalidate>
+        <div class="modal-body p-3">
+          <div class="row g-3">
+            <!-- Audience Toggle -->
+            <div class="col-12">
+              <label class="form-label small fw-bold text-dark mb-1">
+                Target Audience <span class="text-danger">*</span>
+              </label>
+              <div class="d-flex flex-wrap gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="TargetType" id="targetAll"
+                         [value]="1" [(ngModel)]="Notice.TargetType" (change)="onTargetTypeChange()">
+                  <label class="form-check-label fw-semibold" for="targetAll">
+                    All Members (Society Broadcast)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="TargetType" id="targetSpecific"
+                         [value]="2" [(ngModel)]="Notice.TargetType" (change)="onTargetTypeChange()">
+                  <label class="form-check-label fw-semibold" for="targetSpecific">
+                    Particular Member(s) Only
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Member Recipient Selector (Only when TargetType === 2) -->
+            <div class="col-12" *ngIf="Notice.TargetType === 2">
+              <div class="p-3 bg-light border rounded-3">
+                <label class="form-label small fw-semibold text-primary mb-1">
+                  Select Member Recipient(s) <span class="text-danger">*</span>
+                </label>
+                <div class="position-relative">
+                  <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white"><i class="bi bi-person-plus text-primary"></i></span>
+                    <input type="text" class="form-control" name="memberSearchQuery"
+                           [(ngModel)]="memberSearchQuery" (input)="onMemberSearchInput()"
+                           placeholder="Type Staff No, Member No, or Member Name..." autocomplete="off">
+                  </div>
+
+                  <!-- Search Suggestions -->
+                  <div *ngIf="memberSearchResults.length > 0"
+                       class="notice-autocomplete-list shadow border rounded bg-white mt-1">
+                    <div *ngFor="let m of memberSearchResults"
+                         class="p-2 border-bottom notice-autocomplete-item"
+                         (click)="addTargetMember(m)">
+                      <div class="d-flex justify-content-between align-items-center small">
+                        <div>
+                          <strong class="text-primary">{{m.MemberName}}</strong>
+                          <span class="badge bg-secondary ms-2">Staff: {{m.StaffNo}}</span>
+                          <span class="badge bg-light text-dark border ms-1">Mem: {{m.MemberNo}}</span>
+                        </div>
+                        <span class="text-muted">{{m.DepartmentName}}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div *ngIf="isSearchingMember" class="small text-muted mt-1">
+                    <span class="spinner-border spinner-border-sm me-1"></span> Searching members...
+                  </div>
+                </div>
+
+                <!-- Selected Recipients Chips -->
+                <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="selectedTargets.length > 0">
+                  <span *ngFor="let t of selectedTargets"
+                        class="badge bg-primary text-white d-inline-flex align-items-center gap-2 py-1 px-2">
+                    {{t.MemberName}} (Staff: {{t.StaffNo}} | Mem: {{t.MemberNo}})
+                    <button type="button" class="btn-close btn-close-white" style="font-size: 0.6rem;"
+                            (click)="removeTargetMember(t.MemberId)" aria-label="Remove"></button>
+                  </span>
+                </div>
+                <div *ngIf="selectedTargets.length === 0" class="small text-danger mt-2" [hidden]="!isSubmitted">
+                  Please add at least one member recipient.
+                </div>
+              </div>
+            </div>
+
+            <!-- Notice Number, Category, Priority -->
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold mb-1">Notice Reference No</label>
+              <input type="text" class="form-control form-control-sm" name="NoticeNumber"
+                     [(ngModel)]="Notice.NoticeNumber" maxlength="30" placeholder="e.g. NTC/2026-27/001">
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold mb-1">Category <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" name="Category" [(ngModel)]="Notice.Category" required>
+                <option *ngFor="let c of Categories" [value]="c">{{c}}</option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label small fw-semibold mb-1">Priority <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" name="Priority" [(ngModel)]="Notice.Priority" required>
+                <option *ngFor="let pr of Priorities" [ngValue]="pr.Key">{{pr.Value}}</option>
+              </select>
+            </div>
+
+            <!-- Title -->
+            <div class="col-12">
+              <label class="form-label small fw-semibold mb-1">
+                Notice Title / Subject <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control form-control-sm" name="Title"
+                     [(ngModel)]="Notice.Title" #titleModel="ngModel" maxlength="200"
+                     placeholder="Enter concise circular headline..." required>
+              <div class="text-danger small mt-1" *ngIf="isSubmitted && titleModel.invalid">
+                Title is required.
+              </div>
+            </div>
+
+            <!-- Message Body -->
+            <div class="col-12">
+              <label class="form-label small fw-semibold mb-1">
+                Notice Message <span class="text-danger">*</span>
+              </label>
+              <textarea class="form-control form-control-sm" rows="4" name="Message"
+                        [(ngModel)]="Notice.Message" #msgModel="ngModel"
+                        placeholder="Write the full circular or personal notice details..." required></textarea>
+              <div class="text-danger small mt-1" *ngIf="isSubmitted && msgModel.invalid">
+                Message content is required.
+              </div>
+            </div>
+
+            <!-- Dates & Status -->
+            <div class="col-md-3 col-6">
+              <label class="form-label small fw-semibold mb-1">Publish Date <span class="text-danger">*</span></label>
+              <input type="date" class="form-control form-control-sm" name="PublishDate"
+                     [(ngModel)]="Notice.PublishDate" required>
+            </div>
+
+            <div class="col-md-3 col-6">
+              <label class="form-label small fw-semibold mb-1">Expiry Date</label>
+              <input type="date" class="form-control form-control-sm" name="ExpiryDate"
+                     [(ngModel)]="Notice.ExpiryDate">
+            </div>
+
+            <div class="col-md-3 col-6">
+              <label class="form-label small fw-semibold mb-1">Status <span class="text-danger">*</span></label>
+              <select class="form-select form-select-sm" name="Status" [(ngModel)]="Notice.Status" required>
+                <option [ngValue]="1">Published (Visible)</option>
+                <option [ngValue]="2">Draft / Inactive</option>
+              </select>
+            </div>
+
+            <div class="col-md-3 col-6 d-flex align-items-end">
+              <div class="form-check form-switch mb-1">
+                <input class="form-check-input" type="checkbox" id="isPinnedSwitch" name="IsPinned"
+                       [(ngModel)]="Notice.IsPinned">
+                <label class="form-check-label small fw-semibold" for="isPinnedSwitch">Pin to Top</label>
+              </div>
+            </div>
+
+            <!-- Attachment Upload -->
+            <div class="col-12">
+              <label class="form-label small fw-semibold mb-1">
+                Attachment (Optional — PDF, PNG, JPG up to 5 MB)
+              </label>
+              <div class="d-flex flex-wrap align-items-center gap-2">
+                <input #fileInput type="file" class="form-control form-control-sm" style="max-width: 340px;"
+                       accept=".pdf,.png,.jpg,.jpeg" (change)="onAttachmentSelected($event)">
+                <div *ngIf="Notice.HasAttachment && Notice.AttachmentName"
+                     class="badge bg-secondary-subtle text-dark border d-inline-flex align-items-center gap-2 py-1 px-2">
+                  <i class="bi bi-paperclip"></i> {{Notice.AttachmentName}}
+                  <button type="button" class="btn-close" style="font-size: 0.6rem;"
+                          (click)="removeAttachment()" title="Remove Attachment"></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer bg-light py-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm px-4" [disabled]="dataLoading">
+            <span *ngIf="dataLoading" class="spinner-border spinner-border-sm me-1"></span>
+            <i *ngIf="!dataLoading" class="bi bi-check-circle me-1"></i>
+            {{Notice.NoticeId > 0 ? 'Update Notice' : 'Publish Notice'}}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
