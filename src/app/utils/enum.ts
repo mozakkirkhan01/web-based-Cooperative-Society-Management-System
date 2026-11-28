@@ -108,6 +108,16 @@ export enum Status {
     Active = 1,
     Inactive = 2
 }
+export enum MembershipStatus {
+    Active = 1,
+    Retired = 2,
+    LeftSociety = 3
+}
+export enum SettlementStatus {
+    NotApplicable = 0,
+    Pending = 1,
+    Settled = 2
+}
 export enum BookletStatus {
     NotSale = 1,
     Sold = 2
