@@ -4,15 +4,22 @@ import {
   PSU_UNIT_OPTIONS,
   MEMBER_TYPE_OPTIONS,
   NOMINEE_RELATION_OPTIONS,
-  GUARDIAN_TYPE_OPTIONS
+  GUARDIAN_TYPE_OPTIONS,
+  MEMBERSHIP_STATUS_FILTER_OPTIONS
 } from '../../utils/constants';
+import {
+  getMemberLifecycleLabel,
+  getMemberLifecycleBadgeClass,
+  isDueForRetirement,
+  getMemberStatusActionLabel
+} from '../../utils/formatters';
 import { Component, ViewChild } from '@angular/core';
 import { NgForm } from '@angular/forms';
 import { ToastrService } from 'ngx-toastr';
 import { AppService } from '../../utils/app.service';
 import { ConstantData } from '../../utils/constant-data';
 import { LoadDataService } from '../../utils/load-data.service';
-import { Status, MemberType, Gender, NomineeRelation, PsuUnit, GuardianType } from '../../utils/enum';
+import { Status, MemberType, Gender, NomineeRelation, PsuUnit, GuardianType, MembershipStatus, SettlementStatus } from '../../utils/enum';
 import { ActionModel, RequestModel, StaffLoginModel } from '../../utils/interface';
 import { LocalService } from '../../utils/local.service';
 import { Router } from '@angular/router';
@@ -52,10 +59,32 @@ export class MemberComponent {
   AllMemberTypeList = MemberType;
   GuardianTypeList = GUARDIAN_TYPE_OPTIONS;
   AllGuardianTypeList = GuardianType;
+  MembershipStatusEnum = MembershipStatus;
+  SettlementStatusEnum = SettlementStatus;
+  LifecycleFilterList = MEMBERSHIP_STATUS_FILTER_OPTIONS;
   selectedMember: any = {};
+  selectedMemberHistory: any[] = [];
   filterStatus: number = 0;        // 0 = All
+  filterLifecycle: string = 'ALL';
 filterDepartmentId: number = 0;  // 0 = All
 filterPsuUnit: number = 0;       // 0 = All
+
+  // Status Change & Rejoin Modal state
+  statusTargetMember: any = null;
+  statusContext: any = null;
+  statusModalLoading: boolean = false;
+  statusSubmitting: boolean = false;
+  statusAction: string = '';
+  statusEffectiveDate: any = new Date();
+  statusRemarks: string = '';
+  acknowledgePending: boolean = false;
+  availableStatusActions: { key: string; label: string }[] = [];
+  rejoinModel: any = {};
+
+  getLifecycleLabel = getMemberLifecycleLabel;
+  getLifecycleBadgeClass = getMemberLifecycleBadgeClass;
+  isDueRetirement = isDueForRetirement;
+  getActionLabel = getMemberStatusActionLabel;
   constructor(
     private service: AppService,
     private toastr: ToastrService,
@@ -121,6 +150,204 @@ filterPsuUnit: number = 0;       // 0 = All
 
   viewMember(item: any) {
     this.selectedMember = item;
+    this.selectedMemberHistory = [];
+    const obj: RequestModel = {
+      request: this.localService.encrypt(JSON.stringify({ MemberId: item.MemberId })).toString()
+    };
+    this.service.getMemberStatusContext(obj).subscribe((r1: any) => {
+      if (r1?.Message == ConstantData.SuccessMessage && r1?.Context) {
+        this.selectedMemberHistory = r1.Context.History || [];
+      }
+    });
+  }
+
+  openStatusModal(item: any) {
+    this.statusTargetMember = item;
+    this.statusContext = null;
+    this.statusModalLoading = true;
+    this.statusSubmitting = false;
+    this.statusAction = '';
+    this.statusRemarks = '';
+    this.acknowledgePending = false;
+    this.availableStatusActions = [];
+    this.statusEffectiveDate = item.RetirementDate ? new Date(item.RetirementDate) : new Date();
+    this.rejoinModel = {};
+
+    $('#memberStatusModal').modal('show');
+
+    const obj: RequestModel = {
+      request: this.localService.encrypt(JSON.stringify({ MemberId: item.MemberId })).toString()
+    };
+    this.service.getMemberStatusContext(obj).subscribe((res: any) => {
+      this.statusModalLoading = false;
+      if (res?.Message == ConstantData.SuccessMessage && res?.Context) {
+        this.applyStatusContext(res.Context, item);
+      } else {
+        this.toastr.error(res?.Message || 'Unable to load member status details');
+      }
+    }, () => {
+      this.statusModalLoading = false;
+      this.toastr.error('Error while loading member status details');
+    });
+  }
+
+  private applyStatusContext(ctx: any, item: any) {
+    this.statusContext = ctx;
+    const actions: { key: string; label: string }[] = [];
+
+    if (ctx.MembershipStatus == MembershipStatus.Active || ctx.Status == Status.Active) {
+      actions.push({ key: 'RETIRED', label: 'Mark as Retired' });
+      actions.push({ key: 'LEFT_SOCIETY', label: 'Left Society / Resigned' });
+    } else if (ctx.MembershipStatus == MembershipStatus.Retired) {
+      if (ctx.SettlementStatus == SettlementStatus.Pending) {
+        actions.push({ key: 'SETTLED', label: 'Mark Settlement as Completed' });
+      }
+      actions.push({ key: 'ACTIVATED', label: 'Activate Member (Status Correction)' });
+    } else {
+      if (ctx.CanRejoin) {
+        actions.push({ key: 'REJOINED', label: 'Rejoin Society (Issue New Member No.)' });
+      }
+      if (ctx.SettlementStatus == SettlementStatus.Pending) {
+        actions.push({ key: 'SETTLED', label: 'Mark Settlement as Completed' });
+      }
+      if (!ctx.NextRejoinedMemberId) {
+        actions.push({ key: 'ACTIVATED', label: 'Activate Member (Status Correction)' });
+      }
+    }
+
+    this.availableStatusActions = actions;
+    this.statusAction = actions.length > 0 ? actions[0].key : '';
+    this.onStatusActionChange();
+
+    this.rejoinModel = {
+      PreviousMemberId: item.MemberId,
+      NewMemberNo: ctx.SuggestedNextMemberNo,
+      RejoinDate: new Date(),
+      DepartmentId: item.DepartmentId || null,
+      DeptSecCode: item.DeptSecCode || '',
+      Designation: item.Designation || '',
+      MobileNo: item.MobileNo || '',
+      WhatsappNo: item.WhatsappNo || '',
+      Email: item.Email || '',
+      PresentAddress: item.PresentAddress || '',
+      PermanentAddress: item.PermanentAddress || '',
+      BankName: item.BankName || '',
+      AccountNo: item.AccountNo || '',
+      IFSCCode: item.IFSCCode || '',
+      BranchName: item.BranchName || '',
+      NomineeName: item.NomineeName || '',
+      NomineeRelation: item.NomineeRelation || null,
+      RetirementDate: item.RetirementDate ? new Date(item.RetirementDate) : null,
+      Remarks: ''
+    };
+  }
+
+  onStatusActionChange() {
+    this.acknowledgePending = false;
+    if (this.statusAction === 'RETIRED' && this.statusContext?.RetirementDate) {
+      this.statusEffectiveDate = new Date(this.statusContext.RetirementDate);
+    } else {
+      this.statusEffectiveDate = new Date();
+    }
+  }
+
+  onRejoinDepartmentChange(departmentId: any) {
+    const dept = this.DepartmentList.find((x: any) => x.DepartmentId == departmentId);
+    if (dept) {
+      this.rejoinModel.DeptSecCode = dept.DepartmentCode;
+    }
+  }
+
+  submitStatusOrRejoin() {
+    if (!this.statusContext || !this.statusAction || this.statusSubmitting) return;
+
+    if (this.statusAction === 'REJOINED') {
+      const remarks = (this.rejoinModel.Remarks || '').trim();
+      const newMemNo = Number(this.rejoinModel.NewMemberNo);
+      if (!Number.isInteger(newMemNo) || newMemNo <= 0) {
+        this.toastr.error('Enter a valid positive New Member No.');
+        return;
+      }
+      if (!this.rejoinModel.RejoinDate) {
+        this.toastr.error('Select a Rejoin Date.');
+        return;
+      }
+      if (!remarks) {
+        this.toastr.error('Rejoin remarks are required.');
+        return;
+      }
+
+      const payload = {
+        ...this.rejoinModel,
+        NewMemberNo: newMemNo,
+        RejoinDate: this.loadData.loadDateYMD(this.rejoinModel.RejoinDate),
+        RetirementDate: this.rejoinModel.RetirementDate ? this.loadData.loadDateYMD(this.rejoinModel.RetirementDate) : null,
+        Remarks: remarks,
+        StaffLoginId: this.staffLogin.StaffLoginId
+      };
+
+      this.statusSubmitting = true;
+      this.service.rejoinMember({
+        request: this.localService.encrypt(JSON.stringify(payload)).toString()
+      }).subscribe((res: any) => {
+        this.statusSubmitting = false;
+        if (res?.Message == ConstantData.SuccessMessage) {
+          this.toastr.success(`Member rejoined successfully with new Member No. ${newMemNo}`);
+          $('#memberStatusModal').modal('hide');
+          this.getMemberList();
+        } else {
+          this.toastr.error(res?.Message || 'Unable to process rejoin');
+        }
+      }, () => {
+        this.statusSubmitting = false;
+        this.toastr.error('Error while processing member rejoin');
+      });
+      return;
+    }
+
+    const remarks = (this.statusRemarks || '').trim();
+    if (!remarks) {
+      this.toastr.error('Remarks are required when changing status.');
+      return;
+    }
+    if (!this.statusEffectiveDate) {
+      this.toastr.error('Select an effective date.');
+      return;
+    }
+
+    const isExit = this.statusAction === 'RETIRED' || this.statusAction === 'LEFT_SOCIETY';
+    const needsSettleAck = this.statusAction === 'SETTLED' &&
+      ((this.statusContext.OutstandingLoan || 0) > 0 || (this.statusContext.TotalDeposits || 0) > 0 || (this.statusContext.DraftVoucherCount || 0) > 0);
+    if (((isExit && this.statusContext.HasPendingSettlementItems) || needsSettleAck) && !this.acknowledgePending) {
+      this.toastr.warning('Please confirm the pending balances/sureties warning checkbox first.');
+      return;
+    }
+
+    const payload = {
+      MemberId: this.statusContext.MemberId,
+      ActionType: this.statusAction,
+      EffectiveDate: this.loadData.loadDateYMD(this.statusEffectiveDate),
+      Remarks: remarks,
+      AcknowledgePending: this.acknowledgePending,
+      StaffLoginId: this.staffLogin.StaffLoginId
+    };
+
+    this.statusSubmitting = true;
+    this.service.changeMemberStatus({
+      request: this.localService.encrypt(JSON.stringify(payload)).toString()
+    }).subscribe((res: any) => {
+      this.statusSubmitting = false;
+      if (res?.Message == ConstantData.SuccessMessage) {
+        this.toastr.success('Member status updated successfully');
+        $('#memberStatusModal').modal('hide');
+        this.getMemberList();
+      } else {
+        this.toastr.error(res?.Message || 'Unable to update member status');
+      }
+    }, () => {
+      this.statusSubmitting = false;
+      this.toastr.error('Error while updating member status');
+    });
   }
 
   getDepartmentList() {
@@ -510,7 +737,7 @@ filterPsuUnit: number = 0;       // 0 = All
     doc.setFontSize(14);
     doc.setTextColor(0, 120, 0);
     doc.text("Status :", leftX + 8, footerY + 8.5);
-    doc.text(item.Status == 1 ? "ACTIVE" : "INACTIVE", leftX + 32, footerY + 8.5);
+    doc.text(this.getLifecycleLabel(item).toUpperCase(), leftX + 32, footerY + 8.5);
 
     doc.setTextColor(0, 45, 120);
     doc.text("Print Date :", 115, footerY + 8.5);
@@ -589,15 +816,30 @@ getMemberList() {
 applyFilter() {
   this.filteredMemberList = this.MemberList.filter((item: any) => {
     const matchStatus = this.filterStatus == 0 || item.Status == this.filterStatus;
+    let matchLifecycle = true;
+    if (this.filterLifecycle === 'ACTIVE') {
+      matchLifecycle = item.Status == Status.Active;
+    } else if (this.filterLifecycle === 'DUE_RETIREMENT') {
+      matchLifecycle = this.isDueRetirement(item);
+    } else if (this.filterLifecycle === 'RETIRED_PENDING') {
+      matchLifecycle = item.Status != Status.Active && item.MembershipStatus == MembershipStatus.Retired && item.SettlementStatus == SettlementStatus.Pending;
+    } else if (this.filterLifecycle === 'RETIRED_SETTLED') {
+      matchLifecycle = item.Status != Status.Active && item.MembershipStatus == MembershipStatus.Retired && item.SettlementStatus != SettlementStatus.Pending;
+    } else if (this.filterLifecycle === 'LEFT_PENDING') {
+      matchLifecycle = item.Status != Status.Active && item.MembershipStatus == MembershipStatus.LeftSociety && item.SettlementStatus == SettlementStatus.Pending;
+    } else if (this.filterLifecycle === 'LEFT_SETTLED') {
+      matchLifecycle = item.Status != Status.Active && item.MembershipStatus == MembershipStatus.LeftSociety && item.SettlementStatus != SettlementStatus.Pending;
+    }
     const matchDept = this.filterDepartmentId == 0 || item.DepartmentId == this.filterDepartmentId;
     const matchPsu = this.filterPsuUnit == 0 || item.PsuUnit == this.filterPsuUnit;
-    return matchStatus && matchDept && matchPsu;
+    return matchStatus && matchLifecycle && matchDept && matchPsu;
   });
   this.p = 1; // reset to first page
 }
 
 clearFilters() {
   this.filterStatus = 0;
+  this.filterLifecycle = 'ALL';
   this.filterDepartmentId = 0;
   this.filterPsuUnit = 0;
   this.applyFilter();

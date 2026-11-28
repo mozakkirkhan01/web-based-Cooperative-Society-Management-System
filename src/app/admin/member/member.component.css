@@ -115,3 +115,19 @@ hr {
     background: #d0ebff;
     border-color: #339af0;
 }
+
+#memberStatusModal .modal-title,
+#staticBackdrop .modal-title {
+    color: #ffffff !important;
+}
+
+#memberStatusModal .card-body {
+    overflow: visible;
+    padding: 18px 16px 14px 16px;
+    margin-top: 0;
+}
+
+#memberStatusModal ::ng-deep .mat-mdc-form-field {
+    display: block !important;
+    width: 100%;
+}
