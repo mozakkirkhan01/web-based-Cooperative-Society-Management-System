@@ -9,7 +9,9 @@ import {
   DebitCreditType,
   HeadType,
   Category,
-  StaffType
+  StaffType,
+  MembershipStatus,
+  SettlementStatus
 } from '../enum';
 
 export interface KeyValueOption<K = any, V = string> {
@@ -128,3 +130,26 @@ export const TRANSACTION_TYPE_FILTER_OPTIONS: readonly KeyValueOption<string, st
   { Key: 'SCHEDULE', Value: 'Schedule' },
   { Key: 'SALARY', Value: 'Salary' }
 ] as const;
+
+/** Member lifecycle status filter options */
+export const MEMBERSHIP_STATUS_FILTER_OPTIONS: readonly KeyValueOption<string, string>[] = [
+  { Key: 'ALL', Value: 'All Lifecycle Statuses' },
+  { Key: 'ACTIVE', Value: 'Active' },
+  { Key: 'DUE_RETIREMENT', Value: 'Due for Retirement' },
+  { Key: 'RETIRED_PENDING', Value: 'Retired - Settlement Pending' },
+  { Key: 'RETIRED_SETTLED', Value: 'Retired - Settled' },
+  { Key: 'LEFT_PENDING', Value: 'Left Society - Settlement Pending' },
+  { Key: 'LEFT_SETTLED', Value: 'Left Society - Settled' }
+] as const;
+
+export const MEMBERSHIP_STATUS_LABELS: Record<number, string> = {
+  [MembershipStatus.Active]: 'Active',
+  [MembershipStatus.Retired]: 'Retired',
+  [MembershipStatus.LeftSociety]: 'Left Society'
+};
+
+export const SETTLEMENT_STATUS_LABELS: Record<number, string> = {
+  [SettlementStatus.NotApplicable]: 'N/A',
+  [SettlementStatus.Pending]: 'Settlement Pending',
+  [SettlementStatus.Settled]: 'Settled'
+};
