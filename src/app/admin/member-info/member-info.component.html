@@ -76,6 +76,7 @@
                     <span class="fw-bold text-primary">{{m.MemberName}}</span>
                     <span class="badge bg-secondary ms-2">Staff: {{m.StaffNo}}</span>
                     <span class="badge bg-light text-dark border ms-1">Mem: {{m.MemberNo}}</span>
+                    <span *ngIf="m.Status != 1" class="ms-1" [ngClass]="getLifecycleBadgeClass(m)">{{getLifecycleLabel(m)}}</span>
                   </div>
                   <small class="text-muted">{{m.DepartmentName || m.Designation || ''}}</small>
                 </div>
@@ -119,9 +120,13 @@
             <span class="fw-bold fs-6 text-primary">
               <i class="bi bi-person-vcard me-2"></i>Member Profile
             </span>
-            <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
-              Active Member
+            <span class="px-2 py-1" [ngClass]="getLifecycleBadgeClass(member)">
+              {{getLifecycleLabel(member)}}
             </span>
+          </div>
+          <div class="alert alert-warning py-1 px-3 mb-0 rounded-0 border-bottom small" *ngIf="member.Status != 1 && member.StatusRemarks">
+            <strong>Status Note:</strong> {{member.StatusRemarks}}
+            <span *ngIf="member.StatusEffectiveDate"> (Effective: {{member.StatusEffectiveDate | date:'dd-MM-yyyy'}})</span>
           </div>
           <div class="card-body p-3">
             <div class="row g-2">

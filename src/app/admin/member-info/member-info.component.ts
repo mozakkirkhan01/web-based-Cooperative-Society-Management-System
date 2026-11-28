@@ -5,6 +5,7 @@ import { AppService } from '../../utils/app.service';
 import { LocalService } from '../../utils/local.service';
 import { ConstantData } from '../../utils/constant-data';
 import { RequestModel } from '../../utils/interface';
+import { getMemberLifecycleBadgeClass, getMemberLifecycleLabel } from '../../utils/formatters';
 
 declare var $: any;
 
@@ -24,6 +25,8 @@ export class MemberInfoComponent implements OnInit {
 
   member: any = null;
   balances: any[] = [];
+  getLifecycleLabel = getMemberLifecycleLabel;
+  getLifecycleBadgeClass = getMemberLifecycleBadgeClass;
   lastLoan: any = null;
   recoveries: any = null;
   settlement: any = null;
@@ -67,7 +70,7 @@ export class MemberInfoComponent implements OnInit {
 
     this.isSearchingMember = true;
     const obj: RequestModel = {
-      request: this.localService.encrypt(JSON.stringify({ Search: q, Query: q, Limit: 15 })).toString()
+      request: this.localService.encrypt(JSON.stringify({ Search: q, Query: q, Limit: 15, IncludeInactive: true })).toString()
     };
 
     this.service.loan('SearchMembers', obj).subscribe({
